@@ -16,8 +16,8 @@ PRAGMA foreign_keys = ON;
 -- Entidad central de autenticación y permisos.
 -- Reemplaza a EJECUTIVOS y SOCIOS del diseño original.
 -- Los roles posibles son:
---   'procurement' → ex ejecutivos de cuentas, gestionan proveedores
---   'partner'     → ex socios, realizan pedidos y reciben remitos
+--   'ejecutivo' → ex ejecutivos de cuentas, gestionan proveedores
+--   'socio'     → ex socios, realizan pedidos y reciben remitos
 
 CREATE TABLE IF NOT EXISTS USERS (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS USERS (
     -- Se guarda el hash (resultado de aplicar bcrypt o sha256 a la contraseña).
     -- Ejemplo: '$2b$12$KIXxyz...' en lugar de 'micontraseña123'
 
-    role          TEXT    NOT NULL CHECK(role IN ('procurement', 'partner'))
+    role          TEXT    NOT NULL CHECK(role IN ('ejecutivo', 'socio'))
     -- CHECK garantiza que solo se puedan insertar esos dos valores.
     -- Si intentás insertar role = 'admin' → error.
 );
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS USERS (
 CREATE TABLE IF NOT EXISTS PROVEEDORES (
     id_proveedor  INTEGER PRIMARY KEY AUTOINCREMENT,
     id_user       INTEGER NOT NULL,
-    -- Reemplaza a id_ejecutivo. Apunta al usuario procurement responsable.
+    -- Reemplaza a id_ejecutivo. Apunta al usuario ejecutivo responsable.
 
     nombre        TEXT    NOT NULL,
     direccion     TEXT,
@@ -55,57 +55,51 @@ CREATE TABLE IF NOT EXISTS PROVEEDORES (
 
 
 -- ============================================================
--- TABLA 3: LISTAS_PRECIOS
+-- TABLA 3: ARTICULOS
 -- ============================================================
--- Cada lista pertenece a un proveedor. Un proveedor puede tener
--- varias listas a lo largo del tiempo.
+-- Representa los artículos/productos generales en el sistema.
 
-CREATE TABLE IF NOT EXISTS LISTAS_PRECIOS (
-    id_lista              INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_proveedor          INTEGER NOT NULL,
-    fecha_carga           TEXT    NOT NULL,
-    -- Las fechas en SQLite se guardan como TEXT en formato 'YYYY-MM-DD'.
+CREATE TABLE IF NOT EXISTS ARTICULOS (
+    id_articulo           INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_articulo_proveedor TEXT,
+    -- Código de referencia original del proveedor.
 
-    nombre_archivo_source TEXT,
-    -- Nombre del archivo Excel/CSV original del que vino la lista.
-
-    FOREIGN KEY (id_proveedor) REFERENCES PROVEEDORES(id_proveedor)
+    detalle               TEXT    NOT NULL,
+    rubro                 TEXT,
+    cantidad_stock        INTEGER NOT NULL DEFAULT 0
 );
 
 
 -- ============================================================
--- TABLA 4: ARTICULOS
+-- TABLA 4: PRECIOS_NEGOCIADOS
 -- ============================================================
--- Cada artículo pertenece a una lista de precios.
+-- Tabla intermedia/relacional que vincula el ID del Proveedor y el ID del Artículo.
+-- Contiene el precio final acordado y/o el descuento pactado.
 
-CREATE TABLE IF NOT EXISTS ARTICULOS (
-    id_articulo           INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_lista              INTEGER NOT NULL,
-    id_articulo_proveedor TEXT,
-    -- Código interno del proveedor. Puede ser alfanumérico.
+CREATE TABLE IF NOT EXISTS PRECIOS_NEGOCIADOS (
+    id_proveedor  INTEGER NOT NULL,
+    id_articulo   INTEGER NOT NULL,
+    precio_final  REAL    NOT NULL DEFAULT 0.0, -- Precio final acordado
+    descuento     REAL    NOT NULL DEFAULT 0.0, -- Descuento acordado (ej. porcentaje 0.10 o valor directo)
 
-    detalle               TEXT    NOT NULL,
-    rubro                 TEXT,
-    precio_final          REAL    NOT NULL DEFAULT 0.0,
-    cantidad_stock        INTEGER NOT NULL DEFAULT 0,
-
-    FOREIGN KEY (id_lista) REFERENCES LISTAS_PRECIOS(id_lista)
+    PRIMARY KEY (id_proveedor, id_articulo),
+    FOREIGN KEY (id_proveedor) REFERENCES PROVEEDORES(id_proveedor),
+    FOREIGN KEY (id_articulo)  REFERENCES ARTICULOS(id_articulo)
 );
 
 
 -- ============================================================
 -- TABLA 5: PEDIDOS
 -- ============================================================
--- Un pedido es realizado por un usuario con role = 'partner'.
+-- Un pedido es realizado por un usuario con role = 'socio'.
 
 CREATE TABLE IF NOT EXISTS PEDIDOS (
     id_pedido  INTEGER PRIMARY KEY AUTOINCREMENT,
     id_user    INTEGER NOT NULL,
-    -- Reemplaza a id_socio. Apunta al usuario partner que hace el pedido.
+    -- Reemplaza a id_socio. Apunta al usuario socio que hace el pedido.
 
     fecha      TEXT    NOT NULL,
-    estado     TEXT    NOT NULL DEFAULT 'pendiente',
-    -- Valores posibles: 'pendiente', 'confirmado', 'cancelado'
+    estado     TEXT    NOT NULL DEFAULT 'Pendiente' CHECK(estado IN ('Pendiente', 'Consolidado', 'Procesado', 'Repartido')),
 
     FOREIGN KEY (id_user) REFERENCES USERS(id)
 );
@@ -148,12 +142,12 @@ CREATE TABLE IF NOT EXISTS PROCESOS_REPARTO (
 -- ============================================================
 -- TABLA 8: REMITOS
 -- ============================================================
--- Documento de entrega dirigido a un usuario con role = 'partner'.
+-- Documento de entrega dirigido a un usuario con role = 'socio'.
 
 CREATE TABLE IF NOT EXISTS REMITOS (
     id_remito        INTEGER PRIMARY KEY AUTOINCREMENT,
     id_user          INTEGER NOT NULL,
-    -- Reemplaza a id_socio. Apunta al usuario partner que recibe el remito.
+    -- Reemplaza a id_socio. Apunta al usuario socio que recibe el remito.
 
     id_proceso       INTEGER NOT NULL,
     fecha_emision    TEXT    NOT NULL,
