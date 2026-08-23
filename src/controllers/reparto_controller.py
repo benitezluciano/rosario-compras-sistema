@@ -1,75 +1,67 @@
 class RepartoController:
-    def __init__(self, vista, modelo):
+    def __init__(self, vista, modelo, on_reparto_completado=None):
         self.vista = vista
         self.modelo = modelo
+        self.on_reparto_completado = on_reparto_completado
         
-        # Conectar señales de la vista
+        # Conectar eventos de la vista
+        if hasattr(self.vista, 'btn_actualizar_stock'):
+            self.vista.btn_actualizar_stock.clicked.connect(self.guardar_ingreso_stock)
         if hasattr(self.vista, 'btn_ejecutar'):
-            self.vista.btn_ejecutar.clicked.connect(self.procesar_asignacion)
+            self.vista.btn_ejecutar.clicked.connect(self.ejecutar_reparto)
 
     def inicializar(self):
-        """Carga los pedidos pendientes o consolidados y los despliega en la tabla."""
-        try:
-            pedidos = self.modelo.obtener_pedidos_consolidados()
-            self.vista.cargar_pedidos(pedidos)
-            self.vista.actualizar_estado_interfaz("Pendiente")
-        except Exception as e:
-            self.vista.mostrar_mensaje_error(f"Error al cargar pedidos: {str(e)}")
-
-    def procesar_asignacion(self):
-        """
-        Ejecuta la asignación automática. Cambia el estado visual a 'Procesando...',
-        valida el stock, propone ajustes si hay discrepancia (Excepción E1),
-        y ejecuta el reparto masivo en la BD si se aprueba.
-        """
-        # Cambiar estado en la UI
-        self.vista.actualizar_estado_interfaz("Procesando...")
+        """Carga los artículos a recibir y los pedidos consolidados."""
+        articulos = self.modelo.obtener_articulos_recepcion()
+        self.vista.cargar_articulos_recepcion(articulos)
         
-        try:
-            # 1. Validar el stock vs los pedidos consolidados
-            discrepancias = self.modelo.validar_stock_vs_pedidos()
-            
-            ajustes_para_db = None
-            
-            if discrepancias:
-                # E1: Stock insuficiente. Mostrar propuesta de ajuste
-                aceptar_ajuste = self.vista.mostrar_alerta_ajuste(discrepancias)
-                if not aceptar_ajuste:
-                    # Cancelar la operación
-                    self.vista.actualizar_estado_interfaz("Asignación Cancelada")
-                    return
+        pedidos = self.modelo.obtener_pedidos_consolidados()
+        self.vista.cargar_pedidos(pedidos)
+
+    def guardar_ingreso_stock(self):
+        """Guarda los valores ingresados en la tabla de recepción como nuevo stock físico."""
+        stock_map = self.vista.obtener_stock_ingresado()
+        if not stock_map:
+            self.vista.mostrar_mensaje_error("No hay artículos para actualizar.")
+            return
+
+        self.modelo.actualizar_stock_recibido(stock_map)
+        self.vista.mostrar_mensaje_exito("Stock físico actualizado correctamente según la mercadería recibida.")
+        self.inicializar()
+
+    def ejecutar_reparto(self):
+        """Valida stock (con prorrateo si aplica), descuenta inventario y emite remitos."""
+        # 1. Guardar primero el stock cargado en la tabla de recepción
+        stock_map = self.vista.obtener_stock_ingresado()
+        if stock_map:
+            self.modelo.actualizar_stock_recibido(stock_map)
+
+        pedidos = self.modelo.obtener_pedidos_consolidados()
+        if not pedidos:
+            self.vista.mostrar_mensaje_error("No hay pedidos en estado 'Consolidado' listos para repartir.")
+            return
+
+        # 2. Validar stock vs pedidos
+        discrepancias = self.modelo.validar_stock_vs_pedidos()
+        ajustes_totales = {}
+        
+        if discrepancias:
+            confirmado = self.vista.mostrar_alerta_discrepancias(discrepancias)
+            if not confirmado:
+                return
                 
-                # Consolidar los ajustes individuales
-                # Estructura: (id_pedido, id_articulo) -> cantidad_ajustada
-                ajustes_para_db = {}
-                for disc in discrepancias:
-                    id_art = disc['id_articulo']
-                    for id_ped, cant_ajustada in disc['ajustes'].items():
-                        ajustes_para_db[(id_ped, id_art)] = cant_ajustada
-            
-            # 2. Intentar procesar asignación masiva, actualizar stock y generar remitos
-            resultado = self.modelo.ejecutar_reparto_masivo(ajustes=ajustes_para_db)
-            
-            if resultado:
-                # Notificar éxito y actualizar interfaz
-                self.vista.actualizar_estado_interfaz("Completado")
-                
-                mensaje_exito = (
-                    "Asignación automática de reparto completada con éxito.\n"
-                    "Se han generado los remitos correspondientes y se ha descontado el stock de los artículos."
-                )
-                if ajustes_para_db:
-                    mensaje_exito += "\n\nNota: Se aplicó el ajuste proporcional equitativo aceptado debido a faltantes de stock."
-                
-                self.vista.mostrar_mensaje_exito(mensaje_exito)
-            else:
-                self.vista.actualizar_estado_interfaz("Pendiente")
-                self.vista.mostrar_mensaje_exito("No se encontraron pedidos en estado 'Consolidado' para procesar.")
-            
-            # Recargar la tabla
+            for disc in discrepancias:
+                id_art = disc['id_articulo']
+                for id_ped, cant_ajustada in disc['ajustes'].items():
+                    ajustes_totales[(id_ped, id_art)] = cant_ajustada
+
+        # 3. Ejecutar reparto transaccional
+        exito = self.modelo.ejecutar_reparto_masivo(ajustes=ajustes_totales if ajustes_totales else None)
+        
+        if exito:
+            self.vista.mostrar_mensaje_exito("¡Reparto automático completado con éxito!\nSe emitieron los remitos y se notificó a los socios.")
             self.inicializar()
-            
-        except Exception as e:
-            # Capturar cualquier error inesperado
-            self.vista.actualizar_estado_interfaz("Pendiente")
-            self.vista.mostrar_mensaje_error(f"Error inesperado al ejecutar el reparto: {str(e)}")
+            if self.on_reparto_completado:
+                self.on_reparto_completado()
+        else:
+            self.vista.mostrar_mensaje_error("No fue posible ejecutar el proceso de reparto.")

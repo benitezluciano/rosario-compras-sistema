@@ -1,12 +1,25 @@
 from datetime import datetime
 from src.database import Database
+from src.models.notificacion_model import NotificacionModel
 
 class PedidoModel:
+    def obtener_proveedores(self):
+        """Devuelve los proveedores registrados que tienen artículos cotizados."""
+        query = """
+            SELECT DISTINCT p.id_proveedor, p.nombre
+            FROM PROVEEDORES p
+            JOIN PRECIOS_NEGOCIADOS pn ON p.id_proveedor = pn.id_proveedor
+            ORDER BY p.nombre ASC
+        """
+        with Database() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query)
+            return [dict(row) for row in cursor.fetchall()]
+
     def obtener_catalogo_articulos(self, id_proveedor=None):
         """
-        Consulta la base de datos para obtener el catálogo de artículos 
-        junto con sus precios negociados actuales.
-        Opcionalmente filtra por un proveedor específico.
+        Consulta el catálogo de artículos con sus precios negociados actuales.
+        Permite filtrar opcionalmente por proveedor.
         """
         query = """
             SELECT a.id_articulo, a.id_articulo_proveedor, a.detalle, a.rubro, a.cantidad_stock,
@@ -20,6 +33,8 @@ class PedidoModel:
             query += " WHERE p.id_proveedor = ?"
             params.append(id_proveedor)
             
+        query += " ORDER BY p.nombre, a.detalle"
+            
         with Database() as conn:
             cursor = conn.cursor()
             cursor.execute(query, params)
@@ -27,29 +42,42 @@ class PedidoModel:
 
     def registrar_pedido(self, id_socio, articulos_pedido):
         """
-        Inserta un nuevo pedido en la base de datos con estado 'Pendiente' y 
-        guarda sus respectivos renglones/detalles de artículos y cantidades.
-        
-        articulos_pedido: Lista de tuplas/diccionarios con (id_articulo, cantidad_pedida)
-        Retorna el ID del pedido registrado.
+        Inserta un nuevo pedido en la base de datos con estado 'Pendiente', 
+        guarda sus detalles y genera una notificación para el ejecutivo.
         """
         fecha_actual = datetime.now().strftime("%Y-%m-%d")
         
         with Database() as conn:
             cursor = conn.cursor()
             
-            # 1. Insertar en la cabecera de la tabla PEDIDOS
+            # Obtener nombre del socio para la notificación
+            cursor.execute("SELECT nombre FROM USERS WHERE id = ?", (id_socio,))
+            user_row = cursor.fetchone()
+            nombre_socio = user_row['nombre'] if user_row else f"Socio #{id_socio}"
+            
+            # 1. Insertar cabecera de PEDIDOS
             cursor.execute(
                 "INSERT INTO PEDIDOS (id_user, fecha, estado) VALUES (?, ?, ?)",
                 (id_socio, fecha_actual, "Pendiente")
             )
             id_pedido = cursor.lastrowid
             
-            # 2. Insertar los detalles correspondientes en DETALLE_PEDIDOS
+            # 2. Insertar renglones en DETALLE_PEDIDOS
             for id_articulo, cantidad in articulos_pedido:
                 cursor.execute(
                     "INSERT INTO DETALLE_PEDIDOS (id_pedido, id_articulo, cantidad_pedida) VALUES (?, ?, ?)",
                     (id_pedido, id_articulo, cantidad)
                 )
                 
-            return id_pedido
+        # 3. Disparar notificación automática al Ejecutivo
+        try:
+            notif = NotificacionModel()
+            notif.crear_notificacion(
+                mensaje=f"El socio {nombre_socio} registró el Pedido #{id_pedido} ({len(articulos_pedido)} productos).",
+                tipo="nuevo_pedido",
+                id_user=None # Para ejecutivos y admin
+            )
+        except Exception as e:
+            print(f"Advertencia al emitir notificación: {e}")
+                
+        return id_pedido

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>PedidoView</class>
- <widget class="QWidget" name="PedidoView">
+ <class>CatalogoView</class>
+ <widget class="QWidget" name="CatalogoView">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Carga Digital de Pedido</string>
+   <string>Listas de Precios de Proveedores</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
@@ -39,7 +39,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Carga Digital de Pedido de Socio</string>
+      <string>Importación y Consolidación de Listas de Proveedores</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -47,12 +47,12 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="layout_filtro">
+    <layout class="QHBoxLayout" name="layout_proveedor">
      <property name="spacing">
       <number>10</number>
      </property>
      <item>
-      <widget class="QLabel" name="lbl_filtro">
+      <widget class="QLabel" name="lbl_proveedor">
        <property name="font">
         <font>
          <family>Arial</family>
@@ -61,22 +61,22 @@
         </font>
        </property>
        <property name="text">
-        <string>Filtrar por Proveedor:</string>
+        <string>Proveedor Asignado:</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="cmb_filtro_proveedor">
+      <widget class="QComboBox" name="cmb_proveedor">
        <property name="minimumSize">
         <size>
-         <width>250</width>
+         <width>260</width>
          <height>32</height>
         </size>
        </property>
       </widget>
      </item>
      <item>
-      <spacer name="horizontalSpacerFiltro">
+      <spacer name="horizontalSpacerProv">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -91,78 +91,43 @@
     </layout>
    </item>
    <item>
-    <widget class="QTableWidget" name="tabla_articulos">
-     <property name="columnCount">
-      <number>6</number>
+    <layout class="QHBoxLayout" name="layout_archivo">
+     <property name="spacing">
+      <number>10</number>
      </property>
-     <column>
-      <property name="text">
-       <string>Artículo</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Rubro</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Proveedor</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Precio Unit.</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Cantidad</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Subtotal</string>
-      </property>
-     </column>
-    </widget>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="layout_total">
      <item>
-      <spacer name="horizontalSpacerTot">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
+      <widget class="QPushButton" name="btn_seleccionar_archivo">
+       <property name="minimumSize">
         <size>
-         <width>40</width>
-         <height>20</height>
+         <width>220</width>
+         <height>32</height>
         </size>
        </property>
-      </spacer>
+       <property name="text">
+        <string>Seleccionar Planilla (.xlsx / .csv)</string>
+       </property>
+      </widget>
      </item>
      <item>
-      <widget class="QLabel" name="lbl_total">
+      <widget class="QLabel" name="lbl_archivo_seleccionado">
        <property name="font">
         <font>
          <family>Arial</family>
-         <pointsize>13</pointsize>
-         <bold>true</bold>
+         <italic>true</italic>
         </font>
        </property>
        <property name="text">
-        <string>Total Estimado: $0.00</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        <string>Ningún archivo seleccionado</string>
        </property>
       </widget>
      </item>
     </layout>
    </item>
    <item>
-    <widget class="QPushButton" name="btn_confirmar">
+    <widget class="QTableWidget" name="tabla_previa"/>
+   </item>
+   <item>
+    <widget class="QPushButton" name="btn_importar">
      <property name="minimumSize">
       <size>
        <width>0</width>
@@ -177,7 +142,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Confirmar y Enviar Pedido</string>
+      <string>Procesar e Importar al Catálogo Único</string>
      </property>
     </widget>
    </item>

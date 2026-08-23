@@ -6,28 +6,28 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>700</width>
-    <height>500</height>
+    <width>850</width>
+    <height>620</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Consola de Control Logístico - Reparto</string>
+   <string>Recepción de Mercadería y Reparto Automático</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
-    <number>15</number>
+    <number>10</number>
    </property>
    <property name="leftMargin">
     <number>20</number>
    </property>
    <property name="topMargin">
-    <number>20</number>
+    <number>15</number>
    </property>
    <property name="rightMargin">
     <number>20</number>
    </property>
    <property name="bottomMargin">
-    <number>20</number>
+    <number>15</number>
    </property>
    <item>
     <widget class="QLabel" name="lbl_titulo">
@@ -39,7 +39,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Consola de Control Logístico - Reparto</string>
+      <string>Recepción de Mercadería y Reparto Automático</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -47,27 +47,46 @@
     </widget>
    </item>
    <item>
-    <widget class="QLabel" name="lbl_estado_asignacion">
+    <widget class="QLabel" name="lbl_sec1">
      <property name="font">
       <font>
        <family>Arial</family>
        <pointsize>11</pointsize>
-       <bold>false</bold>
+       <bold>true</bold>
       </font>
      </property>
      <property name="text">
-      <string>Estado actual: Pendiente</string>
+      <string>📦 1. Registrar Mercadería Entregada por Proveedores (Stock Físico):</string>
      </property>
-     <property name="alignment">
-      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTableWidget" name="tabla_recepcion"/>
+   </item>
+   <item>
+    <widget class="QLabel" name="lbl_sec2">
+     <property name="font">
+      <font>
+       <family>Arial</family>
+       <pointsize>11</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>📋 2. Pedidos Consolidados Listos para Reparto:</string>
      </property>
     </widget>
    </item>
    <item>
     <widget class="QTableWidget" name="tabla_pedidos">
      <property name="columnCount">
-      <number>3</number>
+      <number>4</number>
      </property>
+     <column>
+      <property name="text">
+       <string>Nro Pedido</string>
+      </property>
+     </column>
      <column>
       <property name="text">
        <string>Socio</string>
@@ -86,24 +105,51 @@
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="btn_ejecutar">
-     <property name="minimumSize">
-      <size>
-       <width>0</width>
-       <height>40</height>
-      </size>
+    <layout class="QHBoxLayout" name="layout_botones">
+     <property name="spacing">
+      <number>12</number>
      </property>
-     <property name="font">
-      <font>
-       <family>Arial</family>
-       <pointsize>10</pointsize>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>Ejecutar Asignación Automática</string>
-     </property>
-    </widget>
+     <item>
+      <widget class="QPushButton" name="btn_actualizar_stock">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>40</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Arial</family>
+         <pointsize>10</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Guardar Ingreso de Stock</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_ejecutar">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>40</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Arial</family>
+         <pointsize>10</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Ejecutar Reparto Automático y Generar Remitos</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

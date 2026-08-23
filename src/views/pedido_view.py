@@ -7,37 +7,52 @@ class PedidoView(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        # Obtiene la ruta absoluta de carga_pedido.ui en esta misma carpeta
         ui_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "carga_pedido.ui")
-        
-        # Carga el diseño .ui en esta instancia de QWidget
         uic.loadUi(ui_path, self)
 
-        # Conectar la señal de cambio de ítem para calcular totales dinámicamente
-        self.tabla_articulos.itemChanged.connect(self.calcular_totales)
+        self.id_socio_actual = 1
+        self.nombre_socio_actual = "Socio"
+        self.catalogo_completo = []
+        self.carrito = {} # {id_articulo: {'cantidad': int, 'precio': float, 'detalle': str}}
+
+        # Conectar señal de cambio de ítem
+        self.tabla_articulos.itemChanged.connect(self.al_cambiar_celda)
+
+    def establecer_socio_actual(self, id_socio, nombre_socio=""):
+        """Establece el socio actual conectado."""
+        self.id_socio_actual = id_socio
+        self.nombre_socio_actual = nombre_socio or f"Socio #{id_socio}"
 
     def obtener_id_socio(self):
-        """
-        Retorna el ID del socio actual del formulario.
-        En este caso de uso inicial, retorna un ID fijo 1 (Socio por defecto).
-        """
-        return 1 
+        return self.id_socio_actual
+
+    def cargar_proveedores_filtro(self, proveedores):
+        """Puebla el ComboBox con los proveedores disponibles."""
+        self.cmb_filtro_proveedor.blockSignals(True)
+        self.cmb_filtro_proveedor.clear()
+        self.cmb_filtro_proveedor.addItem("🔍 Todos los Proveedores", None)
+        for p in proveedores:
+            self.cmb_filtro_proveedor.addItem(p['nombre'], p['id_proveedor'])
+        self.cmb_filtro_proveedor.blockSignals(False)
 
     def cargar_articulos(self, lista_articulos):
         """
-        Configura y llena la tabla_articulos con el catálogo recibido.
-        Configura la columna 'Cantidad' como editable y las demás como de solo lectura.
+        Guarda el catálogo recibido y puebla la tabla respetando las cantidades en carrito.
         """
-        # Bloquear señales para evitar cálculos innecesarios mientras cargamos los datos
+        self.catalogo_completo = lista_articulos
+        self.renderizar_tabla(lista_articulos)
+
+    def renderizar_tabla(self, lista_articulos):
+        """Dibuja las filas del catálogo en la tabla_articulos."""
         self.tabla_articulos.blockSignals(True)
-        
         self.tabla_articulos.setRowCount(len(lista_articulos))
         
         for row, articulo in enumerate(lista_articulos):
+            id_art = articulo['id_articulo']
+            
             # Columna 0: Artículo (Detalle)
             item_articulo = QTableWidgetItem(articulo['detalle'])
-            # Guardamos el id_articulo de forma oculta en UserRole
-            item_articulo.setData(Qt.ItemDataRole.UserRole, articulo['id_articulo'])
+            item_articulo.setData(Qt.ItemDataRole.UserRole, id_art)
             item_articulo.setFlags(item_articulo.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.tabla_articulos.setItem(row, 0, item_articulo)
             
@@ -46,129 +61,102 @@ class PedidoView(QWidget):
             item_rubro.setFlags(item_rubro.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.tabla_articulos.setItem(row, 1, item_rubro)
             
-            # Columna 2: Precio
+            # Columna 2: Proveedor
+            item_prov = QTableWidgetItem(articulo.get('proveedor_nombre') or 'General')
+            item_prov.setFlags(item_prov.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.tabla_articulos.setItem(row, 2, item_prov)
+            
+            # Columna 3: Precio
             precio = articulo['precio_final']
-            item_precio = QTableWidgetItem(f"${precio:.2f}")
-            # Guardamos el precio numérico para cálculos futuros
+            item_precio = QTableWidgetItem(f"${precio:,.2f}")
             item_precio.setData(Qt.ItemDataRole.UserRole, precio)
             item_precio.setFlags(item_precio.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            self.tabla_articulos.setItem(row, 2, item_precio)
+            item_precio.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            self.tabla_articulos.setItem(row, 3, item_precio)
             
-            # Columna 3: Cantidad (Editable)
-            item_cantidad = QTableWidgetItem("0")
-            item_cantidad.setFlags(item_cantidad.flags() | Qt.ItemFlag.ItemIsEditable)
-            self.tabla_articulos.setItem(row, 3, item_cantidad)
+            # Columna 4: Cantidad (Editable)
+            cant_actual = self.carrito.get(id_art, {}).get('cantidad', 0)
+            item_cantidad = QTableWidgetItem(str(cant_actual) if cant_actual > 0 else "")
+            item_cantidad.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.tabla_articulos.setItem(row, 4, item_cantidad)
             
-            # Columna 4: Subtotal (De solo lectura, inicializado a 0.00)
-            item_subtotal = QTableWidgetItem("$0.00")
+            # Columna 5: Subtotal
+            subtotal = cant_actual * precio
+            item_subtotal = QTableWidgetItem(f"${subtotal:,.2f}")
             item_subtotal.setFlags(item_subtotal.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            self.tabla_articulos.setItem(row, 4, item_subtotal)
-            
-        self.tabla_articulos.blockSignals(False)
+            item_subtotal.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            self.tabla_articulos.setItem(row, 5, item_subtotal)
 
-    def calcular_totales(self, item):
-        """
-        Se ejecuta cada vez que cambia una celda. Si es de la columna 'Cantidad' (3),
-        calcula el subtotal (Precio * Cantidad) y actualiza el total general estimado.
-        """
-        # Solo actuar cuando se modifica la columna de Cantidad (columna 3)
-        if item.column() != 3:
+        self.tabla_articulos.resizeColumnsToContents()
+        self.tabla_articulos.blockSignals(False)
+        self.calcular_totales()
+
+    def al_cambiar_celda(self, item):
+        """Captura cambios en la columna de Cantidad y actualiza el carrito."""
+        if item.column() != 4:
             return
             
         row = item.row()
-        item_precio = self.tabla_articulos.item(row, 2)
-        item_subtotal = self.tabla_articulos.item(row, 4)
+        item_articulo = self.tabla_articulos.item(row, 0)
+        item_precio = self.tabla_articulos.item(row, 3)
+        item_subtotal = self.tabla_articulos.item(row, 5)
         
-        if not item_precio or not item_subtotal:
+        if not item_articulo or not item_precio or not item_subtotal:
             return
             
-        # Obtener el precio guardado
+        id_articulo = item_articulo.data(Qt.ItemDataRole.UserRole)
         precio = item_precio.data(Qt.ItemDataRole.UserRole)
+        texto_cant = item.text().strip()
         
-        # Validar la cantidad ingresada
         try:
-            cantidad_texto = item.text().strip()
-            cantidad = int(cantidad_texto) if cantidad_texto else 0
-            if cantidad < 0:
-                raise ValueError()
+            cant = int(texto_cant) if texto_cant else 0
+            if cant < 0:
+                cant = 0
+                item.setText("")
         except ValueError:
-            # Si el valor ingresado es inválido o negativo, restablecer a 0
-            cantidad = 0
-            self.tabla_articulos.blockSignals(True)
-            item.setText("0")
-            self.tabla_articulos.blockSignals(False)
+            cant = 0
+            item.setText("")
+
+        if cant > 0:
+            self.carrito[id_articulo] = {
+                'id_articulo': id_articulo,
+                'cantidad': cant,
+                'precio': precio,
+                'detalle': item_articulo.text()
+            }
+        else:
+            self.carrito.pop(id_articulo, None)
             
-        # Calcular y actualizar subtotal de la fila
-        subtotal = precio * cantidad
-        
+        subtotal = cant * precio
         self.tabla_articulos.blockSignals(True)
-        item_subtotal.setText(f"${subtotal:.2f}")
+        item_subtotal.setText(f"${subtotal:,.2f}")
         self.tabla_articulos.blockSignals(False)
         
-        # Calcular y actualizar el Total Estimado general
-        total_general = 0.0
-        for r in range(self.tabla_articulos.rowCount()):
-            item_sub = self.tabla_articulos.item(r, 4)
-            if item_sub:
-                try:
-                    valor_sub = float(item_sub.text().replace('$', ''))
-                    total_general += valor_sub
-                except ValueError:
-                    pass
-                    
-        self.lbl_total.setText(f"Total Estimado: ${total_general:.2f}")
+        self.calcular_totales()
+
+    def calcular_totales(self):
+        """Calcula y muestra el monto acumulado del carrito."""
+        total = sum(item['cantidad'] * item['precio'] for item in self.carrito.values())
+        self.lbl_total.setText(f"Total Estimado: ${total:,.2f}")
 
     def obtener_articulos_seleccionados(self):
-        """
-        Recorre la tabla de artículos y devuelve aquellos cuya cantidad sea mayor que 0.
-        Retorna una lista de diccionarios con formato:
+        """Devuelve los artículos del carrito con cantidad > 0."""
+        return [
             {
-                'id_articulo': int, 
-                'cantidad': int, 
-                'detalle': str
+                'id_articulo': item['id_articulo'],
+                'cantidad': item['cantidad'],
+                'detalle': item['detalle']
             }
-        """
-        articulos_seleccionados = []
-        for row in range(self.tabla_articulos.rowCount()):
-            item_cantidad = self.tabla_articulos.item(row, 3)
-            if item_cantidad:
-                try:
-                    cantidad = int(item_cantidad.text().strip())
-                except ValueError:
-                    cantidad = 0
-                    
-                if cantidad > 0:
-                    item_articulo = self.tabla_articulos.item(row, 0)
-                    id_articulo = item_articulo.data(Qt.ItemDataRole.UserRole)
-                    detalle = item_articulo.text()
-                    
-                    articulos_seleccionados.append({
-                        'id_articulo': id_articulo,
-                        'cantidad': cantidad,
-                        'detalle': detalle
-                    })
-        return articulos_seleccionados
-
-    def mostrar_mensaje_exito(self, mensaje):
-        """Muestra un pop-up informativo de éxito."""
-        QMessageBox.information(self, "Éxito", mensaje)
-
-    def mostrar_mensaje_error(self, mensaje):
-        """Muestra un pop-up de advertencia o error."""
-        QMessageBox.warning(self, "Error de Validación", mensaje)
+            for item in self.carrito.values() if item['cantidad'] > 0
+        ]
 
     def limpiar_formulario(self):
-        """
-        Restablece todas las cantidades a '0', actualiza los subtotales a '$0.00'
-        y el total general a '$0.00'.
-        """
-        self.tabla_articulos.blockSignals(True)
-        for row in range(self.tabla_articulos.rowCount()):
-            item_cantidad = self.tabla_articulos.item(row, 3)
-            if item_cantidad:
-                item_cantidad.setText("0")
-            item_subtotal = self.tabla_articulos.item(row, 4)
-            if item_subtotal:
-                item_subtotal.setText("$0.00")
-        self.tabla_articulos.blockSignals(False)
-        self.lbl_total.setText("Total Estimado: $0.00")
+        """Vacía el carrito y restablece la tabla."""
+        self.carrito.clear()
+        self.renderizar_tabla(self.catalogo_completo)
+
+    def mostrar_mensaje_exito(self, mensaje):
+        QMessageBox.information(self, "Pedido Confirmado", mensaje)
+
+    def mostrar_mensaje_error(self, mensaje):
+        QMessageBox.critical(self, "Error", mensaje)

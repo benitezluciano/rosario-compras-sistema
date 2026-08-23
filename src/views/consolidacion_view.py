@@ -7,58 +7,72 @@ class ConsolidacionView(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        # Obtiene la ruta absoluta de consolidacion.ui en esta misma carpeta
         ui_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "consolidacion.ui")
-        
-        # Carga el diseño .ui en esta instancia de QWidget
         uic.loadUi(ui_path, self)
 
-    def abrir_dialogo_archivo(self):
-        """
-        Abre el cuadro de diálogo nativo del sistema operativo para seleccionar un archivo.
-        Retorna la ruta absoluta del archivo seleccionado o None si el usuario cancela.
-        """
-        ruta_archivo, _ = QFileDialog.getOpenFileName(
+    def abrir_dialogo_guardar(self):
+        """Abre cuadro de diálogo para guardar la planilla general."""
+        ruta_archivo, _ = QFileDialog.getSaveFileName(
             self,
-            "Seleccionar Planilla de Proveedor",
-            "",
-            "Archivos Excel/CSV (*.xlsx *.xls *.csv);;Todos los archivos (*)"
+            "Guardar Planilla Consolidada General",
+            "Planilla_Consolidada_General.xlsx",
+            "Archivos Excel (*.xlsx);;Archivos CSV (*.csv);;Todos los archivos (*)"
         )
         return ruta_archivo if ruta_archivo else None
 
-    def actualizar_archivo_seleccionado(self, nombre_archivo):
-        """Actualiza la etiqueta de la interfaz con el nombre o ruta del archivo."""
-        self.lbl_archivo_seleccionado.setText(nombre_archivo)
+    def abrir_dialogo_carpeta(self):
+        """Abre cuadro de diálogo para seleccionar la carpeta donde exportar las órdenes."""
+        carpeta = QFileDialog.getExistingDirectory(
+            self,
+            "Seleccionar Carpeta para Órdenes por Proveedor"
+        )
+        return carpeta if carpeta else None
 
-    def cargar_tabla_previa(self, headers, filas):
-        """
-        Limpia la tabla_previa, define sus dimensiones y la puebla con
-        las cabeceras y las primeras 10 filas en formato de solo lectura.
-        """
-        self.tabla_previa.clear()
+    def cargar_tabla_consolidado(self, items):
+        """Puebla la tabla_consolidado con el resumen de demanda."""
+        headers = ["ID Art.", "Artículo / Detalle", "Rubro", "Proveedor", "Cant. Total", "Precio Unit.", "Total Estimado", "Desglose Socios"]
         
-        # Configurar dimensiones de la grilla
-        self.tabla_previa.setColumnCount(len(headers))
-        self.tabla_previa.setRowCount(len(filas))
+        self.tabla_consolidado.clear()
+        self.tabla_consolidado.setColumnCount(len(headers))
+        self.tabla_consolidado.setRowCount(len(items))
+        self.tabla_consolidado.setHorizontalHeaderLabels(headers)
         
-        # Configurar títulos de las columnas
-        self.tabla_previa.setHorizontalHeaderLabels(headers)
-        
-        # Rellenar cada celda con sus valores correspondientes
-        for r, fila in enumerate(filas):
-            for c, valor in enumerate(fila):
-                item = QTableWidgetItem(str(valor))
-                # Bloquear edición para que sea estrictamente de solo lectura
-                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                self.tabla_previa.setItem(r, c, item)
+        for r, item in enumerate(items):
+            valores = [
+                str(item.get('id_articulo', '')),
+                str(item.get('articulo_detalle', '')),
+                str(item.get('rubro', '')),
+                str(item.get('proveedor_nombre', '')),
+                str(item.get('cantidad_total', 0)),
+                f"${item.get('precio_unitario', 0.0):,.2f}",
+                f"${item.get('total_estimado', 0.0):,.2f}",
+                str(item.get('detalle_socios', ''))
+            ]
+            
+            for c, val in enumerate(valores):
+                t_item = QTableWidgetItem(val)
+                t_item.setFlags(t_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                if c in [0, 4]:
+                    t_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                elif c in [5, 6]:
+                    t_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                self.tabla_consolidado.setItem(r, c, t_item)
                 
-        # Redimensionar columnas al tamaño de su contenido
-        self.tabla_previa.resizeColumnsToContents()
+        self.tabla_consolidado.resizeColumnsToContents()
+        self.lbl_info_pedidos.setText(f"Artículos demandados en pedidos pendientes: {len(items)}")
+
+    def confirmar_accion(self, titulo, mensaje):
+        respuesta = QMessageBox.question(
+            self,
+            titulo,
+            mensaje,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes
+        )
+        return respuesta == QMessageBox.StandardButton.Yes
 
     def mostrar_mensaje_exito(self, mensaje):
-        """Muestra una ventana emergente indicando éxito."""
-        QMessageBox.information(self, "Éxito", mensaje)
+        QMessageBox.information(self, "Operación Exitosa", mensaje)
 
     def mostrar_mensaje_error(self, mensaje):
-        """Muestra una ventana emergente indicando un error."""
         QMessageBox.critical(self, "Error", mensaje)

@@ -39,8 +39,8 @@ rosario-compras-sistema/
 ## Casos de Uso Implementados
 
 1. **Carga Digital de Pedidos (CU-001):** Interfaz para consultar listas de precios activos y cargar pedidos al carrito dinámicamente con cálculo de subtotales en tiempo real.
-2. **Reparto Automático (CU-002):** Motor logístico transaccional. Cruza pedidos consolidados con el stock físico. Aplica automáticamente un algoritmo de prorrateo equitativo si la demanda supera la existencia física (Excepción E1), requiriendo validación humana para asentar remitos.
-3. **Consolidación de Planillas (CU-003):** Importador universal impulsado por `pandas` que soporta `.xlsx` y `.csv`, detectando sus delimitadores automáticamente para pre-visualizar el catálogo de proveedores.
+2. **Consolidación de Planillas (CU-002):** Generador y exportador de planillas de consolidación (`.xlsx` / `.csv`). Agrupa y totaliza el conjunto de todos los pedidos cargados por los socios, permitiendo previsualizar el volumen total demandado por artículo/proveedor y exportar la planilla oficial, pasando los pedidos a estado *Consolidado*.
+3. **Reparto Automático (CU-003):** Motor logístico transaccional. Cruza pedidos consolidados con el stock físico. Aplica automáticamente un algoritmo de prorrateo equitativo si la demanda supera la existencia física (Excepción E1), requiriendo validación humana para asentar remitos.
 
 ## Guía de Configuración e Inicio
 

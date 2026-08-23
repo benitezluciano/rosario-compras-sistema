@@ -30,9 +30,8 @@ CREATE TABLE IF NOT EXISTS USERS (
     -- Se guarda el hash (resultado de aplicar bcrypt o sha256 a la contraseña).
     -- Ejemplo: '$2b$12$KIXxyz...' en lugar de 'micontraseña123'
 
-    role          TEXT    NOT NULL CHECK(role IN ('ejecutivo', 'socio'))
-    -- CHECK garantiza que solo se puedan insertar esos dos valores.
-    -- Si intentás insertar role = 'admin' → error.
+    role          TEXT    NOT NULL CHECK(role IN ('ejecutivo', 'socio', 'admin'))
+    -- CHECK garantiza que solo se puedan insertar esos valores ('ejecutivo', 'socio', 'admin').
 );
 
 
@@ -173,6 +172,23 @@ CREATE TABLE IF NOT EXISTS DETALLE_REMITOS (
 
     FOREIGN KEY (id_remito)   REFERENCES REMITOS(id_remito),
     FOREIGN KEY (id_articulo) REFERENCES ARTICULOS(id_articulo)
+);
+
+
+-- ============================================================
+-- TABLA 10: NOTIFICACIONES
+-- ============================================================
+-- Avisos automáticos de pedidos cargados, consolidados y remitos.
+
+CREATE TABLE IF NOT EXISTS NOTIFICACIONES (
+    id_notificacion INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_user         INTEGER, -- NULL para notificaciones a ejecutivos/admin, o ID de socio específico
+    mensaje         TEXT NOT NULL,
+    tipo            TEXT NOT NULL DEFAULT 'info', -- 'nuevo_pedido', 'pedido_consolidado', 'reparto'
+    fecha           TEXT NOT NULL,
+    leida           INTEGER NOT NULL DEFAULT 0,
+
+    FOREIGN KEY (id_user) REFERENCES USERS(id)
 );
 
 
