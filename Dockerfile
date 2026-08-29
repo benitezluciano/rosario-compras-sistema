@@ -12,11 +12,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fluxbox \
     novnc \
     websockify \
+    autocutsel \
+    x11-xkb-utils \
+    xclip \
     dos2unix \
     procps \
     libgl1 \
+    libegl1 \
+    libgl1-mesa-dri \
     libglib2.0-0 \
+    libxkbcommon0 \
     libxkbcommon-x11-0 \
+    libx11-xcb1 \
     libxcb1 \
     libxcb-cursor0 \
     libxcb-icccm4 \
@@ -30,6 +37,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcb-xinput0 \
     libfontconfig1 \
     libdbus-1-3 \
+    libsm6 \
+    libice6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Crear enlace simbólico para que noVNC sirva directamente en /vnc.html o /
