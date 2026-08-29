@@ -218,7 +218,7 @@ class ConsolidacionModel:
             notif = NotificacionModel()
             for ped in pedidos_pendientes:
                 notif.crear_notificacion(
-                    mensaje=f"Tu Pedido #{ped['id_pedido']} fue consolidado por el ejecutivo y enviado a los proveedores.",
+                    mensaje=f"Tu Pedido #{ped['id_pedido']} fue consolidado y enviado al proveedor para su preparación.",
                     tipo="pedido_consolidado",
                     id_user=ped['id_user']
                 )

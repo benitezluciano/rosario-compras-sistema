@@ -3,16 +3,38 @@ from src.database import Database
 from src.models.notificacion_model import NotificacionModel
 
 class RepartoModel:
-    def obtener_articulos_recepcion(self):
+    def obtener_proveedores_con_pedidos(self):
+        """Devuelve los proveedores con artículos en pedidos consolidados."""
+        query = """
+            SELECT DISTINCT pr.id_proveedor, pr.nombre
+            FROM DETALLE_PEDIDOS dp
+            JOIN PEDIDOS p ON dp.id_pedido = p.id_pedido
+            JOIN ARTICULOS a ON dp.id_articulo = a.id_articulo
+            JOIN PRECIOS_NEGOCIADOS pn ON a.id_articulo = pn.id_articulo
+            JOIN PROVEEDORES pr ON pn.id_proveedor = pr.id_proveedor
+            WHERE p.estado = 'Consolidado'
+            ORDER BY pr.nombre ASC;
         """
-        Devuelve los artículos involucrados en pedidos 'Consolidado's con la cantidad demandada y el stock actual.
+        with Database() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query)
+            return [dict(row) for row in cursor.fetchall()]
+
+    def obtener_articulos_control_recepcion(self, id_proveedor=None):
+        """
+        Devuelve los artículos involucrados en pedidos 'Consolidado's con:
+        - Cantidad demandada por los socios (Logística)
+        - Precio pactado en catálogo (Compras)
+        - Stock físico actual
         """
         query = """
             SELECT a.id_articulo,
                    a.detalle AS articulo_detalle,
                    a.rubro,
+                   COALESCE(pr.id_proveedor, 0) AS id_proveedor,
                    COALESCE(pr.nombre, 'Sin Proveedor') AS proveedor_nombre,
                    SUM(dp.cantidad_pedida) AS cantidad_demandada,
+                   COALESCE(pn.precio_final, 0.0) AS precio_pactado,
                    a.cantidad_stock
             FROM DETALLE_PEDIDOS dp
             JOIN PEDIDOS p ON dp.id_pedido = p.id_pedido
@@ -20,32 +42,67 @@ class RepartoModel:
             LEFT JOIN PRECIOS_NEGOCIADOS pn ON a.id_articulo = pn.id_articulo
             LEFT JOIN PROVEEDORES pr ON pn.id_proveedor = pr.id_proveedor
             WHERE p.estado = 'Consolidado'
-            GROUP BY a.id_articulo
-            ORDER BY pr.nombre, a.detalle;
         """
+        params = []
+        if id_proveedor is not None:
+            query += " AND pr.id_proveedor = ?"
+            params.append(id_proveedor)
+
+        query += " GROUP BY a.id_articulo ORDER BY pr.nombre, a.detalle;"
+        
         with Database() as conn:
             cursor = conn.cursor()
-            cursor.execute(query)
+            cursor.execute(query, params)
             return [dict(row) for row in cursor.fetchall()]
 
-    def actualizar_stock_recibido(self, stock_map):
+    def registrar_comprobante_y_stock(self, id_proveedor, tipo_comprobante, nro_comprobante, fecha_emision, observaciones, items_detalle):
         """
-        Actualiza la cantidad física de stock en la tabla ARTICULOS.
-        stock_map: dict {id_articulo: cantidad_stock_nuevo}
+        Registra formalmente el comprobante del proveedor (Factura/Remito),
+        asienta el control de compras (precios) y logística (cantidades), y actualiza el stock.
+        items_detalle: lista de dicts con keys:
+          id_articulo, cantidad_pedida, cantidad_recibida, precio_pactado, precio_facturado
         """
+        fecha_recepcion = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if not fecha_emision:
+            fecha_emision = datetime.now().strftime("%Y-%m-%d")
+
         with Database() as conn:
             cursor = conn.cursor()
-            for id_art, cant in stock_map.items():
-                cursor.execute(
-                    "UPDATE ARTICULOS SET cantidad_stock = ? WHERE id_articulo = ?",
-                    (cant, id_art)
-                )
-        return True
+
+            # 1. Insertar comprobante cabecera
+            cursor.execute("""
+                INSERT INTO COMPROBANTES_PROVEEDOR 
+                (id_proveedor, tipo_comprobante, nro_comprobante, fecha_emision, fecha_recepcion, observaciones)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (id_proveedor, tipo_comprobante, nro_comprobante, fecha_emision, fecha_recepcion, observaciones))
+            
+            id_comprobante = cursor.lastrowid
+
+            # 2. Insertar renglones de control y actualizar stock físico
+            for item in items_detalle:
+                id_art = item['id_articulo']
+                cant_ped = item['cantidad_pedida']
+                cant_rec = item['cantidad_recibida']
+                prec_pact = item['precio_pactado']
+                prec_fact = item['precio_facturado']
+
+                cursor.execute("""
+                    INSERT INTO DETALLE_COMPROBANTES_PROVEEDOR
+                    (id_comprobante, id_articulo, cantidad_pedida, cantidad_recibida, precio_pactado, precio_facturado)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (id_comprobante, id_art, cant_ped, cant_rec, prec_pact, prec_fact))
+
+                # Actualizar stock físico en la tabla ARTICULOS
+                cursor.execute("""
+                    UPDATE ARTICULOS 
+                    SET cantidad_stock = ?
+                    WHERE id_articulo = ?
+                """, (cant_rec, id_art))
+
+            return id_comprobante
 
     def obtener_pedidos_consolidados(self):
-        """
-        Devuelve los pedidos en estado 'Consolidado'.
-        """
+        """Devuelve los pedidos en estado 'Consolidado' listos para reparto."""
         query = """
             SELECT p.id_pedido, u.nombre AS socio_nombre, p.estado, 
                    group_concat(a.detalle || ' x' || dp.cantidad_pedida, ', ') AS resumen_articulos
@@ -63,8 +120,8 @@ class RepartoModel:
 
     def validar_stock_vs_pedidos(self):
         """
-        Compara la cantidad pedida contra el stock disponible.
-        Si la demanda supera el stock, calcula el prorrateo equitativo.
+        Compara la demanda consolidada contra el stock físico real registrado.
+        Si la demanda supera el stock, calcula el prorrateo proporcional equitativo.
         """
         query = """
             SELECT dp.id_pedido, dp.id_articulo, dp.cantidad_pedida, 
@@ -139,7 +196,7 @@ class RepartoModel:
 
     def ejecutar_reparto_masivo(self, ajustes=None):
         """
-        Ejecuta el reparto para todos los pedidos en 'Consolidado', genera REMITOS y notifica a los socios.
+        Ejecuta el reparto para los pedidos en 'Consolidado', genera REMITOS y notifica a los socios.
         """
         fecha_proceso = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         fecha_emision = datetime.now().strftime("%Y-%m-%d")
@@ -177,7 +234,7 @@ class RepartoModel:
                 )
                 items = cursor.fetchall()
                 
-                # Descontar stock
+                # Descontar stock físico entregado
                 for item in items:
                     id_articulo = item['id_articulo']
                     cantidad_final = item['cantidad_pedida']
@@ -194,7 +251,7 @@ class RepartoModel:
                         (cantidad_final, id_articulo)
                     )
                 
-                # Actualizar estado del pedido a 'Procesado'
+                # Actualizar estado a 'Procesado'
                 cursor.execute(
                     "UPDATE PEDIDOS SET estado = 'Procesado' WHERE id_pedido = ?",
                     (id_pedido,)
@@ -226,7 +283,7 @@ class RepartoModel:
                         (id_remito, id_articulo, cantidad_final)
                     )
 
-        # Emitir notificaciones de entrega a los socios
+        # Emitir notificaciones de remito generado a cada socio
         try:
             notif = NotificacionModel()
             for id_remito, id_pedido, id_user in remitos_generados:

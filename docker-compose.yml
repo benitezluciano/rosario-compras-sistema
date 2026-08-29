@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    container_name: rosario_compras_sistema
+    ports:
+      - "8080:8080"
+    environment:
+      - RESOLUTION=1366x768x24
+    volumes:
+      # Mantiene persistente la base de datos local
+      - ./database.db:/app/database.db
+    restart: unless-stopped
