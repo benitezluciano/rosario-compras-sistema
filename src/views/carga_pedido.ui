@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>900</width>
+    <height>650</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,13 +21,13 @@
     <number>20</number>
    </property>
    <property name="topMargin">
-    <number>20</number>
+    <number>15</number>
    </property>
    <property name="rightMargin">
     <number>20</number>
    </property>
    <property name="bottomMargin">
-    <number>20</number>
+    <number>15</number>
    </property>
    <item>
     <widget class="QLabel" name="lbl_titulo">
@@ -39,7 +39,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Carga Digital de Pedido de Socio</string>
+      <string>Carga Digital de Pedido de Socio (Por Proveedor)</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -47,12 +47,12 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="layout_filtro">
+    <layout class="QHBoxLayout" name="layout_socio_selector">
      <property name="spacing">
       <number>10</number>
      </property>
      <item>
-      <widget class="QLabel" name="lbl_filtro">
+      <widget class="QLabel" name="lbl_socio_actual">
        <property name="font">
         <font>
          <family>Arial</family>
@@ -61,22 +61,22 @@
         </font>
        </property>
        <property name="text">
-        <string>Filtrar por Proveedor:</string>
+        <string>Socio:</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="cmb_filtro_proveedor">
+      <widget class="QComboBox" name="cmb_socio_seleccion">
        <property name="minimumSize">
         <size>
-         <width>250</width>
-         <height>32</height>
+         <width>260</width>
+         <height>30</height>
         </size>
        </property>
       </widget>
      </item>
      <item>
-      <spacer name="horizontalSpacerFiltro">
+      <spacer name="horizontalSpacerSocio">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -91,40 +91,40 @@
     </layout>
    </item>
    <item>
-    <widget class="QTableWidget" name="tabla_articulos">
-     <property name="columnCount">
-      <number>6</number>
+    <widget class="QScrollArea" name="scroll_area_tablas">
+     <property name="widgetResizable">
+      <bool>true</bool>
      </property>
-     <column>
-      <property name="text">
-       <string>Artículo</string>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <widget class="QWidget" name="scroll_content">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>858</width>
+        <height>460</height>
+       </rect>
       </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Rubro</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Proveedor</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Precio Unit.</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Cantidad</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Subtotal</string>
-      </property>
-     </column>
+      <layout class="QVBoxLayout" name="layout_tablas_proveedores">
+       <property name="spacing">
+        <number>15</number>
+       </property>
+       <property name="leftMargin">
+        <number>10</number>
+       </property>
+       <property name="topMargin">
+        <number>10</number>
+       </property>
+       <property name="rightMargin">
+        <number>10</number>
+       </property>
+       <property name="bottomMargin">
+        <number>10</number>
+       </property>
+      </layout>
+     </widget>
     </widget>
    </item>
    <item>
@@ -152,7 +152,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Total Estimado: $0.00</string>
+        <string>Total General Estimado: $0.00</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -166,7 +166,7 @@
      <property name="minimumSize">
       <size>
        <width>0</width>
-       <height>40</height>
+       <height>42</height>
       </size>
      </property>
      <property name="font">
@@ -177,7 +177,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Confirmar y Enviar Pedido</string>
+      <string>🛒 Confirmar y Enviar Pedido Consolidado del Socio</string>
      </property>
     </widget>
    </item>

@@ -44,24 +44,25 @@ class ConsolidacionController:
             self.vista.mostrar_mensaje_exito(mensaje)
 
     def procesar_consolidacion(self):
-        """Consolida los pedidos y notifica a cada socio."""
+        """Consolida los pedidos, registra el envío a los proveedores y notifica a cada socio."""
         resumen = self.modelo.obtener_resumen_consolidado()
         if not resumen:
             self.vista.mostrar_mensaje_error("No hay pedidos pendientes para consolidar.")
             return
 
         confirmado = self.vista.confirmar_accion(
-            "Confirmar Consolidación",
-            "¿Estás seguro de consolidar todos los pedidos pendientes?\n\n"
-            "• Pasarán a estado 'Consolidado'.\n"
-            "• Cada socio recibirá una notificación en su panel.\n"
-            "• Quedarán listos para la recepción de mercadería y reparto."
+            "Confirmar Envío a Proveedores y Consolidación",
+            "¿Estás seguro de consolidar y confirmar el envío de las órdenes de compra a los proveedores?\n\n"
+            "• Las órdenes quedarán formalmente registradas como enviadas a los proveedores.\n"
+            "• Los pedidos de los socios pasarán a estado 'Consolidado'.\n"
+            "• Cada socio recibirá una notificación automática avisando que su pedido fue enviado al proveedor.\n"
+            "• El sistema quedará a la espera de la entrega física de la mercadería (Paso de Recepción)."
         )
         if not confirmado:
             return
 
         cantidad = self.modelo.marcar_pedidos_como_consolidados()
-        self.vista.mostrar_mensaje_exito(f"¡Se consolidaron con éxito {cantidad} pedidos!\nLos socios han sido notificados.")
+        self.vista.mostrar_mensaje_exito(f"¡Se consolidaron y despacharon {cantidad} pedidos hacia los proveedores!\nLos socios han sido notificados.")
         self.inicializar()
         
         if self.on_pedidos_consolidados:

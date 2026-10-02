@@ -3,6 +3,14 @@ from src.database import Database
 from src.models.notificacion_model import NotificacionModel
 
 class PedidoModel:
+    def obtener_socios(self):
+        """Devuelve los usuarios con rol socio para el selector."""
+        query = "SELECT id, nombre, email FROM USERS WHERE role = 'socio' ORDER BY nombre ASC"
+        with Database() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query)
+            return [dict(row) for row in cursor.fetchall()]
+
     def obtener_proveedores(self):
         """Devuelve los proveedores registrados que tienen artículos cotizados."""
         query = """
@@ -18,8 +26,7 @@ class PedidoModel:
 
     def obtener_catalogo_articulos(self, id_proveedor=None):
         """
-        Consulta el catálogo de artículos con sus precios negociados actuales.
-        Permite filtrar opcionalmente por proveedor.
+        Consulta el catálogo de artículos agrupados con sus precios negociados actuales.
         """
         query = """
             SELECT a.id_articulo, a.id_articulo_proveedor, a.detalle, a.rubro, a.cantidad_stock,
@@ -33,7 +40,7 @@ class PedidoModel:
             query += " WHERE p.id_proveedor = ?"
             params.append(id_proveedor)
             
-        query += " ORDER BY p.nombre, a.detalle"
+        query += " ORDER BY p.nombre ASC, a.detalle ASC"
             
         with Database() as conn:
             cursor = conn.cursor()
@@ -50,7 +57,6 @@ class PedidoModel:
         with Database() as conn:
             cursor = conn.cursor()
             
-            # Obtener nombre del socio para la notificación
             cursor.execute("SELECT nombre FROM USERS WHERE id = ?", (id_socio,))
             user_row = cursor.fetchone()
             nombre_socio = user_row['nombre'] if user_row else f"Socio #{id_socio}"
@@ -75,7 +81,7 @@ class PedidoModel:
             notif.crear_notificacion(
                 mensaje=f"El socio {nombre_socio} registró el Pedido #{id_pedido} ({len(articulos_pedido)} productos).",
                 tipo="nuevo_pedido",
-                id_user=None # Para ejecutivos y admin
+                id_user=None
             )
         except Exception as e:
             print(f"Advertencia al emitir notificación: {e}")

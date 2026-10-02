@@ -7,27 +7,19 @@ class PedidoController:
         # Conectar eventos de la vista
         if hasattr(self.vista, 'btn_confirmar'):
             self.vista.btn_confirmar.clicked.connect(self.confirmar_pedido)
-        if hasattr(self.vista, 'cmb_filtro_proveedor'):
-            self.vista.cmb_filtro_proveedor.currentIndexChanged.connect(self.filtrar_catalogo)
 
     def inicializar(self):
-        """Carga los proveedores en el filtro y el catálogo completo de artículos."""
-        proveedores = self.modelo.obtener_proveedores()
-        self.vista.cargar_proveedores_filtro(proveedores)
+        """Carga los socios disponibles y el catálogo completo de artículos organizado por proveedor."""
+        socios = self.modelo.obtener_socios()
+        self.vista.cargar_socios_selector(socios)
         
         articulos = self.modelo.obtener_catalogo_articulos()
         self.vista.cargar_articulos(articulos)
 
-    def filtrar_catalogo(self):
-        """Filtra el catálogo según el proveedor seleccionado en el combo."""
-        id_proveedor = self.vista.cmb_filtro_proveedor.currentData()
-        articulos = self.modelo.obtener_catalogo_articulos(id_proveedor)
-        self.vista.renderizar_tabla(articulos)
-
     def validar_entradas(self, items_pedido):
         """Valida que haya artículos seleccionados con cantidades válidas."""
         if not items_pedido:
-            return False, "Debes ingresar al menos una cantidad para confirmar tu pedido."
+            return False, "Debes ingresar al menos una cantidad en cualquiera de los proveedores para confirmar tu pedido."
 
         for item in items_pedido:
             cant = item.get('cantidad', 0)
@@ -51,7 +43,11 @@ class PedidoController:
             articulos_para_registro = [(item['id_articulo'], item['cantidad']) for item in items_seleccionados]
             id_pedido = self.modelo.registrar_pedido(id_socio, articulos_para_registro)
             
-            self.vista.mostrar_mensaje_exito(f"¡Tu Pedido #{id_pedido} fue registrado con éxito!\nEl ejecutivo de cuentas ha sido notificado.")
+            self.vista.mostrar_mensaje_exito(
+                f"¡Pedido #{id_pedido} registrado con éxito!\n\n"
+                f"• {len(articulos_para_registro)} productos solicitados.\n"
+                f"• El Ejecutivo de Cuentas ha sido notificado para su consolidación."
+            )
             self.vista.limpiar_formulario()
             
             if self.on_pedido_creado:

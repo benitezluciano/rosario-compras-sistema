@@ -5,6 +5,8 @@ class CatalogoController:
         self.on_catalogo_updated = on_catalogo_updated
         
         # Conectar señales
+        if hasattr(self.vista, 'btn_solicitar_lista'):
+            self.vista.btn_solicitar_lista.clicked.connect(self.solicitar_lista_proveedor)
         if hasattr(self.vista, 'btn_seleccionar_archivo'):
             self.vista.btn_seleccionar_archivo.clicked.connect(self.seleccionar_archivo)
         if hasattr(self.vista, 'btn_importar'):
@@ -14,6 +16,19 @@ class CatalogoController:
         """Carga la lista de proveedores en el combo."""
         proveedores = self.modelo.obtener_proveedores()
         self.vista.cargar_proveedores(proveedores)
+
+    def solicitar_lista_proveedor(self):
+        """Registra la emisión de solicitud de listas al proveedor seleccionado."""
+        id_proveedor = self.vista.obtener_proveedor_seleccionado()
+        if not id_proveedor:
+            self.vista.mostrar_mensaje_error("Debes seleccionar un proveedor asignado.")
+            return
+
+        exito, mensaje = self.modelo.solicitar_lista_proveedor(id_proveedor)
+        if exito:
+            self.vista.mostrar_mensaje_exito(mensaje)
+        else:
+            self.vista.mostrar_mensaje_error(mensaje)
 
     def seleccionar_archivo(self):
         """Abre el archivo seleccionado y muestra la vista previa."""
@@ -29,7 +44,7 @@ class CatalogoController:
             self.vista.cargar_tabla_previa(headers, filas)
 
     def procesar_importacion(self):
-        """Ejecuta la importación del archivo hacia la base de datos."""
+        """Ejecuta la importación del archivo hacia la base de datos y notifica a los socios."""
         if not self.vista.ruta_archivo_actual:
             self.vista.mostrar_mensaje_error("Debes seleccionar una planilla (.xlsx o .csv) antes de procesar.")
             return

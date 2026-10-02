@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>850</width>
+    <height>620</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,7 +39,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Importación y Consolidación de Listas de Proveedores</string>
+      <string>Gestión de Listas de Precios y Catálogo Único</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -69,9 +69,29 @@
       <widget class="QComboBox" name="cmb_proveedor">
        <property name="minimumSize">
         <size>
-         <width>260</width>
+         <width>250</width>
          <height>32</height>
         </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_solicitar_lista">
+       <property name="minimumSize">
+        <size>
+         <width>220</width>
+         <height>32</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Arial</family>
+         <pointsize>9</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>📧 Solicitar Lista al Proveedor</string>
        </property>
       </widget>
      </item>
@@ -142,7 +162,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Procesar e Importar al Catálogo Único</string>
+      <string>📥 Procesar e Importar al Catálogo Único (Notifica a Socios)</string>
      </property>
     </widget>
    </item>

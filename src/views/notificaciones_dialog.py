@@ -9,7 +9,7 @@ class NotificacionesDialog(QDialog):
         self.modelo_notif = NotificacionModel()
         
         self.setWindowTitle("Centro de Notificaciones")
-        self.resize(550, 420)
+        self.resize(580, 440)
         
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
@@ -68,7 +68,18 @@ class NotificacionesDialog(QDialog):
             return
 
         for n in notifs:
-            icono = "🛒" if n['tipo'] == 'nuevo_pedido' else ("📦" if n['tipo'] == 'pedido_consolidado' else "🚚")
+            tipo = n.get('tipo', 'info')
+            if tipo == 'nuevo_pedido':
+                icono = "🛒"
+            elif tipo == 'catalogo_actualizado':
+                icono = "📑"
+            elif tipo == 'pedido_consolidado':
+                icono = "📦"
+            elif tipo == 'reparto':
+                icono = "🚚"
+            else:
+                icono = "ℹ️"
+                
             estado = " [NUEVA]" if n['leida'] == 0 else ""
             texto = f"{icono} {n['mensaje']}{estado}\n    🕒 {n['fecha']}"
             

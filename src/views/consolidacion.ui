@@ -39,7 +39,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Consolidación y Pedidos a Proveedores</string>
+      <string>Consolidación y Envío de Pedidos a Proveedores</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -154,7 +154,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Confirmar Consolidación</string>
+        <string>📤 Enviar a Proveedores y Consolidar</string>
        </property>
       </widget>
      </item>

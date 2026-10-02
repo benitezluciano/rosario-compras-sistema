@@ -209,7 +209,7 @@ class MainWindow(QMainWindow):
         rol_display = "Socio" if rol == "socio" else ("Ejecutivo de Cuentas" if rol == "ejecutivo" else "Administrador")
         self.lbl_usuario_info.setText(f"👤 {nombre} | Rol: {rol_display}")
         
-        self.vista_pedido.establecer_socio_actual(usuario['id'], nombre)
+        self.vista_pedido.establecer_socio_actual(usuario['id'], nombre, rol=rol)
         self.actualizar_badge_notificaciones()
         
         self.menu_lateral.blockSignals(True)

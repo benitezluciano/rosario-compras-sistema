@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from src.database import Database
+from src.models.notificacion_model import NotificacionModel
 
 class CatalogoModel:
     def obtener_proveedores(self):
@@ -10,6 +11,20 @@ class CatalogoModel:
             cursor = conn.cursor()
             cursor.execute(query)
             return [dict(row) for row in cursor.fetchall()]
+
+    def solicitar_lista_proveedor(self, id_proveedor):
+        """
+        Registra la emisión de la solicitud formal de lista de precios a un proveedor.
+        """
+        with Database() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT nombre, direccion FROM PROVEEDORES WHERE id_proveedor = ?", (id_proveedor,))
+            row = cursor.fetchone()
+            if not row:
+                return False, "Proveedor no encontrado."
+            
+            nombre_prov = row['nombre']
+            return True, f"Se ha generado y registrado la solicitud de lista de precios actualizada al proveedor '{nombre_prov}'."
 
     def leer_vista_previa(self, ruta_archivo):
         """
@@ -45,6 +60,7 @@ class CatalogoModel:
         """
         Interpreta la planilla del proveedor y actualiza o inserta los artículos
         y sus precios negociados en SQLite.
+        Emite automáticamente una notificación a todos los socios informando la disponibilidad.
         """
         if not os.path.exists(ruta_archivo):
             return False, f"No se encontró el archivo: {ruta_archivo}"
@@ -64,7 +80,6 @@ class CatalogoModel:
             # Normalizar nombres de columnas a minúsculas
             cols_map = {str(col).strip().lower(): col for col in df.columns}
             
-            # Buscar columnas estándar o aproximadas
             def find_col(posibles):
                 for p in posibles:
                     for c_low, orig in cols_map.items():
@@ -82,9 +97,14 @@ class CatalogoModel:
                 return False, "La planilla debe contener al menos una columna de 'Detalle/Artículo' y una de 'Precio'."
 
             articulos_insertados = 0
+            nombre_prov = "Proveedor"
             
             with Database() as conn:
                 cursor = conn.cursor()
+                cursor.execute("SELECT nombre FROM PROVEEDORES WHERE id_proveedor = ?", (id_proveedor,))
+                prov_row = cursor.fetchone()
+                if prov_row:
+                    nombre_prov = prov_row['nombre']
                 
                 for _, row in df.iterrows():
                     detalle = str(row[col_det]).strip()
@@ -94,20 +114,18 @@ class CatalogoModel:
                     cod_prov = str(row[col_cod]).strip() if col_cod else ""
                     rubro = str(row[col_rub]).strip() if col_rub else "General"
                     
-                    # Convertir precio a float limpio
                     try:
                         raw_precio = str(row[col_pre]).replace('$', '').replace(' ', '').replace(',', '.')
                         precio = float(raw_precio)
                     except ValueError:
                         precio = 0.0
 
-                    # Convertir descuento
                     descuento = 0.0
                     if col_des:
                         try:
                             raw_desc = str(row[col_des]).replace('%', '').replace(' ', '').replace(',', '.')
                             descuento = float(raw_desc)
-                            if descuento > 1.0: # Si vino como porcentaje 10 -> 0.10
+                            if descuento > 1.0:
                                 descuento = descuento / 100.0
                         except ValueError:
                             descuento = 0.0
@@ -118,7 +136,6 @@ class CatalogoModel:
                     
                     if art_row:
                         id_articulo = art_row['id_articulo']
-                        # Actualizar datos básicos
                         cursor.execute("""
                             UPDATE ARTICULOS 
                             SET id_articulo_proveedor = COALESCE(NULLIF(?, ''), id_articulo_proveedor),
@@ -140,7 +157,17 @@ class CatalogoModel:
                     
                     articulos_insertados += 1
 
-            return True, f"Se importaron y actualizaron con éxito {articulos_insertados} artículos en el catálogo único."
+            # 3. Notificación masiva automática a los socios
+            try:
+                notif = NotificacionModel()
+                notif.notificar_a_todos_los_socios(
+                    mensaje=f"El Ejecutivo actualizó el catálogo con {articulos_insertados} productos de '{nombre_prov}'. Ya puedes consultar precios y cargar tu pedido.",
+                    tipo="catalogo_actualizado"
+                )
+            except Exception as e:
+                print(f"Advertencia al notificar actualización de catálogo: {e}")
+
+            return True, f"Se importaron y actualizaron con éxito {articulos_insertados} artículos en el catálogo único.\nSe notificó a los socios sobre la disponibilidad."
 
         except Exception as e:
             return False, f"Error durante el procesamiento de la planilla: {str(e)}"

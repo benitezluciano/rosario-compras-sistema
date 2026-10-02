@@ -58,7 +58,7 @@ class CatalogoView(QWidget):
         self.tabla_previa.setColumnCount(0)
 
     def mostrar_mensaje_exito(self, mensaje):
-        QMessageBox.information(self, "Importación Exitosa", mensaje)
+        QMessageBox.information(self, "Operación Exitosa", mensaje)
 
     def mostrar_mensaje_error(self, mensaje):
         QMessageBox.critical(self, "Error", mensaje)

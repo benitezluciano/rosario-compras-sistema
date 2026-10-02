@@ -17,11 +17,29 @@ class NotificacionModel:
             cursor.execute(query, (id_user, mensaje, tipo, fecha_actual))
             return cursor.lastrowid
 
+    def notificar_a_todos_los_socios(self, mensaje, tipo="catalogo_actualizado"):
+        """
+        Emite una notificación masiva para todos los usuarios con rol 'socio'.
+        """
+        fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with Database() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM USERS WHERE role = 'socio'")
+            socios = cursor.fetchall()
+            
+            for socio in socios:
+                cursor.execute("""
+                    INSERT INTO NOTIFICACIONES (id_user, mensaje, tipo, fecha, leida)
+                    VALUES (?, ?, ?, ?, 0)
+                """, (socio['id'], mensaje, tipo, fecha_actual))
+                
+        return len(socios)
+
     def obtener_notificaciones_usuario(self, id_user, rol):
         """
         Obtiene las notificaciones relevantes para el usuario:
         - Si es socio: notificaciones donde id_user = su ID.
-        - Si es ejecutivo o admin: notificaciones donde id_user IS NULL (avisos de pedidos cargados por socios).
+        - Si es ejecutivo o admin: notificaciones donde id_user IS NULL (avisos de nuevos pedidos).
         """
         with Database() as conn:
             cursor = conn.cursor()
@@ -31,7 +49,7 @@ class NotificacionModel:
                     FROM NOTIFICACIONES
                     WHERE id_user = ?
                     ORDER BY id_notificacion DESC
-                    LIMIT 20
+                    LIMIT 25
                 """, (id_user,))
             else:
                 cursor.execute("""
@@ -39,7 +57,7 @@ class NotificacionModel:
                     FROM NOTIFICACIONES
                     WHERE id_user IS NULL
                     ORDER BY id_notificacion DESC
-                    LIMIT 20
+                    LIMIT 25
                 """)
             return [dict(row) for row in cursor.fetchall()]
 
