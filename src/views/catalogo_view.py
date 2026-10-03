@@ -1,5 +1,5 @@
 import os
-from PyQt6.QtWidgets import QWidget, QFileDialog, QMessageBox, QTableWidgetItem
+from PyQt6.QtWidgets import QWidget, QFileDialog, QMessageBox, QTableWidgetItem, QHeaderView
 from PyQt6.QtCore import Qt
 from PyQt6 import uic
 
@@ -10,6 +10,7 @@ class CatalogoView(QWidget):
         ui_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "catalogo.ui")
         uic.loadUi(ui_path, self)
         self.ruta_archivo_actual = None
+        self.tabla_previa.setAlternatingRowColors(True)
 
     def cargar_proveedores(self, proveedores):
         """Puebla el ComboBox con los proveedores."""
@@ -40,6 +41,7 @@ class CatalogoView(QWidget):
         self.tabla_previa.setColumnCount(len(headers))
         self.tabla_previa.setRowCount(len(filas))
         self.tabla_previa.setHorizontalHeaderLabels(headers)
+        self.tabla_previa.setAlternatingRowColors(True)
         
         for r, fila in enumerate(filas):
             for c, val in enumerate(fila):

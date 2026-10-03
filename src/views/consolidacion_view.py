@@ -1,5 +1,5 @@
 import os
-from PyQt6.QtWidgets import QWidget, QFileDialog, QMessageBox, QTableWidgetItem
+from PyQt6.QtWidgets import QWidget, QFileDialog, QMessageBox, QTableWidgetItem, QHeaderView
 from PyQt6.QtCore import Qt
 from PyQt6 import uic
 
@@ -9,6 +9,7 @@ class ConsolidacionView(QWidget):
         
         ui_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "consolidacion.ui")
         uic.loadUi(ui_path, self)
+        self.tabla_consolidado.setAlternatingRowColors(True)
 
     def abrir_dialogo_guardar(self):
         """Abre cuadro de diálogo para guardar la planilla general."""
@@ -36,6 +37,10 @@ class ConsolidacionView(QWidget):
         self.tabla_consolidado.setColumnCount(len(headers))
         self.tabla_consolidado.setRowCount(len(items))
         self.tabla_consolidado.setHorizontalHeaderLabels(headers)
+        self.tabla_consolidado.setAlternatingRowColors(True)
+        
+        self.tabla_consolidado.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.tabla_consolidado.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeMode.Stretch)
         
         for r, item in enumerate(items):
             valores = [
@@ -59,7 +64,7 @@ class ConsolidacionView(QWidget):
                 self.tabla_consolidado.setItem(r, c, t_item)
                 
         self.tabla_consolidado.resizeColumnsToContents()
-        self.lbl_info_pedidos.setText(f"Artículos demandados en pedidos pendientes: {len(items)}")
+        self.lbl_info_pedidos.setText(f"📋 Artículos demandados en pedidos pendientes: {len(items)}")
 
     def confirmar_accion(self, titulo, mensaje):
         respuesta = QMessageBox.question(

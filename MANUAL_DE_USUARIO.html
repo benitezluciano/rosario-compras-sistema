@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Rosario Compras</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true, theme:'neutral'});</script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            background-color: #0f172a;
+            color: #f8fafc;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            padding: 24px 16px;
+            overflow-y: auto;
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #38bdf8;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link {
+            display: block;
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background-color: #1e293b;
+            color: #ffffff;
+        }
+
+        .nav-section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-top: 18px;
+            margin-bottom: 6px;
+            padding-left: 12px;
+            font-weight: bold;
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+            padding: 40px 50px;
+            max-width: 1000px;
+        }
+
+        h1 {
+            font-size: 32px;
+            color: var(--text-main);
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 22px;
+            color: var(--primary-dark);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px;
+            margin-top: 40px;
+        }
+
+        h3 {
+            font-size: 17px;
+            color: #1e293b;
+            margin-top: 24px;
+        }
+
+        /* Cards and Callouts */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .alert {
+            padding: 14px 18px;
+            border-radius: 8px;
+            margin: 16px 0;
+            font-size: 14px;
+        }
+
+        .alert-info { background: #eff6ff; border-left: 4px solid var(--primary); color: #1e40af; }
+        .alert-success { background: #ecfdf5; border-left: 4px solid var(--success); color: #065f46; }
+        .alert-warning { background: #fffbeb; border-left: 4px solid var(--warning); color: #92400e; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .badge-socio { background: #e0e7ff; color: #3730a3; }
+        .badge-ejecutivo { background: #dcfce7; color: #166534; }
+        .badge-admin { background: #fee2e2; color: #991b1b; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 14px;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: #334155;
+            font-weight: 600;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background-color: #f8fafc; }
+
+        /* Step List */
+        .step-item {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .step-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .step-body {
+            flex: 1;
+        }
+
+        .step-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .step-desc {
+            font-size: 14px;
+            color: #475569;
+        }
+
+        /* Image Box */
+        .img-box {
+            text-align: center;
+            background: #f1f5f9;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        .img-box img {
+            max-width: 100%;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .img-caption {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .layout { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; position: static; }
+            .content { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+    <!-- Barra Lateral de Navegación -->
+    <nav class="sidebar">
+        <div class="sidebar-title">
+            <span>📦</span> Rosario Compras
+        </div>
+
+        <div class="nav-section-title">General</div>
+        <a href="#introduccion" class="nav-link">1. Introducción y Objetivo</a>
+        <a href="#roles" class="nav-link">2. Roles y Credenciales</a>
+        <a href="#circuito" class="nav-link">3. Diagrama del Circuito</a>
+
+        <div class="nav-section-title">Guía por Rol</div>
+        <a href="#guia-socio" class="nav-link">4. Guía para el Socio</a>
+        <a href="#guia-ejecutivo" class="nav-link">5. Guía para el Ejecutivo</a>
+        <a href="#guia-admin" class="nav-link">6. Administrador</a>
+
+        <div class="nav-section-title">Módulos en Detalle</div>
+        <a href="#modulo-listas" class="nav-link">Listas de Proveedores</a>
+        <a href="#modulo-pedidos" class="nav-link">Carga de Pedidos</a>
+        <a href="#modulo-consolidacion" class="nav-link">Consolidación y Órdenes</a>
+        <a href="#modulo-reparto" class="nav-link">Recepción y Reparto</a>
+
+        <div class="nav-section-title">Ayuda</div>
+        <a href="#faq" class="nav-link">Preguntas Frecuentes (FAQ)</a>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="content">
+        <h1>Manual de Usuario - Rosario Compras</h1>
+        <div class="subtitle">Guía de operación del sistema de compras agrupadas, consolidación automática y logística.</div>
+
+        <!-- 1. INTRODUCCIÓN -->
+        <section id="introduccion">
+            <h2>1. Introducción y Objetivo</h2>
+            <div class="card">
+                <p><strong>Rosario Compras</strong> es una plataforma de compras comunitarias y abastecimiento inteligente diseñada para conectar a comercios gastronómicos, hoteleros y comerciales (<strong>Socios</strong>) con grandes distribuidores y fabricantes (<strong>Proveedores</strong>), bajo la coordinación del <strong>Ejecutivo de Cuentas</strong>.</p>
+                <p>El objetivo principal del sistema es:</p>
+                <ul>
+                    <li><strong>Eliminar el error humano:</strong> Los socios cargan sus pedidos de forma digital y el sistema consolida automáticamente las cantidades totales exactas.</li>
+                    <li><strong>Asegurar mejores precios por escala:</strong> Agrupa la demanda de múltiples socios para negociar precios mayoristas.</li>
+                    <li><strong>Garantizar doble control de recepción:</strong> Audita precios facturados (Compras) y mercadería recibida (Logística) antes de despachar remitos.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 2. ROLES Y CREDENCIALES -->
+        <section id="roles">
+            <h2>2. Roles y Credenciales de Acceso</h2>
+            <p>El sistema cuenta con 3 roles con permisos estrictamente diferenciados:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rol</th>
+                        <th>Nombre / Comercio</th>
+                        <th>Email de Acceso</th>
+                        <th>Contraseña</th>
+                        <th>Permisos en el Sistema</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge badge-admin">admin</span></td>
+                        <td>Administrador General</td>
+                        <td><code>admin@rosariocompras.com</code></td>
+                        <td><code>admin123</code></td>
+                        <td>Acceso total a todos los módulos y auditoría.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-ejecutivo">ejecutivo</span></td>
+                        <td>Ejecutivo de Cuentas</td>
+                        <td><code>ejecutivo@rosariocompras.com</code></td>
+                        <td><code>account123</code></td>
+                        <td>Importar listas, consolidar pedidos, exportar órdenes a proveedores, registrar comprobantes y reparto.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-socio">socio</span></td>
+                        <td>Café Central (Socio 1)</td>
+                        <td><code>socio1@rosariocompras.com</code></td>
+                        <td><code>socio123</code></td>
+                        <td>Cargar pedido por proveedor, recibir notificaciones y consultar remitos.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-socio">socio</span></td>
+                        <td>Panadería La Rosa (Socio 2)</td>
+                        <td><code>socio2@rosariocompras.com</code></td>
+                        <td><code>socio123</code></td>
+                        <td>Cargar pedido por proveedor, recibir notificaciones y consultar remitos.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-socio">socio</span></td>
+                        <td>Restaurante Italia (Socio 3)</td>
+                        <td><code>socio3@rosariocompras.com</code></td>
+                        <td><code>socio123</code></td>
+                        <td>Cargar pedido por proveedor, recibir notificaciones y consultar remitos.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 3. DIAGRAMA DEL CIRCUITO -->
+        <section id="circuito">
+            <h2>3. Diagrama del Circuito Operativo</h2>
+            <div class="img-box">
+                <img src="circuito_operativo.jpg" alt="Circuito Operativo Rosario Compras">
+                <div class="img-caption">Infografía general del circuito de 11 pasos operativos.</div>
+            </div>
+
+            <div class="card">
+                <div class="mermaid">
+                sequenceDiagram
+                    autonumber
+                    actor Prov as Proveedor (Externo)
+                    actor Ejec as Ejecutivo / Admin
+                    actor Socio as Socio (Business Partner)
+
+                    Ejec->>Prov: 1. Solicita listas de precios actualizadas
+                    Prov->>Ejec: 2. Envía lista de precios (.xlsx / .csv)
+                    Ejec->>Ejec: 3. Importa y consolida en Catálogo Único
+                    Ejec->>Socio: 4. Notificación automática 🔔 (Catálogo actualizado)
+                    Socio->>Socio: 5. Consulta catálogo por Proveedor y Carga Pedido
+                    Socio->>Ejec: 6. Notificación automática 🔔 (Nuevo Pedido registrado)
+                    Ejec->>Ejec: 7. Consolida pedidos y Exporta Órdenes por Proveedor (.xlsx)
+                    Ejec->>Prov: 8. Envía Órdenes de Compra a cada Proveedor
+                    Ejec->>Socio: 9. Notificación automática 🔔 (Pedido enviado al proveedor)
+                    Prov->>Ejec: 10. Entrega mercadería con Factura / Remito
+                    Ejec->>Ejec: 11. Registra Comprobante con doble control + Stock
+                    Ejec->>Ejec: 12. Ejecuta Reparto Automático y genera Remitos
+                    Ejec->>Socio: Notificación automática 🔔 (Remito listo para entrega)
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. GUÍA PARA EL SOCIO -->
+        <section id="guia-socio">
+            <h2>4. Guía Paso a Paso para el Socio</h2>
+            <div class="alert alert-info">
+                💡 <strong>Acceso del Socio:</strong> El socio únicamente ve su módulo de <strong>"🛍️ Cargar Pedido"</strong> y la campana de notificaciones.
+            </div>
+
+            <div class="step-item">
+                <div class="step-circle">1</div>
+                <div class="step-body">
+                    <div class="step-title">Iniciar Sesión</div>
+                    <div class="step-desc">Ingresa tu email (ej. <code>socio1@rosariocompras.com</code>) y contraseña (<code>socio123</code>).</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-circle">2</div>
+                <div class="step-body">
+                    <div class="step-title">Consultar Catálogo por Proveedor</div>
+                    <div class="step-desc">En pantalla verás las listas separadas por cada proveedor (ej. Distribuidora Central, Lácteos del Litoral, Insumos Gastronómicos).</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-circle">3</div>
+                <div class="step-body">
+                    <div class="step-title">Ingresar Cantidades Deseadas</div>
+                    <div class="step-desc">Escribe las cantidades que tu comercio necesita en la columna <strong>"Cantidad a Pedir"</strong>. El sistema calcula en vivo el subtotal de cada ítem y el <strong>Total General Estimado</strong> al pie de la pantalla.</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-circle">4</div>
+                <div class="step-body">
+                    <div class="step-title">Confirmar Pedido</div>
+                    <div class="step-desc">Presiona el botón azul <strong>"🛒 Confirmar y Enviar Pedido Consolidado del Socio"</strong>. Tu pedido quedará registrado en estado <em>Pendiente</em> y el Ejecutivo será notificado de inmediato.</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-circle">5</div>
+                <div class="step-body">
+                    <div class="step-title">Seguimiento por Notificaciones 🔔</div>
+                    <div class="step-desc">En la barra superior verás avisos cuando el Ejecutivo envíe el pedido a los proveedores y cuando se emita tu Remito final con los productos listos para entrega.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. GUÍA PARA EL EJECUTIVO -->
+        <section id="guia-ejecutivo">
+            <h2>5. Guía Paso a Paso para el Ejecutivo de Cuentas</h2>
+            <div class="alert alert-success">
+                💼 <strong>Panel de Control Total:</strong> El Ejecutivo orquesta las 4 etapas del circuito comercial.
+            </div>
+
+            <h3 id="modulo-listas">Módulo 1: Listas de Proveedores (Catálogo Único)</h3>
+            <div class="card">
+                <ol>
+                    <li>Selecciona el Proveedor en el combo desplegable.</li>
+                    <li>Puedes presionar <strong>"📧 Solicitar Lista al Proveedor"</strong> para asentar la solicitud formal de precios.</li>
+                    <li>Cuando recibas el archivo del proveedor, presiona <strong>"Seleccionar Planilla (.xlsx / .csv)"</strong>. Verás una previsualización de las columnas y precios.</li>
+                    <li>Presiona <strong>"📥 Procesar e Importar al Catálogo Único"</strong>. El sistema actualizará los precios y emitirá un aviso masivo a todos los socios.</li>
+                </ol>
+            </div>
+
+            <h3 id="modulo-consolidacion">Módulo 3: Consolidación y Envío a Proveedores</h3>
+            <div class="card">
+                <p>En este módulo se suman automáticamente los pedidos de todos los socios:</p>
+                <ol>
+                    <li>Revisa la tabla con el resumen de demanda agrupada por artículo y proveedor.</li>
+                    <li>Presiona <strong style="color:#059669;">"Órdenes por Proveedor (.xlsx)"</strong> para exportar un archivo de Excel individual por cada proveedor (listo para adjuntar y enviar por email/WhatsApp).</li>
+                    <li>Presiona el botón azul <strong style="color:#1d4ed8;">"📤 Enviar a Proveedores y Consolidar"</strong>. Los pedidos pasarán a estado <em>Consolidado</em> y los socios recibirán la notificación de envío.</li>
+                </ol>
+            </div>
+
+            <h3 id="modulo-reparto">Módulo 4: Recepción de Mercadería y Reparto Automático</h3>
+            <div class="card">
+                <ol>
+                    <li><strong>Llegada del camión/proveedor:</strong> Ingresa el número de Factura o Remito (ej. <code>FC-A-0001-0004521</code>).</li>
+                    <li><strong>Doble Control:</strong>
+                        <ul>
+                            <li><strong>Control de Logística:</strong> Verifica o ajusta la columna <em>"Cant. Recibida (Logística)"</em> según lo que realmente llegó al depósito.</li>
+                            <li><strong>Control de Compras:</strong> Verifica que el <em>"Precio Facturado"</em> coincida con el precio acordado en catálogo.</li>
+                        </ul>
+                    </li>
+                    <li>Presiona <strong>"💾 1. Asentar Comprobante y Registrar Stock Físico"</strong> para guardar la factura en el historial y actualizar el stock.</li>
+                    <li>Presiona <strong>"🚚 2. Ejecutar Reparto Automático y Generar Remitos"</strong>. Si hubo faltantes de mercadería, el sistema aplicará automáticamente el prorrateo equitativo, generará los remitos individuales y notificará a cada socio.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- 6. PREGUNTAS FRECUENTES -->
+        <section id="faq">
+            <h2>6. Preguntas Frecuentes (FAQ)</h2>
+
+            <div class="card">
+                <h3>¿Qué ocurre si un proveedor entrega menos mercadería de la pedida?</h3>
+                <p>El sistema aplica automáticamente la <strong>Regla de Prorrateo Equitativo (Excepción E1)</strong>: reparte el stock disponible de forma estrictamente proporcional a lo que solicitó cada socio, asegurando justicia comercial sin favoritismos.</p>
+
+                <h3>¿El Ejecutivo tiene que sumar las cantidades de los socios a mano?</h3>
+                <p><strong>No, nunca.</strong> El sistema consulta la base de datos y calcula la sumatoria total por artículo y proveedor de forma 100% automática en el módulo 3, eliminando todo error de cálculo manual.</p>
+
+                <h3>¿Cómo se ejecuta el sistema en Docker?</h3>
+                <p>Cualquier miembro del equipo puede ejecutar <code>docker compose up --build</code> y abrir <code>http://localhost:8080</code> en su navegador web.</p>
+            </div>
+        </section>
+    </main>
+</div>
+
+</body>
+</html>

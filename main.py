@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 from src.database import inicializar_db
+from src.styles.theme import GLOBAL_STYLESHEET
 
 # Modelos
 from src.models.auth_model import AuthModel
@@ -42,7 +43,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Rosario Compras - Sistema de Gestión")
-        self.resize(1100, 750)
+        self.resize(1150, 780)
         
         self.usuario_actual = None
         self.modelo_notif = NotificacionModel()
@@ -77,53 +78,32 @@ class MainWindow(QMainWindow):
         """Construye la interfaz principal con barra superior y navegación modular."""
         self.widget_dashboard = QWidget()
         dashboard_layout = QVBoxLayout(self.widget_dashboard)
-        dashboard_layout.setContentsMargins(15, 15, 15, 15)
-        dashboard_layout.setSpacing(10)
+        dashboard_layout.setContentsMargins(15, 12, 15, 15)
+        dashboard_layout.setSpacing(12)
         
         # --- Barra superior de Sesión y Notificaciones ---
         barra_sesion = QFrame()
+        barra_sesion.setObjectName("barra_sesion")
         barra_sesion.setFrameShape(QFrame.Shape.StyledPanel)
-        barra_sesion.setStyleSheet("background-color: #f5f5f5; border-radius: 6px; padding: 6px;")
         layout_sesion = QHBoxLayout(barra_sesion)
-        layout_sesion.setContentsMargins(10, 5, 10, 5)
+        layout_sesion.setContentsMargins(14, 8, 14, 8)
+        layout_sesion.setSpacing(10)
         
         self.lbl_usuario_info = QLabel("Conectado como: -")
-        self.lbl_usuario_info.setStyleSheet("font-weight: bold; font-size: 13px; color: #333;")
+        self.lbl_usuario_info.setObjectName("lbl_usuario_info")
         layout_sesion.addWidget(self.lbl_usuario_info)
         
         layout_sesion.addStretch()
         
         # Botón de Notificaciones con Badge
         self.btn_notificaciones = QPushButton("🔔 Notificaciones (0)")
-        self.btn_notificaciones.setStyleSheet("""
-            QPushButton {
-                background-color: #3498db;
-                color: white;
-                font-weight: bold;
-                border-radius: 4px;
-                padding: 6px 12px;
-            }
-            QPushButton:hover {
-                background-color: #2980b9;
-            }
-        """)
+        self.btn_notificaciones.setObjectName("btn_notificaciones")
         self.btn_notificaciones.clicked.connect(self.abrir_notificaciones)
         layout_sesion.addWidget(self.btn_notificaciones)
         
         # Botón Cerrar Sesión
         self.btn_logout = QPushButton("Cerrar Sesión")
-        self.btn_logout.setStyleSheet("""
-            QPushButton {
-                background-color: #e74c3c; 
-                color: white; 
-                font-weight: bold; 
-                border-radius: 4px; 
-                padding: 6px 14px;
-            }
-            QPushButton:hover {
-                background-color: #c0392b;
-            }
-        """)
+        self.btn_logout.setObjectName("btn_logout")
         self.btn_logout.clicked.connect(self.cerrar_sesion)
         layout_sesion.addWidget(self.btn_logout)
         
@@ -133,24 +113,11 @@ class MainWindow(QMainWindow):
         contenedor_cuerpo = QWidget()
         layout_cuerpo = QHBoxLayout(contenedor_cuerpo)
         layout_cuerpo.setContentsMargins(0, 0, 0, 0)
+        layout_cuerpo.setSpacing(12)
         
         self.menu_lateral = QListWidget()
-        self.menu_lateral.setMaximumWidth(240)
-        self.menu_lateral.setStyleSheet("""
-            QListWidget {
-                font-size: 13px;
-                border: 1px solid #ddd;
-                border-radius: 6px;
-            }
-            QListWidget::item {
-                padding: 12px 10px;
-            }
-            QListWidget::item:selected {
-                background-color: #2c3e50;
-                color: white;
-                font-weight: bold;
-            }
-        """)
+        self.menu_lateral.setObjectName("menu_lateral")
+        self.menu_lateral.setFixedWidth(290)
         layout_cuerpo.addWidget(self.menu_lateral)
         
         self.stacked_pantallas = QStackedWidget()
@@ -207,7 +174,7 @@ class MainWindow(QMainWindow):
         nombre = usuario.get('nombre', '')
         
         rol_display = "Socio" if rol == "socio" else ("Ejecutivo de Cuentas" if rol == "ejecutivo" else "Administrador")
-        self.lbl_usuario_info.setText(f"👤 {nombre} | Rol: {rol_display}")
+        self.lbl_usuario_info.setText(f"👤 {nombre}  |  Rol: {rol_display}")
         
         self.vista_pedido.establecer_socio_actual(usuario['id'], nombre, rol=rol)
         self.actualizar_badge_notificaciones()
@@ -225,7 +192,7 @@ class MainWindow(QMainWindow):
         else:
             # Ejecutivo y Admin: Circuito Completo
             self.menu_lateral.addItem("📑 1. Listas de Proveedores")
-            self.menu_lateral.addItem("🛍️ 2. Cargar Pedido")
+            self.menu_lateral.addItem("🛍️ 2. Cargar Pedido (por Socio)")
             self.menu_lateral.addItem("📦 3. Consolidar y Enviar a Proveedores")
             self.menu_lateral.addItem("🚚 4. Recepción y Reparto Automático")
             
@@ -250,7 +217,6 @@ class MainWindow(QMainWindow):
             self.stacked_pantallas.setCurrentIndex(1) # Vista Pedido
             self.controlador_pedido.inicializar()
         else:
-            # Ejecutivo/Admin: mapa de filas a índices del stack
             self.stacked_pantallas.setCurrentIndex(row)
             if row == 0:
                 self.controlador_catalogo.inicializar()
@@ -300,6 +266,8 @@ if __name__ == '__main__':
     inicializar_db()
     
     app = QApplication(sys.argv)
+    app.setStyleSheet(GLOBAL_STYLESHEET)
+    
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

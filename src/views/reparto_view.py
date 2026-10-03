@@ -1,5 +1,5 @@
 import os
-from PyQt6.QtWidgets import QWidget, QMessageBox, QTableWidgetItem
+from PyQt6.QtWidgets import QWidget, QMessageBox, QTableWidgetItem, QHeaderView
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 from PyQt6 import uic
@@ -10,6 +10,9 @@ class RepartoView(QWidget):
         
         ui_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reparto_automatico.ui")
         uic.loadUi(ui_path, self)
+
+        self.tabla_recepcion.setAlternatingRowColors(True)
+        self.tabla_pedidos.setAlternatingRowColors(True)
 
         # Conectar cambios de celdas para validar diferencias en tiempo real
         self.tabla_recepcion.itemChanged.connect(self.al_cambiar_celda)
@@ -40,6 +43,9 @@ class RepartoView(QWidget):
         self.tabla_recepcion.setColumnCount(len(headers))
         self.tabla_recepcion.setRowCount(len(articulos))
         self.tabla_recepcion.setHorizontalHeaderLabels(headers)
+        self.tabla_recepcion.setAlternatingRowColors(True)
+
+        self.tabla_recepcion.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
 
         for row, art in enumerate(articulos):
             id_art = art['id_articulo']
@@ -70,7 +76,7 @@ class RepartoView(QWidget):
             item_ped.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.tabla_recepcion.setItem(row, 3, item_ped)
             
-            # Col 4: Cantidad Recibida (Editable por Logística, por defecto inicializada con lo pedido)
+            # Col 4: Cantidad Recibida (Editable por Logística)
             item_rec = QTableWidgetItem(str(cant_ped))
             item_rec.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.tabla_recepcion.setItem(row, 4, item_rec)
@@ -82,7 +88,7 @@ class RepartoView(QWidget):
             item_pact.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.tabla_recepcion.setItem(row, 5, item_pact)
             
-            # Col 6: Precio Facturado (Editable por Compras, por defecto igual al pactado)
+            # Col 6: Precio Facturado (Editable por Compras)
             item_fact = QTableWidgetItem(f"{prec_pact:.2f}")
             item_fact.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.tabla_recepcion.setItem(row, 6, item_fact)
@@ -179,6 +185,9 @@ class RepartoView(QWidget):
     def cargar_pedidos(self, lista_pedidos):
         """Puebla la tabla_pedidos con los pedidos consolidados."""
         self.tabla_pedidos.setRowCount(len(lista_pedidos))
+        self.tabla_pedidos.setAlternatingRowColors(True)
+        self.tabla_pedidos.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+
         for row, pedido in enumerate(lista_pedidos):
             item_id = QTableWidgetItem(str(pedido['id_pedido']))
             item_id.setFlags(item_id.flags() & ~Qt.ItemFlag.ItemIsEditable)

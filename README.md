@@ -4,6 +4,14 @@ Sistema de gestión y abastecimiento empresarial para la red **Rosario Compras**
 
 ---
 
+## 📖 Manual de Usuario y Documentación
+
+- **Manual Interactivo (Recomendado):** Abre **[`MANUAL_DE_USUARIO.html`](MANUAL_DE_USUARIO.html)** en cualquier navegador para ver la guía completa con navegación por rol, infografías y diagramas.
+- **Manual en Markdown:** Consulta **[`MANUAL_DE_USUARIO.md`](MANUAL_DE_USUARIO.md)**.
+- **Walkthrough del Circuito:** Consulta **[`WALKTHROUGH.html`](WALKTHROUGH.html)**.
+
+---
+
 ## 🚀 Inicio Rápido con Docker (Recomendado - Zero Config)
 
 Tus colegas **no necesitan instalar Python, ni librerías, ni herramientas adicionales**. Solo requieren tener **Docker Desktop** instalado.
@@ -61,24 +69,24 @@ El sistema cuenta con autenticación segura y permisos diferenciados por rol:
 | :--- | :--- | :--- | :--- | :--- |
 | **`ejecutivo`** | Ejecutivo de Cuentas | `ejecutivo@rosariocompras.com` | `account123` | Acceso a los 4 módulos del circuito completo y notificaciones. |
 | **`admin`** | Administrador General | `admin@rosariocompras.com` | `admin123` | Acceso total y auditoría. |
-| **`socio`** | Café Central (Socio 1) | `socio1@rosariocompras.com` | `socio123` | Carga de pedidos con filtro por proveedor y remitos de entrega. |
-| **`socio`** | Panadería La Rosa (Socio 2) | `socio2@rosariocompras.com` | `socio123` | Carga de pedidos con filtro por proveedor y remitos de entrega. |
-| **`socio`** | Restaurante Italia (Socio 3) | `socio3@rosariocompras.com` | `socio123` | Carga de pedidos con filtro por proveedor y remitos de entrega. |
+| **`socio`** | Café Central (Socio 1) | `socio1@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor y remitos de entrega. |
+| **`socio`** | Panadería La Rosa (Socio 2) | `socio2@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor y remitos de entrega. |
+| **`socio`** | Restaurante Italia (Socio 3) | `socio3@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor y remitos de entrega. |
 
 ---
 
-## 🔄 Circuito Operativo (8 Pasos)
+## 🔄 Circuito Operativo (11 Pasos)
 
-1. **Paso 1:** Proveedor entrega listas de precios en formato Excel o CSV.
-2. **Paso 2:** Ejecutivo importa y unifica listas de precios en el Catálogo Único.
-3. **Paso 3:** Socio consulta catálogo (filtra por proveedor) y confirma su pedido.
-4. **Paso 4:** 🔔 Notificación automática al Ejecutivo con el nuevo pedido cargado.
-5. **Paso 5:** Ejecutivo consolida la demanda y exporta Órdenes de Compra por Proveedor (`.xlsx`).
-6. **Paso 6:** 🔔 Notificación automática al Socio: *"Pedido consolidado y enviado al proveedor"*.
-7. **Paso 7:** Proveedor entrega mercadería: Ejecutivo asienta Factura/Remito con **Doble Control** (Precios por Compras y Cantidades por Logística) y actualiza stock.
-8. **Paso 8:** Ejecutivo ejecuta **Reparto Automático** (aplica prorrateo equitativo ante faltantes), genera `REMITOS` oficiales y 🔔 notifica a cada socio.
-
-> 📖 **Para ver la infografía y diagrama de secuencia completo**, abre el archivo `WALKTHROUGH.html` en tu navegador.
+1. **Paso 1:** Ejecutivo solicita listas de precios a los Proveedores.
+2. **Paso 2:** Proveedor entrega listas de precios en formato Excel o CSV.
+3. **Paso 3:** Ejecutivo importa y consolida listas en el Catálogo Único.
+4. **Paso 4:** 🔔 Notificación automática a los Socios: *"Catálogo y precios actualizados"*.
+5. **Paso 5:** Socio consulta catálogo por proveedor y confirma su pedido.
+6. **Paso 6:** 🔔 Notificación automática al Ejecutivo con el nuevo pedido cargado.
+7. **Paso 7:** Ejecutivo consolida la demanda y exporta Órdenes de Compra por Proveedor (`.xlsx`).
+8. **Paso 8 y 9:** Ejecutivo envía órdenes a proveedores y 🔔 se notifica al Socio: *"Pedido enviado al proveedor"*.
+9. **Paso 10:** Llega la mercadería física: Ejecutivo asienta Factura/Remito con **Doble Control** (Precios por Compras y Cantidades por Logística) y actualiza stock.
+10. **Paso 11 y 12:** Ejecutivo ejecuta **Reparto Automático** (prorrateo ante faltantes), genera `REMITOS` oficiales y 🔔 notifica a cada socio.
 
 ---
 
@@ -86,12 +94,14 @@ El sistema cuenta con autenticación segura y permisos diferenciados por rol:
 
 ```text
 rosario-compras-sistema/
-├── Dockerfile                    # Configuración de contenedor con entorno gráfico noVNC
-├── docker-compose.yml            # Orquestación de Docker lista para producción/desarrollo
+├── Dockerfile                    # Contenedor con entorno gráfico noVNC
+├── docker-compose.yml            # Orquestación de Docker lista para usar
 ├── entrypoint.sh                 # Script de arranque del display virtual y la app
+├── MANUAL_DE_USUARIO.html        # Manual de usuario interactivo y completo
+├── MANUAL_DE_USUARIO.md          # Manual de usuario en formato Markdown
 ├── WALKTHROUGH.html              # Documento visual con infografía y diagramas
-├── WALKTHROUGH.md                # Documentación markdown del circuito
-├── circuito_operativo.jpg        # Infografía gráfica del flujo de 8 pasos
+├── WALKTHROUGH.md                # Documentación técnica del circuito
+├── circuito_operativo.jpg        # Infografía gráfica del flujo operativo
 ├── db/
 │   └── rosario_compras.sql       # Script DDL maestro con las 12 tablas
 ├── migrations/                   # Scripts incrementales de migración
@@ -99,9 +109,10 @@ rosario-compras-sistema/
 │   ├── models/                   # Modelos de negocio (Auth, Catálogo, Pedidos, Consolidación, Reparto, Notificaciones)
 │   ├── views/                    # Vistas y archivos .ui de Qt Designer
 │   ├── controllers/              # Controladores que conectan eventos y modelos
+│   ├── styles/                   # Sistema de estilos QSS (theme.py)
 │   └── database.py               # Conexión SQLite transaccional
 ├── seeds/
 │   └── seed_db.py                # Script para resetear y poblar datos iniciales
-├── main.py                       # Punto de entrada principal
+├── main.py                       # Punto de entrada principal con tema moderno
 └── requirements.txt              # Dependencias del proyecto
 ```
