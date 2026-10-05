@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS PROVEEDORES (
     -- Reemplaza a id_ejecutivo. Apunta al usuario ejecutivo responsable.
 
     nombre        TEXT    NOT NULL,
+    email         TEXT,
+    telefono      TEXT,
     direccion     TEXT,
 
     FOREIGN KEY (id_user) REFERENCES USERS(id)

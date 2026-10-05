@@ -188,6 +188,7 @@ class MainWindow(QMainWindow):
         self.lbl_usuario_info.setText(f"👤 {nombre}  |  Rol: {rol_display}")
         
         self.vista_pedido.establecer_socio_actual(usuario['id'], nombre, rol=rol)
+        self.controlador_catalogo.set_usuario_actual(usuario)
         self.actualizar_badge_notificaciones()
         
         self.menu_lateral.blockSignals(True)
@@ -202,7 +203,7 @@ class MainWindow(QMainWindow):
             self.stacked_pantallas.setCurrentIndex(1) # Vista Pedido
         else:
             # Ejecutivo y Admin: Circuito Completo
-            self.menu_lateral.addItem("📑 1. Listas de Proveedores")
+            self.menu_lateral.addItem("📑 1. Listas y Proveedores")
             self.menu_lateral.addItem("🛍️ 2. Cargar Pedido (por Socio)")
             self.menu_lateral.addItem("📦 3. Consolidar y Enviar a Proveedores")
             self.menu_lateral.addItem("🚚 4. Recepción y Reparto Automático")
