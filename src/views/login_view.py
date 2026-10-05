@@ -61,8 +61,9 @@ class LoginView(QWidget):
         credenciales = [
             ("👔 Ejecutivo", "ejecutivo@rosariocompras.com", "account123"),
             ("👑 Admin", "admin@rosariocompras.com", "admin123"),
-            ("☕ Socio 1", "socio1@rosariocompras.com", "socio123"),
-            ("🥖 Socio 2", "socio2@rosariocompras.com", "socio123"),
+            ("☕ Café Central", "socio1@rosariocompras.com", "socio123"),
+            ("🥖 Panadería La Rosa", "socio2@rosariocompras.com", "socio123"),
+            ("🍕 Pizzería La Popular", "socio6@rosariocompras.com", "socio123"),
         ]
         
         for label, email, pwd in credenciales:
@@ -72,7 +73,39 @@ class LoginView(QWidget):
             btn_layout.addWidget(btn)
             
         frame_layout.addLayout(btn_layout)
+        
+        # Botón de acceso directo al Manual de Usuario
+        btn_manual = QPushButton("📖 Abrir Manual de Usuario y Guía de Roles")
+        btn_manual.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_manual.setStyleSheet("""
+            QPushButton {
+                background-color: #6366f1;
+                color: #ffffff;
+                font-size: 12px;
+                font-weight: 600;
+                padding: 6px 12px;
+                border-radius: 6px;
+                margin-top: 4px;
+            }
+            QPushButton:hover {
+                background-color: #4f46e5;
+            }
+        """)
+        btn_manual.clicked.connect(self._abrir_manual)
+        frame_layout.addWidget(btn_manual)
+        
         self.mainLayout.addWidget(frame)
+
+    def _abrir_manual(self):
+        from PyQt6.QtCore import QUrl
+        from PyQt6.QtGui import QDesktopServices
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        manual_path = os.path.join(base_dir, "MANUAL_DE_USUARIO.html")
+        if os.path.exists(manual_path):
+            QDesktopServices.openUrl(QUrl.fromLocalFile(manual_path))
+        else:
+            import webbrowser
+            webbrowser.open(manual_path)
 
     def _cargar_credenciales(self, email, password):
         self.txt_email.setText(email)

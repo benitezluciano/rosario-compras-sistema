@@ -224,6 +224,21 @@ QPushButton#btn_logout:hover {
     background-color: #dc2626;
 }
 
+/* 6. Botón de Manual de Usuario - Índigo / Púrpura */
+QPushButton#btn_manual {
+    background-color: #6366f1;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+QPushButton#btn_manual:hover {
+    background-color: #4f46e5;
+}
+
+QPushButton#btn_manual:pressed {
+    background-color: #4338ca;
+}
+
 /* --- TARJETAS GROUPBOX --- */
 QGroupBox {
     font-size: 13px;

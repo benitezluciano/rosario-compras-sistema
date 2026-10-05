@@ -1,4 +1,5 @@
 import sys
+import os
 from PyQt6.QtWidgets import (
     QApplication, 
     QMainWindow, 
@@ -11,7 +12,8 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QFrame
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtGui import QDesktopServices
 
 from src.database import inicializar_db
 from src.styles.theme import GLOBAL_STYLESHEET
@@ -98,12 +100,21 @@ class MainWindow(QMainWindow):
         # Botón de Notificaciones con Badge
         self.btn_notificaciones = QPushButton("🔔 Notificaciones (0)")
         self.btn_notificaciones.setObjectName("btn_notificaciones")
+        self.btn_notificaciones.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_notificaciones.clicked.connect(self.abrir_notificaciones)
         layout_sesion.addWidget(self.btn_notificaciones)
+        
+        # Botón Manual de Usuario
+        self.btn_manual = QPushButton("📖 Manual de Usuario")
+        self.btn_manual.setObjectName("btn_manual")
+        self.btn_manual.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_manual.clicked.connect(self.abrir_manual_usuario)
+        layout_sesion.addWidget(self.btn_manual)
         
         # Botón Cerrar Sesión
         self.btn_logout = QPushButton("Cerrar Sesión")
         self.btn_logout.setObjectName("btn_logout")
+        self.btn_logout.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_logout.clicked.connect(self.cerrar_sesion)
         layout_sesion.addWidget(self.btn_logout)
         
@@ -241,6 +252,16 @@ class MainWindow(QMainWindow):
         dialog = NotificacionesDialog(self.usuario_actual, self)
         dialog.exec()
         self.actualizar_badge_notificaciones()
+
+    def abrir_manual_usuario(self):
+        """Abre el Manual de Usuario interactivo en el navegador predeterminado."""
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        manual_path = os.path.join(base_dir, "MANUAL_DE_USUARIO.html")
+        if os.path.exists(manual_path):
+            QDesktopServices.openUrl(QUrl.fromLocalFile(manual_path))
+        else:
+            import webbrowser
+            webbrowser.open(os.path.join(base_dir, "MANUAL_DE_USUARIO.md"))
 
     def al_actualizar_catalogo(self):
         self.controlador_pedido.inicializar()

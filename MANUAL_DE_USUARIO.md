@@ -21,10 +21,16 @@ Sistema de compras agrupadas, consolidación automática de demanda y gestión l
 | Rol | Nombre / Comercio | Email | Contraseña | Permisos |
 | :--- | :--- | :--- | :--- | :--- |
 | `admin` | Administrador General | `admin@rosariocompras.com` | `admin123` | Acceso total y auditoría. |
-| `ejecutivo` | Ejecutivo de Cuentas | `ejecutivo@rosariocompras.com` | `account123` | Importación de listas, consolidación, órdenes a proveedores, comprobantes y reparto. |
-| `socio` | Café Central (Socio 1) | `socio1@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
-| `socio` | Panadería La Rosa (Socio 2) | `socio2@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
-| `socio` | Restaurante Italia (Socio 3) | `socio3@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
+| `ejecutivo` | Luciano Benítez (Ejecutivo Principal) | `ejecutivo@rosariocompras.com` | `account123` | Importación de listas, consolidación, órdenes a proveedores, comprobantes y reparto. |
+| `ejecutivo` | Martina Valenzuela (Ejecutiva Zona Norte) | `ejecutivo2@rosariocompras.com` | `account123` | Gestión de compras y consolidación de zona norte. |
+| `socio` | Café Central (Pichincha) | `socio1@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
+| `socio` | Panadería & Confitería La Rosa (Centro) | `socio2@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
+| `socio` | Restaurante Italia Tradizionale (Pellegrini) | `socio3@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
+| `socio` | Bar & Bodegón Pellegrini (Echesortu) | `socio4@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
+| `socio` | Gran Hotel Rosario (Costanera) | `socio5@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
+| `socio` | Pizzería La Popular (Fisherton) | `socio6@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
+| `socio` | Cervecería del Monumento (Monumento) | `socio7@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
+| `socio` | Cafetería & Brunch El Parque (Parque Urquiza) | `socio8@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
 
 ---
 
