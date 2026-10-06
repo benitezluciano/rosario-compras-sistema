@@ -17,10 +17,26 @@ def get_connection():
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
+def migrar_db(conn):
+    """
+    Aplica migraciones incrementales automáticas y seguras
+    para garantizar compatibilidad con bases de datos existentes.
+    """
+    cursor = conn.cursor()
+    
+    # 1. Verificar columnas en PROVEEDORES
+    cursor.execute("PRAGMA table_info(PROVEEDORES);")
+    cols_prov = [row[1] for row in cursor.fetchall()]
+    
+    if "email" not in cols_prov:
+        cursor.execute("ALTER TABLE PROVEEDORES ADD COLUMN email TEXT;")
+    if "telefono" not in cols_prov:
+        cursor.execute("ALTER TABLE PROVEEDORES ADD COLUMN telefono TEXT;")
+
 def inicializar_db():
     """
-    Inicializa la base de datos ejecutando el script de creación.
-    Crea el archivo database.db en la raíz si no existe.
+    Inicializa la base de datos ejecutando el script de creación y
+    aplicando migraciones necesarias.
     """
     if not os.path.exists(SQL_PATH):
         raise FileNotFoundError(f"No se encontró el script de esquema SQL en: {SQL_PATH}")
@@ -30,6 +46,7 @@ def inicializar_db():
         with open(SQL_PATH, "r", encoding="utf-8") as f:
             script_sql = f.read()
         conn.executescript(script_sql)
+        migrar_db(conn)
         conn.commit()
     except Exception as e:
         conn.rollback()

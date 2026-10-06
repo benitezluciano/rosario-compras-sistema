@@ -6,25 +6,36 @@ from src.models.notificacion_model import NotificacionModel
 class CatalogoModel:
     def obtener_proveedores(self):
         """Devuelve la lista de proveedores registrados en la base de datos."""
-        query = "SELECT id_proveedor, nombre, direccion FROM PROVEEDORES ORDER BY nombre ASC"
+        query = "SELECT id_proveedor, nombre, email, telefono, direccion FROM PROVEEDORES ORDER BY nombre ASC"
         with Database() as conn:
             cursor = conn.cursor()
             cursor.execute(query)
             return [dict(row) for row in cursor.fetchall()]
 
+    def obtener_proveedor_por_id(self, id_proveedor):
+        """Obtiene la información completa del proveedor junto con su ejecutivo."""
+        query = """
+            SELECT p.id_proveedor, p.id_user, p.nombre, p.email, p.telefono, p.direccion,
+                   u.nombre AS ejecutivo_nombre, u.email AS ejecutivo_email
+            FROM PROVEEDORES p
+            JOIN USERS u ON p.id_user = u.id
+            WHERE p.id_proveedor = ?
+        """
+        with Database() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query, (id_proveedor,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
     def solicitar_lista_proveedor(self, id_proveedor):
         """
         Registra la emisión de la solicitud formal de lista de precios a un proveedor.
         """
-        with Database() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT nombre, direccion FROM PROVEEDORES WHERE id_proveedor = ?", (id_proveedor,))
-            row = cursor.fetchone()
-            if not row:
-                return False, "Proveedor no encontrado."
-            
-            nombre_prov = row['nombre']
-            return True, f"Se ha generado y registrado la solicitud de lista de precios actualizada al proveedor '{nombre_prov}'."
+        prov = self.obtener_proveedor_por_id(id_proveedor)
+        if not prov:
+            return False, "Proveedor no encontrado.", None
+        
+        return True, f"Solicitud preparada para '{prov['nombre']}'.", prov
 
     def leer_vista_previa(self, ruta_archivo):
         """

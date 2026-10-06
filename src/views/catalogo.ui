@@ -79,7 +79,7 @@
       <widget class="QPushButton" name="btn_solicitar_lista">
        <property name="minimumSize">
         <size>
-         <width>220</width>
+         <width>200</width>
          <height>32</height>
         </size>
        </property>
@@ -91,7 +91,27 @@
         </font>
        </property>
        <property name="text">
-        <string>📧 Solicitar Lista al Proveedor</string>
+        <string>📧 Solicitar Lista</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_gestionar_proveedores">
+       <property name="minimumSize">
+        <size>
+         <width>190</width>
+         <height>32</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Arial</family>
+         <pointsize>9</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>🏢 Gestionar Proveedores</string>
        </property>
       </widget>
      </item>

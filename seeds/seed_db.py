@@ -1,8 +1,13 @@
 import sqlite3
 import os
+import sys
 from werkzeug.security import generate_password_hash
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+from src.database import migrar_db
+
 DB_PATH = os.path.join(BASE_DIR, "database.db")
 SQL_PATH = os.path.join(BASE_DIR, "db", "rosario_compras.sql")
 
@@ -17,6 +22,7 @@ def seed():
         # 1. Asegurar esquema limpio y estructurado
         with open(SQL_PATH, "r", encoding="utf-8") as f:
             cursor.executescript(f.read())
+        migrar_db(conn)
             
         # Limpiar datos previos si existieran para evitar duplicados en reprocesamiento
         cursor.execute("DELETE FROM DETALLE_COMPROBANTES_PROVEEDOR;")
@@ -59,18 +65,18 @@ def seed():
         
         # 3. Insertar Proveedores representativos de Rosario y la región
         proveedores = [
-            (1, 2, 'Distribuidora Central Rosario', 'Av. Pellegrini 1500, Rosario - Tel: (0341) 482-9000'),
-            (2, 2, 'Lácteos del Litoral', 'Calle Santa Fe 2300, Rosario - Tel: (0341) 440-1122'),
-            (3, 2, 'Insumos Gastronómicos del Sur', 'Bv. Oroño 850, Rosario - Tel: (0341) 425-7788'),
-            (4, 2, 'Frigorífico & Carnes del Paraná', 'Av. Circunvalación 4200, Rosario - Tel: (0341) 456-3344'),
-            (5, 2, 'Bebidas & Bodegas Rosario', 'San Lorenzo 1120, Rosario - Tel: (0341) 438-5566'),
-            (6, 2, 'Distribuidora Limpieza & Higiene Pro', 'Salta 2840, Rosario - Tel: (0341) 471-8899'),
+            (1, 2, 'Distribuidora Central Rosario', 'ventas@distribuidoracentral.com', '(0341) 482-9000', 'Av. Pellegrini 1500, Rosario'),
+            (2, 2, 'Lácteos del Litoral', 'pedidos@lacteosdellitoral.com', '(0341) 440-1122', 'Calle Santa Fe 2300, Rosario'),
+            (3, 2, 'Insumos Gastronómicos del Sur', 'contacto@insumosdelsur.com', '(0341) 425-7788', 'Bv. Oroño 850, Rosario'),
+            (4, 2, 'Frigorífico & Carnes del Paraná', 'ventas@carnesdelparana.com.ar', '(0341) 456-3344', 'Av. Circunvalación 4200, Rosario'),
+            (5, 3, 'Bebidas & Bodegas Rosario', 'pedidos@bodegasrosario.com', '(0341) 438-5566', 'San Lorenzo 1120, Rosario'),
+            (6, 3, 'Distribuidora Limpieza & Higiene Pro', 'info@limpiezapro.com.ar', '(0341) 471-8899', 'Salta 2840, Rosario'),
         ]
         cursor.executemany("""
-            INSERT INTO PROVEEDORES (id_proveedor, id_user, nombre, direccion)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO PROVEEDORES (id_proveedor, id_user, nombre, email, telefono, direccion)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, proveedores)
-        print(f"OK: {len(proveedores)} Proveedores insertados.")
+        print(f"OK: {len(proveedores)} Proveedores insertados con email y teléfono.")
         
         # 4. Insertar Artículos del catálogo clasificados por rubro
         articulos = [
