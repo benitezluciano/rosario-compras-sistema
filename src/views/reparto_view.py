@@ -1,8 +1,10 @@
 import os
+import subprocess
 from PyQt6.QtWidgets import QWidget, QMessageBox, QTableWidgetItem, QHeaderView
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtGui import QColor, QDesktopServices
 from PyQt6 import uic
+from src.utils.id_generator import generar_codigo_comprobante
 
 class RepartoView(QWidget):
     def __init__(self, parent=None):
@@ -14,8 +16,22 @@ class RepartoView(QWidget):
         self.tabla_recepcion.setAlternatingRowColors(True)
         self.tabla_pedidos.setAlternatingRowColors(True)
 
+        # Generar comprobante interno inicial
+        self.generar_nuevo_comprobante_id()
+
+        # Conectar eventos internos
+        if hasattr(self, 'btn_nuevo_comprobante'):
+            self.btn_nuevo_comprobante.clicked.connect(self.generar_nuevo_comprobante_id)
+        if hasattr(self, 'btn_abrir_remitos'):
+            self.btn_abrir_remitos.clicked.connect(self.abrir_carpeta_remitos)
+
         # Conectar cambios de celdas para validar diferencias en tiempo real
         self.tabla_recepcion.itemChanged.connect(self.al_cambiar_celda)
+
+    def generar_nuevo_comprobante_id(self):
+        """Genera y asigna un nuevo ID comercial ofuscado al comprobante interno."""
+        nuevo_id = generar_codigo_comprobante()
+        self.txt_nro_comprobante.setText(nuevo_id)
 
     def cargar_proveedores(self, proveedores):
         """Puebla el ComboBox con los proveedores."""
@@ -23,8 +39,25 @@ class RepartoView(QWidget):
         self.cmb_proveedor_recepcion.clear()
         self.cmb_proveedor_recepcion.addItem("🔍 Todos los Proveedores", None)
         for p in proveedores:
-            self.cmb_proveedor_recepcion.addItem(p['nombre'], p['id_proveedor'])
+            self.cmb_proveedor_recepcion.addItem(f"🏢 {p['nombre']}", p['id_proveedor'])
         self.cmb_proveedor_recepcion.blockSignals(False)
+
+    def cargar_pedidos_consolidados_selector(self, pedidos):
+        """Puebla el ComboBox con los pedidos consolidados pendientes de recepción."""
+        self.cmb_pedido_consolidado.blockSignals(True)
+        self.cmb_pedido_consolidado.clear()
+        self.cmb_pedido_consolidado.addItem("📦 Todos los Pedidos del Proveedor", None)
+        for ped in pedidos:
+            cod = ped.get('codigo_comercial') or f"RC-ORD-{ped['id_pedido']}"
+            socio = ped.get('socio_nombre', 'Socio')
+            self.cmb_pedido_consolidado.addItem(f"{cod} - {socio}", ped['id_pedido'])
+        self.cmb_pedido_consolidado.blockSignals(False)
+
+    def obtener_proveedor_seleccionado(self):
+        return self.cmb_proveedor_recepcion.currentData()
+
+    def obtener_pedido_seleccionado(self):
+        return self.cmb_pedido_consolidado.currentData()
 
     def cargar_articulos_control(self, articulos):
         """Puebla la tabla de recepción con el doble control (compras y logística)."""
@@ -148,7 +181,7 @@ class RepartoView(QWidget):
         self.tabla_recepcion.blockSignals(False)
 
     def obtener_items_para_asentar(self):
-        """Retorna los datos de los renglones cargados en la tabla."""
+        """Retorna los renglones cargados en la tabla de control."""
         items = []
         for row in range(self.tabla_recepcion.rowCount()):
             item_id = self.tabla_recepcion.item(row, 0)
@@ -183,13 +216,19 @@ class RepartoView(QWidget):
         return items
 
     def cargar_pedidos(self, lista_pedidos):
-        """Puebla la tabla_pedidos con los pedidos consolidados."""
+        """Puebla la tabla_pedidos con los pedidos consolidados enviados."""
+        headers = ["N° Pedido (Código)", "Socio Receptor", "Artículos Solicitados", "Estado"]
+        self.tabla_pedidos.clear()
+        self.tabla_pedidos.setColumnCount(len(headers))
         self.tabla_pedidos.setRowCount(len(lista_pedidos))
+        self.tabla_pedidos.setHorizontalHeaderLabels(headers)
         self.tabla_pedidos.setAlternatingRowColors(True)
         self.tabla_pedidos.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
 
         for row, pedido in enumerate(lista_pedidos):
-            item_id = QTableWidgetItem(str(pedido['id_pedido']))
+            cod = pedido.get('codigo_comercial') or f"RC-ORD-{pedido['id_pedido']}"
+            item_id = QTableWidgetItem(cod)
+            item_id.setData(Qt.ItemDataRole.UserRole, pedido['id_pedido'])
             item_id.setFlags(item_id.flags() & ~Qt.ItemFlag.ItemIsEditable)
             item_id.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.tabla_pedidos.setItem(row, 0, item_id)
@@ -202,15 +241,23 @@ class RepartoView(QWidget):
             item_articulos.setFlags(item_articulos.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.tabla_pedidos.setItem(row, 2, item_articulos)
             
-            item_estado = QTableWidgetItem(pedido['estado'])
+            item_estado = QTableWidgetItem(pedido.get('estado', 'Consolidado'))
             item_estado.setFlags(item_estado.flags() & ~Qt.ItemFlag.ItemIsEditable)
             item_estado.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            item_estado.setForeground(QColor("#2563eb"))
             self.tabla_pedidos.setItem(row, 3, item_estado)
 
         self.tabla_pedidos.resizeColumnsToContents()
 
+    def abrir_carpeta_remitos(self):
+        """Abre la carpeta donde se almacenan los Remitos PDF generados."""
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        carpeta = os.path.join(base_dir, "remitos_pdf")
+        os.makedirs(carpeta, exist_ok=True)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(carpeta))
+
     def mostrar_alerta_discrepancias(self, discrepancias):
-        """Muestra diálogo modal con los ajustes calculados."""
+        """Muestra diálogo modal con los ajustes calculados por prorrateo."""
         mensaje = "Se detectó faltante de stock físico para los siguientes artículos:\n\n"
         for d in discrepancias:
             mensaje += f"• {d['detalle']}: Solicitado: {d['solicitado']} | Físico recibido: {d['disponible']}\n"

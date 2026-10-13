@@ -1,98 +1,79 @@
 # Manual de Usuario - Rosario Compras
 
-Sistema de compras agrupadas, consolidación automática de demanda y gestión logística con doble control.
+Bienvenido al **Sistema de Gestión y Abastecimiento de Rosario Compras**. Esta aplicación permite gestionar de manera integral el circuito de compras consolidadas, centralizando las listas de proveedores, la toma y ajuste de pedidos de socios, el control cruzado de recepción y la emisión automática de remitos en PDF oficiales.
 
 ---
 
-## 1. Introducción y Objetivo del Sistema
+## 1. Roles y Permisos
 
-**Rosario Compras** centraliza y automatiza la relación comercial entre los comercios adheridos (**Socios**) y los grandes distribuidores (**Proveedores**), coordinada por el **Ejecutivo de Cuentas**.
-
-- **Carga Digital de Pedidos:** Los socios cargan sus propios pedidos desde el catálogo segmentado por proveedor.
-- **Consolidación Automática:** El sistema suma y totaliza la demanda de todos los socios con 0% error humano.
-- **Exportación de Órdenes:** Genera planillas de Excel listas para cada proveedor (`.xlsx`).
-- **Recepción con Doble Control:** Controla precios facturados (Compras) y cantidades físicas recibidas (Logística).
-- **Reparto Inteligente:** Prorratea automáticamente en caso de entregas parciales y emite remitos con notificaciones.
-
----
-
-## 2. Roles y Credenciales de Acceso
-
-| Rol | Nombre / Comercio | Email | Contraseña | Permisos |
+| Rol | Nombre de Ejemplo | Email | Contraseña | Funciones |
 | :--- | :--- | :--- | :--- | :--- |
-| `admin` | Administrador General | `admin@rosariocompras.com` | `admin123` | Acceso total y auditoría. |
-| `ejecutivo` | Luciano Benítez (Ejecutivo Principal) | `ejecutivo@rosariocompras.com` | `account123` | Importación de listas, consolidación, órdenes a proveedores, comprobantes y reparto. |
-| `ejecutivo` | Martina Valenzuela (Ejecutiva Zona Norte) | `ejecutivo2@rosariocompras.com` | `account123` | Gestión de compras y consolidación de zona norte. |
-| `socio` | Café Central (Pichincha) | `socio1@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
-| `socio` | Panadería & Confitería La Rosa (Centro) | `socio2@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
-| `socio` | Restaurante Italia Tradizionale (Pellegrini) | `socio3@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
-| `socio` | Bar & Bodegón Pellegrini (Echesortu) | `socio4@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
-| `socio` | Gran Hotel Rosario (Costanera) | `socio5@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
-| `socio` | Pizzería La Popular (Fisherton) | `socio6@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
-| `socio` | Cervecería del Monumento (Monumento) | `socio7@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
-| `socio` | Cafetería & Brunch El Parque (Parque Urquiza) | `socio8@rosariocompras.com` | `socio123` | Carga de pedidos por proveedor, avisos y remitos. |
+| **`ejecutivo`** | Luciano Benítez (Ejecutivo Principal) | `ejecutivo@rosariocompras.com` | `account123` | Circuito completo de 3 módulos: Listas, Previsualización y Consolidado, y Recepción y Reparto con Remitos PDF. |
+| **`ejecutivo`** | Martina Valenzuela (Ejecutiva Zona Norte) | `ejecutivo2@rosariocompras.com` | `account123` | Gestión de compras, ajuste de cantidades en matriz y remitos PDF. |
+| **`admin`** | Administrador General | `admin@rosariocompras.com` | `admin123` | Control total, auditoría comercial y configuración de usuarios. |
+| **`socio`** | Café Central (Socio 1) | `socio1@rosariocompras.com` | `socio123` | Gestión de pedidos: carga de pedido vigente, modificación interactiva e historial de pedidos. |
+| **`socio`** | Panadería La Rosa (Socio 2) | `socio2@rosariocompras.com` | `socio123` | Gestión de pedidos: carga de pedido vigente, modificación interactiva e historial de pedidos. |
+| **`socio`** | Restaurante Italia (Socio 3) | `socio3@rosariocompras.com` | `socio123` | Gestión de pedidos: carga de pedido vigente, modificación interactiva e historial de pedidos. |
 
 ---
 
-## 3. Diagrama del Circuito Operativo (11 Pasos)
+## 2. Guía para el Socio (Business Partner)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Prov as Proveedor (Externo)
-    actor Ejec as Ejecutivo / Admin
-    actor Socio as Socio (Business Partner)
+### Pestaña 1: 🛍️ Pedido Vigente / Carga de Pedido
+1. **Sin límites artificiales de cantidad:** Ingresa la cantidad deseada para cada producto.
+2. **Pedido sin cerrar (Vigente):** Si ya confirmaste un pedido en el ciclo actual y continúa en estado *Pendiente*, el sistema lo cargará automáticamente indicando: *"Modificando Pedido Vigente #RC-ORD-XXXXXX"*.
+3. **Modificación de Pedido:** Puedes alterar cualquier cantidad, agregar nuevos artículos o poner en 0 los que no desees, y presionar **"💾 Guardar Modificaciones del Pedido"**.
+4. **Subtotales y Total General:** Se calculan en tiempo real a medida que editas cada fila.
 
-    Ejec->>Prov: 1. Solicita listas de precios actualizadas
-    Prov->>Ejec: 2. Envía lista de precios (.xlsx / .csv)
-    Ejec->>Ejec: 3. Importa y consolida en Catálogo Único
-    Ejec->>Socio: 4. Notificación automática 🔔 (Catálogo actualizado)
-    Socio->>Socio: 5. Consulta catálogo por Proveedor y Carga Pedido
-    Socio->>Ejec: 6. Notificación automática 🔔 (Nuevo Pedido registrado)
-    Ejec->>Ejec: 7. Consolida pedidos y Exporta Órdenes por Proveedor (.xlsx)
-    Ejec->>Prov: 8. Envía Órdenes de Compra a cada Proveedor
-    Ejec->>Socio: 9. Notificación automática 🔔 (Pedido enviado al proveedor)
-    Prov->>Ejec: 10. Entrega mercadería con Factura / Remito
-    Ejec->>Ejec: 11. Registra Comprobante con doble control + Stock
-    Ejec->>Ejec: 12. Ejecuta Reparto Automático y genera Remitos
-    Ejec->>Socio: Notificación automática 🔔 (Remito listo para entrega)
-```
+### Pestaña 2: 📜 Historial de Mis Pedidos
+1. **Monitoreo Completo:** Consulta tus pedidos pasados con su Nro. de Pedido seguro (`RC-ORD-XXXXXX`), fecha de registro, estado (`Pendiente`, `Consolidado`, `Procesado`), cantidad de productos y monto total estimado.
+2. **Notificaciones y Remitos:** Recibirás alertas automáticas en la campana `🔔` ante modificaciones realizadas por el Ejecutivo, confirmación de consolidación y cuando tu **Remito oficial en PDF** esté generado.
 
 ---
 
-## 4. Guía para el Socio (Business Partner)
+## 3. Guía para el Ejecutivo de Cuentas y Administradores
 
-1. **Iniciar Sesión:** Ingresa con tu email y contraseña asignados.
-2. **Consultar Productos por Proveedor:** En la pantalla verás las listas separadas por cada distribuidor (ej. Distribuidora Central, Lácteos del Litoral, Insumos Gastronómicos).
-3. **Cargar Cantidades:** Ingresa las cantidades en la columna *Cantidad a Pedir*. El sistema calcula automáticamente los subtotales y el Total General en tiempo real.
-4. **Confirmar Pedido:** Presiona el botón azul **"🛒 Confirmar y Enviar Pedido Consolidado del Socio"**. Tu pedido quedará registrado en estado *Pendiente* y el Ejecutivo recibirá un aviso automático.
-5. **Avisos y Remitos:** Recibirás notificaciones en la campana `🔔` cuando tu pedido sea enviado a los proveedores y cuando esté disponible el Remito de entrega.
+El flujo operativo se organiza en **3 Módulos Principales**:
+
+### Módulo 1: 📑 Listas y Proveedores
+- **Solicitud de Cotización:** Presiona **"📧 Solicitar Lista"** para generar un email formal con membrete corporativo hacia el proveedor.
+- **Previsualización Transparente con IVA:** Al cargar una planilla (.xlsx / .csv), la grilla desglosa:
+  `Código` | `Detalle / Producto` | `Rubro` | **`Precio Base`** | **`Descuento (%)`** | **`Precio c/ Descuento`** | **`Precio + IVA (21%)`**.
+- **Importación:** Presiona **"📥 Procesar e Importar al Catálogo Único"** para actualizar la base de datos y emitir un aviso automático masivo a todos los socios.
+
+### Módulo 2: 📦 Previsualización y Consolidado (Por Proveedor)
+- **Selección por Proveedor:** Selecciona el proveedor en el desplegable superior.
+- **Grilla Matricial por Socio:**
+  - Muestra: `Código`, `Artículo / Producto`, `Precio Unitario`, **`Total Cantidad (Suma de todos los socios)`**, y una columna individual para cada socio (sin columna `Rubro`).
+- **Ajustes Ejecutivos por Disponibilidad (Regla 3a):**
+  - Si el proveedor te informa limitaciones externas de stock, puedes editar directamente las cantidades de cualquier socio en la matriz.
+  - La columna *Total Cantidad* se actualiza en tiempo real.
+  - Al presionar **"💾 Guardar Modificaciones"**, se asientan los cambios y se notifica automáticamente al socio afectado explicando el ajuste.
+- **Exportación y Despacho:**
+  - **"📥 Órdenes por Proveedor (.xlsx)":** Genera un Excel independiente por cada proveedor con pedidos.
+  - **"📊 Planilla Consolidada General (.xlsx)":** Planilla global multi-hoja.
+  - **"🚀 Confirmar Consolidación y Despacho a Proveedores":** Pasa los pedidos a estado *Consolidado* y notifica a los socios.
+
+### Módulo 3: 🚚 Recepción y Reparto Automático
+- **Privacidad Comercial:** Todos los pedidos y comprobantes emplean identificadores seguros y ofuscados tipo UUID/Hash (`RC-ORD-XXXXXX`, `CMP-REC-XXXXXX`, `RC-REM-XXXXXX`).
+- **Selección Multinivel:**
+  - Selector de Proveedor.
+  - Selector de **Nro. de Pedido Consolidado** (para gestionar entregas simultáneas de un mismo proveedor).
+- **Comprobante Interno Automático:** El sistema autogenera el Nro. de Comprobante con formato UUID/Hash, sin requerir tipeo manual.
+- **Doble Control:**
+  - *Logística:* Cantidad Recibida física vs Cantidad Pedida.
+  - *Compras:* Precio Facturado vs Precio Pactado.
+- **Asentar Entrada:** Presiona **"💾 1. Asentar Entrada por Nro. de Comprobante y Registrar Stock Físico"**.
+- **Reparto y Remitos PDF:** Presiona **"🚚 2. Ejecutar Reparto Automático y Generar Remitos PDF Oficiales"**:
+  - Aplica prorrateo proporcional equitativo si hubo faltantes.
+  - Emite **un Remito PDF oficial por cada proveedor para cada socio**, guardado en `remitos_pdf/`.
+  - Notifica formalmente a cada socio con su remito emitido.
+  - Botón **"📂 Ver Carpeta de Remitos PDF"** para abrir el directorio de documentos.
 
 ---
 
-## 5. Guía para el Ejecutivo de Cuentas
+## 4. Preguntas Frecuentes (FAQ)
 
-### Módulo 1: Listas de Proveedores
-- Selecciona el proveedor y presiona **"📧 Solicitar Lista al Proveedor"** si deseas registrar la solicitud formal.
-- Presiona **"Seleccionar Planilla (.xlsx / .csv)"** para cargar la lista recibida y revisa la vista previa.
-- Presiona **"📥 Procesar e Importar al Catálogo Único"** para actualizar precios y notificar a todos los socios.
-
-### Módulo 3: Consolidación y Envío a Proveedores
-- Revisa la tabla donde se suma automáticamente toda la demanda pendiente de los socios.
-- Presiona el botón verde **"Órdenes por Proveedor (.xlsx)"** para exportar las órdenes de compra listas para enviar a cada proveedor.
-- Presiona **"📤 Enviar a Proveedores y Consolidar"** para confirmar el despacho y notificar a los socios.
-
-### Módulo 4: Recepción y Reparto Automático
-- Cuando llegue el camión o la entrega del proveedor, ingresa el número de Factura / Remito.
-- Realiza el **Doble Control**:
-  - *Logística:* Cantidad Recibida física vs Cantidad Solicitada.
-  - *Compras:* Precio Facturado vs Precio Acordado.
-- Presiona **"💾 1. Asentar Comprobante y Registrar Stock Físico"**.
-- Presiona **"🚚 2. Ejecutar Reparto Automático y Generar Remitos"** para emitir los remitos a cada socio (con prorrateo automático si hubo faltantes).
-
----
-
-## 6. Preguntas Frecuentes (FAQ)
-
-- **¿Qué pasa si el proveedor entrega menos mercadería?** El sistema aplica automáticamente la regla de prorrateo proporcional equitativo entre todos los socios que demandaron ese artículo.
-- **¿Cómo abrir el manual interactivo?** Haz doble clic en el archivo `MANUAL_DE_USUARIO.html` o ejecuta `start MANUAL_DE_USUARIO.html` en la terminal.
+- **¿Dónde se guardan los Remitos PDF generados?** En la carpeta `remitos_pdf/` ubicada en la raíz del proyecto.
+- **¿Por qué los números de pedido y remito tienen letras y números como RC-ORD-A7F9D2?** Son identificadores ofuscados basados en hash/UUID diseñados para preservar el secreto comercial de la empresa.
+- **¿Cómo abrir el Manual Interactivo HTML?** Haz clic en el botón superior **"📖 Manual de Usuario"** dentro del sistema o abre `MANUAL_DE_USUARIO.html` en tu navegador.

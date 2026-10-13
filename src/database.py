@@ -33,6 +33,24 @@ def migrar_db(conn):
     if "telefono" not in cols_prov:
         cursor.execute("ALTER TABLE PROVEEDORES ADD COLUMN telefono TEXT;")
 
+    # 2. Verificar columnas en PEDIDOS
+    cursor.execute("PRAGMA table_info(PEDIDOS);")
+    cols_ped = [row[1] for row in cursor.fetchall()]
+    if "codigo_comercial" not in cols_ped:
+        cursor.execute("ALTER TABLE PEDIDOS ADD COLUMN codigo_comercial TEXT;")
+
+    # 3. Verificar columnas en COMPROBANTES_PROVEEDOR
+    cursor.execute("PRAGMA table_info(COMPROBANTES_PROVEEDOR);")
+    cols_comp = [row[1] for row in cursor.fetchall()]
+    if "codigo_comercial" not in cols_comp:
+        cursor.execute("ALTER TABLE COMPROBANTES_PROVEEDOR ADD COLUMN codigo_comercial TEXT;")
+
+    # 4. Verificar columnas en PRECIOS_NEGOCIADOS
+    cursor.execute("PRAGMA table_info(PRECIOS_NEGOCIADOS);")
+    cols_pn = [row[1] for row in cursor.fetchall()]
+    if "precio_base" not in cols_pn:
+        cursor.execute("ALTER TABLE PRECIOS_NEGOCIADOS ADD COLUMN precio_base REAL DEFAULT 0.0;")
+
 def inicializar_db():
     """
     Inicializa la base de datos ejecutando el script de creación y

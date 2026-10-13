@@ -6,110 +6,41 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>900</width>
-    <height>650</height>
+    <width>950</width>
+    <height>680</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Carga Digital de Pedido</string>
+   <string>Gestión y Carga de Pedidos</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="verticalLayoutRoot">
    <property name="spacing">
-    <number>12</number>
+    <number>10</number>
    </property>
    <property name="leftMargin">
-    <number>20</number>
+    <number>15</number>
    </property>
    <property name="topMargin">
-    <number>15</number>
+    <number>10</number>
    </property>
    <property name="rightMargin">
-    <number>20</number>
-   </property>
-   <property name="bottomMargin">
     <number>15</number>
    </property>
+   <property name="bottomMargin">
+    <number>10</number>
+   </property>
    <item>
-    <widget class="QLabel" name="lbl_titulo">
-     <property name="font">
-      <font>
-       <family>Arial</family>
-       <pointsize>16</pointsize>
-       <bold>true</bold>
-      </font>
+    <widget class="QTabWidget" name="tabs_pedidos">
+     <property name="currentIndex">
+      <number>0</number>
      </property>
-     <property name="text">
-      <string>Carga Digital de Pedido de Socio (Por Proveedor)</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="layout_socio_selector">
-     <property name="spacing">
-      <number>10</number>
-     </property>
-     <item>
-      <widget class="QLabel" name="lbl_socio_actual">
-       <property name="font">
-        <font>
-         <family>Arial</family>
-         <pointsize>10</pointsize>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Socio:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QComboBox" name="cmb_socio_seleccion">
-       <property name="minimumSize">
-        <size>
-         <width>260</width>
-         <height>30</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacerSocio">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <widget class="QScrollArea" name="scroll_area_tablas">
-     <property name="widgetResizable">
-      <bool>true</bool>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
-     </property>
-     <widget class="QWidget" name="scroll_content">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>858</width>
-        <height>460</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="layout_tablas_proveedores">
+     <widget class="QWidget" name="tab_pedido_vigente">
+      <attribute name="title">
+       <string>🛍️ Pedido Vigente / Carga de Pedido</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="layoutTabVigente">
        <property name="spacing">
-        <number>15</number>
+        <number>10</number>
        </property>
        <property name="leftMargin">
         <number>10</number>
@@ -123,62 +54,232 @@
        <property name="bottomMargin">
         <number>10</number>
        </property>
+       <item>
+        <widget class="QLabel" name="lbl_banner_vigente">
+         <property name="styleSheet">
+          <string notr="true">background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px 12px; font-weight: bold; font-size: 13px;</string>
+         </property>
+         <property name="text">
+          <string>ℹ️ Completa las cantidades deseadas para cada producto.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="layout_socio_selector">
+         <property name="spacing">
+          <number>10</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="lbl_socio_actual">
+           <property name="font">
+            <font>
+             <family>Arial</family>
+             <pointsize>10</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Socio:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="cmb_socio_seleccion">
+           <property name="minimumSize">
+            <size>
+             <width>280</width>
+             <height>30</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacerSocio">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QScrollArea" name="scroll_area_tablas">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <widget class="QWidget" name="scroll_content">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>890</width>
+            <height>400</height>
+           </rect>
+          </property>
+          <layout class="QVBoxLayout" name="layout_tablas_proveedores">
+           <property name="spacing">
+            <number>15</number>
+           </property>
+           <property name="leftMargin">
+            <number>5</number>
+           </property>
+           <property name="topMargin">
+            <number>5</number>
+           </property>
+           <property name="rightMargin">
+            <number>5</number>
+           </property>
+           <property name="bottomMargin">
+            <number>5</number>
+           </property>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="layout_total">
+         <item>
+          <spacer name="horizontalSpacerTot">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="lbl_total">
+           <property name="font">
+            <font>
+             <family>Arial</family>
+             <pointsize>13</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Total General Estimado: $0.00</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_confirmar">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>42</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>Arial</family>
+           <pointsize>10</pointsize>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>🛒 Confirmar y Enviar Pedido</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
-    </widget>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="layout_total">
-     <item>
-      <spacer name="horizontalSpacerTot">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+     <widget class="QWidget" name="tab_historial">
+      <attribute name="title">
+       <string>📜 Historial de Pedidos</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="layoutTabHistorial">
+       <property name="spacing">
+        <number>10</number>
        </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
+       <property name="leftMargin">
+        <number>10</number>
        </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QLabel" name="lbl_total">
-       <property name="font">
-        <font>
-         <family>Arial</family>
-         <pointsize>13</pointsize>
-         <bold>true</bold>
-        </font>
+       <property name="topMargin">
+        <number>10</number>
        </property>
-       <property name="text">
-        <string>Total General Estimado: $0.00</string>
+       <property name="rightMargin">
+        <number>10</number>
        </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       <property name="bottomMargin">
+        <number>10</number>
        </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <widget class="QPushButton" name="btn_confirmar">
-     <property name="minimumSize">
-      <size>
-       <width>0</width>
-       <height>42</height>
-      </size>
-     </property>
-     <property name="font">
-      <font>
-       <family>Arial</family>
-       <pointsize>10</pointsize>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>🛒 Confirmar y Enviar Pedido Consolidado del Socio</string>
-     </property>
+       <item>
+        <widget class="QLabel" name="lbl_info_historial">
+         <property name="font">
+          <font>
+           <family>Arial</family>
+           <pointsize>10</pointsize>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>📋 Registro histórico de pedidos realizados y su estado operativo:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QTableWidget" name="tabla_historial">
+         <property name="alternatingRowColors">
+          <bool>true</bool>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="layout_btn_historial">
+         <item>
+          <spacer name="horizontalSpacerHist">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btn_refrescar_historial">
+           <property name="minimumSize">
+            <size>
+             <width>160</width>
+             <height>34</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>🔄 Actualizar Historial</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
   </layout>
