@@ -36,7 +36,7 @@ class CatalogoView(QWidget):
         return ruta_archivo
 
     def cargar_tabla_previa(self, headers, filas):
-        """Muestra las filas leídas en la grilla de vista previa."""
+        """Muestra las filas leídas en la grilla de vista previa con alineación semántica."""
         self.tabla_previa.clear()
         self.tabla_previa.setColumnCount(len(headers))
         self.tabla_previa.setRowCount(len(filas))
@@ -47,9 +47,15 @@ class CatalogoView(QWidget):
             for c, val in enumerate(fila):
                 item = QTableWidgetItem(str(val))
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                if c == 0:
+                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                elif c >= 3:
+                    item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 self.tabla_previa.setItem(r, c, item)
                 
         self.tabla_previa.resizeColumnsToContents()
+        if len(headers) > 1:
+            self.tabla_previa.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
 
     def limpiar_vista(self):
         """Limpia el archivo y la tabla."""

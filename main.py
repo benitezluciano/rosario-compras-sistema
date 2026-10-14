@@ -189,33 +189,32 @@ class MainWindow(QMainWindow):
         
         self.vista_pedido.establecer_socio_actual(usuario['id'], nombre, rol=rol)
         self.controlador_catalogo.set_usuario_actual(usuario)
+        self.controlador_consolidacion.set_usuario_actual(usuario)
         self.actualizar_badge_notificaciones()
         
         self.menu_lateral.blockSignals(True)
         self.menu_lateral.clear()
         
         if rol == 'socio':
-            # Socio: Solo Cargar Pedido
-            self.menu_lateral.addItem("🛍️ Cargar Pedido")
+            # Socio: Pedido Vigente e Historial
+            self.menu_lateral.addItem("🛍️ Gestión de Pedidos")
             self.controlador_pedido.inicializar()
             self.menu_lateral.blockSignals(False)
             self.menu_lateral.setCurrentRow(0)
-            self.stacked_pantallas.setCurrentIndex(1) # Vista Pedido
+            self.stacked_pantallas.setCurrentWidget(self.vista_pedido)
         else:
-            # Ejecutivo y Admin: Circuito Completo
+            # Ejecutivo y Admin: Circuito de 3 Pasos
             self.menu_lateral.addItem("📑 1. Listas y Proveedores")
-            self.menu_lateral.addItem("🛍️ 2. Cargar Pedido (por Socio)")
-            self.menu_lateral.addItem("📦 3. Consolidar y Enviar a Proveedores")
-            self.menu_lateral.addItem("🚚 4. Recepción y Reparto Automático")
+            self.menu_lateral.addItem("📦 2. Previsualización y Consolidado")
+            self.menu_lateral.addItem("🚚 3. Recepción y Reparto Automático")
             
             self.controlador_catalogo.inicializar()
-            self.controlador_pedido.inicializar()
             self.controlador_consolidacion.inicializar()
             self.controlador_reparto.inicializar()
             
             self.menu_lateral.blockSignals(False)
             self.menu_lateral.setCurrentRow(0)
-            self.stacked_pantallas.setCurrentIndex(0) # Vista Catálogo
+            self.stacked_pantallas.setCurrentWidget(self.vista_catalogo)
             
         self.root_stack.setCurrentIndex(1)
 
@@ -226,17 +225,17 @@ class MainWindow(QMainWindow):
             
         rol = self.usuario_actual.get('role', 'socio')
         if rol == 'socio':
-            self.stacked_pantallas.setCurrentIndex(1) # Vista Pedido
+            self.stacked_pantallas.setCurrentWidget(self.vista_pedido)
             self.controlador_pedido.inicializar()
         else:
-            self.stacked_pantallas.setCurrentIndex(row)
             if row == 0:
+                self.stacked_pantallas.setCurrentWidget(self.vista_catalogo)
                 self.controlador_catalogo.inicializar()
             elif row == 1:
-                self.controlador_pedido.inicializar()
-            elif row == 2:
+                self.stacked_pantallas.setCurrentWidget(self.vista_consolidacion)
                 self.controlador_consolidacion.inicializar()
-            elif row == 3:
+            elif row == 2:
+                self.stacked_pantallas.setCurrentWidget(self.vista_reparto)
                 self.controlador_reparto.inicializar()
 
     def actualizar_badge_notificaciones(self):

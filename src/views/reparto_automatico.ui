@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>950</width>
-    <height>680</height>
+    <width>980</width>
+    <height>720</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,13 +21,13 @@
     <number>18</number>
    </property>
    <property name="topMargin">
-    <number>14</number>
+    <number>12</number>
    </property>
    <property name="rightMargin">
     <number>18</number>
    </property>
    <property name="bottomMargin">
-    <number>14</number>
+    <number>12</number>
    </property>
    <item>
     <widget class="QLabel" name="lbl_titulo">
@@ -39,7 +39,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Recepción de Mercadería de Proveedores y Reparto Automático</string>
+      <string>3. Recepción de Mercadería de Proveedores y Reparto Automático</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -47,21 +47,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QLabel" name="lbl_sec1">
-     <property name="font">
-      <font>
-       <family>Arial</family>
-       <pointsize>11</pointsize>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>📦 1. Asentar Comprobante del Proveedor (Control de Compras y Logística):</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="layout_comprobante_header">
+    <layout class="QHBoxLayout" name="layout_filtros_recepcion">
      <property name="spacing">
       <number>10</number>
      </property>
@@ -75,7 +61,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Proveedor:</string>
+        <string>🏢 Proveedor:</string>
        </property>
       </widget>
      </item>
@@ -89,6 +75,50 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QLabel" name="lbl_nro_pedido_cons">
+       <property name="font">
+        <font>
+         <family>Arial</family>
+         <pointsize>9</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>📦 Pedido Consolidado:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="cmb_pedido_consolidado">
+       <property name="minimumSize">
+        <size>
+         <width>220</width>
+         <height>30</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacerHeader">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="layout_comprobante_header">
+     <property name="spacing">
+      <number>10</number>
+     </property>
      <item>
       <widget class="QLabel" name="lbl_tipo">
        <property name="font">
@@ -138,7 +168,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Nro. Comprobante:</string>
+        <string>Nro. Comprobante Interno (UUID/Hash):</string>
        </property>
       </widget>
      </item>
@@ -146,19 +176,66 @@
       <widget class="QLineEdit" name="txt_nro_comprobante">
        <property name="minimumSize">
         <size>
-         <width>160</width>
+         <width>190</width>
          <height>30</height>
         </size>
        </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
        <property name="placeholderText">
-        <string>ej. FC-A-0001-0004521</string>
+        <string>CMP-REC-XXXXXX</string>
        </property>
       </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_nuevo_comprobante">
+       <property name="minimumSize">
+        <size>
+         <width>110</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>🎲 Generar ID</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacerComp">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
      </item>
     </layout>
    </item>
    <item>
-    <widget class="QTableWidget" name="tabla_recepcion"/>
+    <widget class="QLabel" name="lbl_sec1">
+     <property name="font">
+      <font>
+       <family>Arial</family>
+       <pointsize>10</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>📦 1. Doble Control de Recepción del Proveedor (Compras y Logística):</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTableWidget" name="tabla_recepcion">
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QPushButton" name="btn_guardar_comprobante">
@@ -176,7 +253,7 @@
       </font>
      </property>
      <property name="text">
-      <string>💾 1. Asentar Comprobante y Registrar Stock Físico</string>
+      <string>💾 1. Asentar Entrada por Nro. de Comprobante y Registrar Stock Físico</string>
      </property>
     </widget>
    </item>
@@ -185,61 +262,71 @@
      <property name="font">
       <font>
        <family>Arial</family>
-       <pointsize>11</pointsize>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>📋 2. Pedidos Consolidados de Socios Listos para Reparto:</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QTableWidget" name="tabla_pedidos">
-     <property name="columnCount">
-      <number>4</number>
-     </property>
-     <column>
-      <property name="text">
-       <string>Nro Pedido</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Socio</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Artículos Solicitados</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Estado</string>
-      </property>
-     </column>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="btn_ejecutar">
-     <property name="minimumSize">
-      <size>
-       <width>0</width>
-       <height>40</height>
-      </size>
-     </property>
-     <property name="font">
-      <font>
-       <family>Arial</family>
        <pointsize>10</pointsize>
        <bold>true</bold>
       </font>
      </property>
      <property name="text">
-      <string>🚚 2. Ejecutar Reparto Automático y Generar Remitos</string>
+      <string>📋 2. Pedidos Consolidados y Enviados (Selección por Socio para Verificación y Remitos):</string>
      </property>
     </widget>
+   </item>
+   <item>
+    <widget class="QTableWidget" name="tabla_pedidos">
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="layout_botones_finales">
+     <property name="spacing">
+      <number>10</number>
+     </property>
+     <item>
+      <widget class="QPushButton" name="btn_ejecutar">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>40</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Arial</family>
+         <pointsize>10</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>🚚 2. Ejecutar Reparto Automático y Generar Remitos PDF Oficiales</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_abrir_remitos">
+       <property name="minimumSize">
+        <size>
+         <width>220</width>
+         <height>40</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Arial</family>
+         <pointsize>9</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>📂 Ver Carpeta de Remitos PDF</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

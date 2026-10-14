@@ -11,7 +11,7 @@ QWidget {
     color: #1e293b;
 }
 
-QMainWindow, QDialog {
+QMainWindow, QDialog, QStackedWidget {
     background-color: #f8fafc;
 }
 
@@ -103,8 +103,42 @@ QComboBox QAbstractItemView {
     padding: 4px;
 }
 
+/* --- PESTAÑAS (QTabWidget & QTabBar) --- */
+QTabWidget::pane {
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    border-radius: 8px;
+    top: -1px;
+}
+
+QTabBar::tab {
+    background-color: #e2e8f0;
+    color: #475569;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 18px;
+    margin-right: 4px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border: 1px solid #cbd5e1;
+    border-bottom: none;
+}
+
+QTabBar::tab:selected {
+    background-color: #ffffff;
+    color: #1e40af;
+    font-weight: bold;
+    border: 1px solid #cbd5e1;
+    border-bottom: 2px solid #ffffff;
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: #f1f5f9;
+    color: #1e293b;
+}
+
 /* --- TABLAS (QTableWidget) --- */
-QTableWidget {
+QTableWidget, QTableView {
     background-color: #ffffff;
     alternate-background-color: #f8fafc;
     gridline-color: #e2e8f0;
@@ -125,8 +159,41 @@ QHeaderView::section {
     border-right: 1px solid #e2e8f0;
 }
 
-QTableWidget::item {
+QHeaderView::section:vertical {
+    background-color: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 11px;
+    padding: 4px;
+    border: none;
+    border-bottom: 1px solid #e2e8f0;
+    border-right: 1px solid #cbd5e1;
+}
+
+QTableCornerButton::section {
+    background-color: #f1f5f9;
+    border: none;
+    border-bottom: 2px solid #cbd5e1;
+    border-right: 1px solid #e2e8f0;
+}
+
+QTableWidget::item, QTableView::item {
     padding: 6px 8px;
+}
+
+/* --- EDITOR DE CELDAS DENTRO DE TABLAS --- */
+QTableWidget QLineEdit, 
+QTableView QLineEdit {
+    background-color: #ffffff;
+    color: #0f172a;
+    selection-background-color: #2563eb;
+    selection-color: #ffffff;
+    border: 2px solid #2563eb;
+    border-radius: 4px;
+    padding: 0px 4px;
+    margin: 0px;
+    font-size: 13px;
+    font-weight: bold;
 }
 
 /* --- JERARQUÍA SEMÁNTICA DE BOTONES --- */

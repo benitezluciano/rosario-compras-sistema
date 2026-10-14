@@ -10,5 +10,5 @@
 8. Ejecutivo de cuentas confirma el envío formal de los pedidos a cada proveedor.
 9. El sistema notifica automáticamente a cada socio que su pedido fue consolidado y enviado al proveedor para su preparación.
 10. Llega la mercadería del proveedor: El ejecutivo de cuentas registra el comprobante (Factura / Remito) con doble control (control de precios por compras y control de cantidades por logística) y asienta el stock real en depósito.
-11. Ejecutivo de cuentas ejecuta el módulo de reparto automático (con prorrateo proporcional equitativo si hubo faltantes en la entrega) y genera los remitos de entrega.
+11. Ejecutivo de cuentas ejecuta el módulo de reparto automático (con prorrateo proporcional equitativo si hubo faltantes en la entrega) y genera los remoitos de entrega.
 12. El sistema notifica automáticamente a cada socio con su remito emitido y listo para entrega.

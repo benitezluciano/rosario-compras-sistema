@@ -1,6 +1,8 @@
 from datetime import datetime
 from src.database import Database
 from src.models.notificacion_model import NotificacionModel
+from src.utils.id_generator import generar_codigo_pedido, generar_codigo_comprobante, generar_codigo_remito
+from src.services.pdf_service import PdfService
 
 class RepartoModel:
     def obtener_proveedores_con_pedidos(self):
@@ -20,17 +22,52 @@ class RepartoModel:
             cursor.execute(query)
             return [dict(row) for row in cursor.fetchall()]
 
-    def obtener_articulos_control_recepcion(self, id_proveedor=None):
+    def obtener_pedidos_consolidados_por_proveedor(self, id_proveedor=None):
         """
-        Devuelve los artículos involucrados en pedidos 'Consolidado's con:
+        Devuelve el listado de pedidos consolidados disponibles para el proveedor seleccionado.
+        Permite seleccionar individualmente un pedido consolidado cuando hay 2 o más simultáneos.
+        """
+        query = """
+            SELECT DISTINCT p.id_pedido, p.codigo_comercial, p.fecha, p.estado, u.nombre AS socio_nombre, u.email AS socio_email,
+                   pr.id_proveedor, pr.nombre AS proveedor_nombre,
+                   group_concat(a.detalle || ' x' || dp.cantidad_pedida, ', ') AS resumen_articulos
+            FROM PEDIDOS p
+            JOIN USERS u ON p.id_user = u.id
+            JOIN DETALLE_PEDIDOS dp ON p.id_pedido = dp.id_pedido
+            JOIN ARTICULOS a ON dp.id_articulo = a.id_articulo
+            JOIN PRECIOS_NEGOCIADOS pn ON a.id_articulo = pn.id_articulo
+            JOIN PROVEEDORES pr ON pn.id_proveedor = pr.id_proveedor
+            WHERE p.estado = 'Consolidado'
+        """
+        params = []
+        if id_proveedor is not None:
+            query += " AND pr.id_proveedor = ?"
+            params.append(id_proveedor)
+
+        query += " GROUP BY p.id_pedido ORDER BY p.id_pedido DESC;"
+
+        with Database() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            filas = []
+            for row in cursor.fetchall():
+                ped = dict(row)
+                if not ped.get('codigo_comercial'):
+                    ped['codigo_comercial'] = generar_codigo_pedido(ped['id_pedido'], ped['fecha'])
+                filas.append(ped)
+            return filas
+
+    def obtener_articulos_control_recepcion(self, id_proveedor=None, id_pedido=None):
+        """
+        Devuelve los artículos involucrados en pedidos 'Consolidado' con:
         - Cantidad demandada por los socios (Logística)
         - Precio pactado en catálogo (Compras)
         - Stock físico actual
         """
         query = """
             SELECT a.id_articulo,
+                   a.id_articulo_proveedor,
                    a.detalle AS articulo_detalle,
-                   a.rubro,
                    COALESCE(pr.id_proveedor, 0) AS id_proveedor,
                    COALESCE(pr.nombre, 'Sin Proveedor') AS proveedor_nombre,
                    SUM(dp.cantidad_pedida) AS cantidad_demandada,
@@ -47,6 +84,9 @@ class RepartoModel:
         if id_proveedor is not None:
             query += " AND pr.id_proveedor = ?"
             params.append(id_proveedor)
+        if id_pedido is not None:
+            query += " AND p.id_pedido = ?"
+            params.append(id_pedido)
 
         query += " GROUP BY a.id_articulo ORDER BY pr.nombre, a.detalle;"
         
@@ -57,10 +97,8 @@ class RepartoModel:
 
     def registrar_comprobante_y_stock(self, id_proveedor, tipo_comprobante, nro_comprobante, fecha_emision, observaciones, items_detalle):
         """
-        Registra formalmente el comprobante del proveedor (Factura/Remito),
-        asienta el control de compras (precios) y logística (cantidades), y actualiza el stock.
-        items_detalle: lista de dicts con keys:
-          id_articulo, cantidad_pedida, cantidad_recibida, precio_pactado, precio_facturado
+        Registra formalmente el comprobante del proveedor (Factura/Remito) con identificador interno,
+        asienta el control de compras (precios) y logística (cantidades), y actualiza el stock físico.
         """
         fecha_recepcion = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if not fecha_emision:
@@ -69,16 +107,14 @@ class RepartoModel:
         with Database() as conn:
             cursor = conn.cursor()
 
-            # 1. Insertar comprobante cabecera
             cursor.execute("""
                 INSERT INTO COMPROBANTES_PROVEEDOR 
-                (id_proveedor, tipo_comprobante, nro_comprobante, fecha_emision, fecha_recepcion, observaciones)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (id_proveedor, tipo_comprobante, nro_comprobante, fecha_emision, fecha_recepcion, observaciones))
+                (id_proveedor, tipo_comprobante, nro_comprobante, codigo_comercial, fecha_emision, fecha_recepcion, observaciones)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (id_proveedor, tipo_comprobante, nro_comprobante, nro_comprobante, fecha_emision, fecha_recepcion, observaciones))
             
             id_comprobante = cursor.lastrowid
 
-            # 2. Insertar renglones de control y actualizar stock físico
             for item in items_detalle:
                 id_art = item['id_articulo']
                 cant_ped = item['cantidad_pedida']
@@ -92,7 +128,7 @@ class RepartoModel:
                     VALUES (?, ?, ?, ?, ?, ?)
                 """, (id_comprobante, id_art, cant_ped, cant_rec, prec_pact, prec_fact))
 
-                # Actualizar stock físico en la tabla ARTICULOS
+                # Actualizar stock físico en depósito
                 cursor.execute("""
                     UPDATE ARTICULOS 
                     SET cantidad_stock = ?
@@ -101,24 +137,7 @@ class RepartoModel:
 
             return id_comprobante
 
-    def obtener_pedidos_consolidados(self):
-        """Devuelve los pedidos en estado 'Consolidado' listos para reparto."""
-        query = """
-            SELECT p.id_pedido, u.nombre AS socio_nombre, p.estado, 
-                   group_concat(a.detalle || ' x' || dp.cantidad_pedida, ', ') AS resumen_articulos
-            FROM PEDIDOS p
-            JOIN USERS u ON p.id_user = u.id
-            LEFT JOIN DETALLE_PEDIDOS dp ON p.id_pedido = dp.id_pedido
-            LEFT JOIN ARTICULOS a ON dp.id_articulo = a.id_articulo
-            WHERE p.estado = 'Consolidado'
-            GROUP BY p.id_pedido;
-        """
-        with Database() as conn:
-            cursor = conn.cursor()
-            cursor.execute(query)
-            return [dict(row) for row in cursor.fetchall()]
-
-    def validar_stock_vs_pedidos(self):
+    def validar_stock_vs_pedidos(self, id_proveedor=None, id_pedido=None):
         """
         Compara la demanda consolidada contra el stock físico real registrado.
         Si la demanda supera el stock, calcula el prorrateo proporcional equitativo.
@@ -129,11 +148,20 @@ class RepartoModel:
             FROM DETALLE_PEDIDOS dp
             JOIN PEDIDOS p ON dp.id_pedido = p.id_pedido
             JOIN ARTICULOS a ON dp.id_articulo = a.id_articulo
+            LEFT JOIN PRECIOS_NEGOCIADOS pn ON a.id_articulo = pn.id_articulo
             WHERE p.estado = 'Consolidado'
         """
+        params = []
+        if id_proveedor is not None:
+            query += " AND pn.id_proveedor = ?"
+            params.append(id_proveedor)
+        if id_pedido is not None:
+            query += " AND p.id_pedido = ?"
+            params.append(id_pedido)
+
         with Database() as conn:
             cursor = conn.cursor()
-            cursor.execute(query)
+            cursor.execute(query, params)
             filas = [dict(row) for row in cursor.fetchall()]
             
         if not filas:
@@ -194,25 +222,49 @@ class RepartoModel:
                 
         return discrepancias
 
-    def ejecutar_reparto_masivo(self, ajustes=None):
+    def ejecutar_reparto_masivo(self, id_proveedor=None, id_pedido_sel=None, ajustes=None, nro_comprobante=None):
         """
-        Ejecuta el reparto para los pedidos en 'Consolidado', genera REMITOS y notifica a los socios.
+        Ejecuta el reparto para los pedidos en 'Consolidado', genera registros en REMITOS,
+        emite formalmente los REMITOS EN FORMATO PDF (uno por cada proveedor para cada socio),
+        y notifica a los socios destinatarios.
+        Retorna (True, lista_rutas_pdf) o (False, error).
         """
         fecha_proceso = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         fecha_emision = datetime.now().strftime("%Y-%m-%d")
 
-        remitos_generados = []
+        if not nro_comprobante:
+            nro_comprobante = generar_codigo_comprobante(id_proveedor or 0)
+
+        remitos_para_pdf = []
 
         with Database() as conn:
             cursor = conn.cursor()
             
-            cursor.execute(
-                "SELECT id_pedido, id_user FROM PEDIDOS WHERE estado = 'Consolidado'"
-            )
+            query_pedidos = """
+                SELECT DISTINCT p.id_pedido, p.id_user, p.codigo_comercial, p.fecha,
+                                u.nombre AS socio_nombre, u.email AS socio_email,
+                                pr.id_proveedor, pr.nombre AS proveedor_nombre
+                FROM PEDIDOS p
+                JOIN USERS u ON p.id_user = u.id
+                JOIN DETALLE_PEDIDOS dp ON p.id_pedido = dp.id_pedido
+                JOIN ARTICULOS a ON dp.id_articulo = a.id_articulo
+                JOIN PRECIOS_NEGOCIADOS pn ON a.id_articulo = pn.id_articulo
+                JOIN PROVEEDORES pr ON pn.id_proveedor = pr.id_proveedor
+                WHERE p.estado = 'Consolidado'
+            """
+            params = []
+            if id_proveedor is not None:
+                query_pedidos += " AND pr.id_proveedor = ?"
+                params.append(id_proveedor)
+            if id_pedido_sel is not None:
+                query_pedidos += " AND p.id_pedido = ?"
+                params.append(id_pedido_sel)
+
+            cursor.execute(query_pedidos, params)
             pedidos_consolidados = [dict(row) for row in cursor.fetchall()]
             
             if not pedidos_consolidados:
-                return False
+                return False, []
             
             # Registrar proceso de reparto
             cursor.execute(
@@ -220,21 +272,34 @@ class RepartoModel:
                 INSERT INTO PROCESOS_REPARTO (fecha_proceso, archivo_consolidado, estado_reparto)
                 VALUES (?, ?, ?)
                 """,
-                (fecha_proceso, None, 'completado')
+                (fecha_proceso, nro_comprobante, 'completado')
             )
             id_proceso = cursor.lastrowid
             
             for pedido in pedidos_consolidados:
                 id_pedido = pedido['id_pedido']
                 id_user = pedido['id_user']
+                cod_ped = pedido.get('codigo_comercial') or generar_codigo_pedido(id_pedido, pedido.get('fecha', ''))
                 
-                cursor.execute(
-                    "SELECT id_articulo, cantidad_pedida FROM DETALLE_PEDIDOS WHERE id_pedido = ?",
-                    (id_pedido,)
-                )
+                query_items = """
+                    SELECT dp.id_articulo, dp.cantidad_pedida, a.detalle, a.id_articulo_proveedor
+                    FROM DETALLE_PEDIDOS dp
+                    JOIN ARTICULOS a ON dp.id_articulo = a.id_articulo
+                    JOIN PRECIOS_NEGOCIADOS pn ON a.id_articulo = pn.id_articulo
+                    WHERE dp.id_pedido = ?
+                """
+                params_items = [id_pedido]
+                if id_proveedor is not None:
+                    query_items += " AND pn.id_proveedor = ?"
+                    params_items.append(id_proveedor)
+
+                cursor.execute(query_items, params_items)
                 items = cursor.fetchall()
+                if not items:
+                    continue
                 
-                # Descontar stock físico entregado
+                # Actualizar stock físico entregado
+                items_finales_remito = []
                 for item in items:
                     id_articulo = item['id_articulo']
                     cantidad_final = item['cantidad_pedida']
@@ -250,6 +315,13 @@ class RepartoModel:
                         """,
                         (cantidad_final, id_articulo)
                     )
+
+                    items_finales_remito.append({
+                        'id_articulo': id_articulo,
+                        'codigo': item['id_articulo_proveedor'],
+                        'detalle': item['detalle'],
+                        'cantidad': cantidad_final
+                    })
                 
                 # Actualizar estado a 'Procesado'
                 cursor.execute(
@@ -257,42 +329,58 @@ class RepartoModel:
                     (id_pedido,)
                 )
                 
-                # Insertar remito
+                # Insertar remito en la base de datos
+                cod_remito = generar_codigo_remito(id_pedido, id_user)
                 cursor.execute(
                     """
                     INSERT INTO REMITOS (id_user, id_proceso, fecha_emision, detalle_entrega)
                     VALUES (?, ?, ?, ?)
                     """,
-                    (id_user, id_proceso, fecha_emision, f"Remito emitido para el pedido #{id_pedido}")
+                    (id_user, id_proceso, fecha_emision, f"Remito {cod_remito} emitido para pedido {cod_ped}")
                 )
                 id_remito = cursor.lastrowid
-                remitos_generados.append((id_remito, id_pedido, id_user))
                 
-                # Insertar detalles de remito
-                for item in items:
-                    id_articulo = item['id_articulo']
-                    cantidad_final = item['cantidad_pedida']
-                    if ajustes and (id_pedido, id_articulo) in ajustes:
-                        cantidad_final = ajustes[(id_pedido, id_articulo)]
-                        
+                for it in items_finales_remito:
                     cursor.execute(
                         """
                         INSERT INTO DETALLE_REMITOS (id_remito, id_articulo, cantidad_entregada)
                         VALUES (?, ?, ?)
                         """,
-                        (id_remito, id_articulo, cantidad_final)
+                        (id_remito, it['id_articulo'], it['cantidad'])
                     )
 
-        # Emitir notificaciones de remito generado a cada socio
-        try:
-            notif = NotificacionModel()
-            for id_remito, id_pedido, id_user in remitos_generados:
-                notif.crear_notificacion(
-                    mensaje=f"¡Tu Remito #{id_remito} (Pedido #{id_pedido}) fue generado! La mercadería está lista para su retiro/envío.",
-                    tipo="reparto",
-                    id_user=id_user
-                )
-        except Exception as e:
-            print(f"Advertencia al notificar remitos: {e}")
+                remitos_para_pdf.append({
+                    'id_remito': id_remito,
+                    'codigo_remito': cod_remito,
+                    'codigo_pedido': cod_ped,
+                    'nro_comprobante': nro_comprobante,
+                    'fecha': fecha_emision,
+                    'id_user': id_user,
+                    'socio_nombre': pedido['socio_nombre'],
+                    'socio_email': pedido.get('socio_email', ''),
+                    'proveedor_nombre': pedido['proveedor_nombre'],
+                    'items': items_finales_remito
+                })
 
-        return True
+        # Generar PDFs y emitir notificaciones
+        pdf_service = PdfService.get_instance()
+        notif = NotificacionModel()
+        rutas_pdf_generados = []
+
+        for r_data in remitos_para_pdf:
+            try:
+                ruta_pdf = pdf_service.generar_remito_pdf(r_data)
+                rutas_pdf_generados.append(ruta_pdf)
+            except Exception as e:
+                print(f"Advertencia al generar PDF para {r_data['codigo_remito']}: {e}")
+
+            try:
+                notif.crear_notificacion(
+                    mensaje=f"¡Tu Remito {r_data['codigo_remito']} (Pedido {r_data['codigo_pedido']}) de {r_data['proveedor_nombre']} fue generado en formato PDF! La mercadería está lista para su entrega.",
+                    tipo="reparto",
+                    id_user=r_data['id_user']
+                )
+            except Exception as e:
+                print(f"Advertencia al notificar remito: {e}")
+
+        return True, rutas_pdf_generados
