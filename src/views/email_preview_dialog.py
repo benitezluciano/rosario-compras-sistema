@@ -1,9 +1,36 @@
+import os
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
     QLineEdit, QTextBrowser, QPushButton, QMessageBox, QFrame
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from src.services.email_service import EmailService
+
+class EmailWorkerThread(QThread):
+    """
+    Hilo de trabajo seguro basado en QThread para procesar el envío de correos
+    sin congelar la interfaz gráfica ni provocar violaciones entre hilos en Windows/PyQt6.
+    """
+    envio_terminado = pyqtSignal(bool, str)
+
+    def __init__(self, email_service, destinatario, asunto, cuerpo_html, cuerpo_texto="", adjuntos=None, parent=None):
+        super().__init__(parent)
+        self.email_service = email_service
+        self.destinatario = destinatario
+        self.asunto = asunto
+        self.cuerpo_html = cuerpo_html
+        self.cuerpo_texto = cuerpo_texto
+        self.adjuntos = adjuntos or []
+
+    def run(self):
+        exito, mensaje = self.email_service.enviar_correo_sync(
+            destinatario=self.destinatario,
+            asunto=self.asunto,
+            cuerpo_html=self.cuerpo_html,
+            cuerpo_texto=self.cuerpo_texto,
+            adjuntos=self.adjuntos
+        )
+        self.envio_terminado.emit(exito, mensaje)
 
 class EmailPreviewDialog(QDialog):
     def __init__(self, destinatario, asunto, cuerpo_html, adjuntos=None, parent=None):
@@ -13,6 +40,9 @@ class EmailPreviewDialog(QDialog):
         self.cuerpo_html = cuerpo_html
         self.adjuntos = adjuntos or []
         self.email_service = EmailService.get_instance()
+        self.resultado_exito = False
+        self.resultado_mensaje = ""
+        self.worker = None
         
         self.setWindowTitle("Emisión de Correo Electrónico - Rosario Compras")
         self.resize(650, 560)
@@ -113,19 +143,33 @@ class EmailPreviewDialog(QDialog):
             return
             
         self.btn_enviar.setEnabled(False)
-        self.btn_enviar.setText("Enviando...")
+        self.btn_enviar.setText("⏳ Enviando...")
+        self.btn_cancelar.setEnabled(False)
         
-        # Enviar de forma asíncrona
-        def al_finalizar(exito, mensaje):
-            # Como corre en un hilo secundario, garantizamos mensaje amigable
-            self.resultado_exito = exito
-            self.resultado_mensaje = mensaje
-            self.accept()
-
-        self.email_service.enviar_correo_async(
+        # Iniciar worker thread de Qt
+        self.worker = EmailWorkerThread(
+            email_service=self.email_service,
             destinatario=destinatario,
             asunto=asunto,
             cuerpo_html=self.cuerpo_html,
             adjuntos=self.adjuntos,
-            callback=al_finalizar
+            parent=self
         )
+        self.worker.envio_terminado.connect(self._al_finalizar_envio)
+        self.worker.start()
+
+    def _al_finalizar_envio(self, exito, mensaje):
+        """
+        Slot ejecutado de forma 100% segura en el Main GUI Thread
+        gracias al mecanismo QueuedConnection de pyqtSignal.
+        """
+        self.resultado_exito = exito
+        self.resultado_mensaje = mensaje
+        
+        if exito:
+            self.accept()
+        else:
+            self.btn_enviar.setEnabled(True)
+            self.btn_enviar.setText("🚀 Reintentar Enviar")
+            self.btn_cancelar.setEnabled(True)
+            QMessageBox.critical(self, "Error al Enviar", mensaje)

@@ -77,8 +77,12 @@ class CatalogoController:
             parent=self.vista
         )
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            msg_res = getattr(dialog, "resultado_mensaje", "Solicitud de lista de precios emitida exitosamente.")
-            self.vista.mostrar_mensaje_exito(f"✅ {msg_res}")
+            if getattr(dialog, "resultado_exito", False):
+                msg_res = getattr(dialog, "resultado_mensaje", "Solicitud de lista de precios emitida exitosamente.")
+                self.vista.mostrar_mensaje_exito(f"✅ {msg_res}")
+            else:
+                msg_err = getattr(dialog, "resultado_mensaje", "No se pudo emitir la solicitud.")
+                self.vista.mostrar_mensaje_error(f"❌ {msg_err}")
 
     def seleccionar_archivo(self):
         """Abre el archivo seleccionado y muestra la vista previa."""
