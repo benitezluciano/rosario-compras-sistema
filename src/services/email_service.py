@@ -46,19 +46,17 @@ class EmailService:
         )
         hilo.start()
 
-    def _enviar_correo_sync(self, destinatario, asunto, cuerpo_html, cuerpo_texto="", adjuntos=None, callback=None):
-        """Lógica síncrona interna de envío de correo."""
+    def enviar_correo_sync(self, destinatario, asunto, cuerpo_html, cuerpo_texto="", adjuntos=None):
+        """
+        Lógica síncrona de envío de correo.
+        Retorna: tupla (exito: bool, mensaje: str).
+        """
         if not destinatario:
-            if callback:
-                callback(False, "No se especificó dirección de correo destinataria.")
-            return
+            return False, "No se especificó dirección de correo destinataria."
 
         # Si no hay credenciales SMTP configuradas, usamos el MODO SIMULACIÓN SEGURO
         if not self.esta_configurado():
-            exito, msg = self._registrar_simulacion(destinatario, asunto, cuerpo_html, adjuntos)
-            if callback:
-                callback(exito, msg)
-            return
+            return self._registrar_simulacion(destinatario, asunto, cuerpo_html, adjuntos)
 
         try:
             msg = EmailMessage()
@@ -98,16 +96,21 @@ class EmailService:
 
             log_msg = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Correo enviado exitosamente a {destinatario} | Asunto: {asunto}"
             print(log_msg)
-            if callback:
-                callback(True, f"Correo electrónico enviado exitosamente a {destinatario}.")
+            return True, f"Correo electrónico enviado exitosamente a {destinatario}."
 
         except Exception as e:
             error_msg = f"Error al enviar correo vía SMTP ({self.smtp_host}): {str(e)}"
             print(error_msg)
             # Fallback a log de simulación para no perder la traza
             self._registrar_simulacion(destinatario, asunto, cuerpo_html, adjuntos, fallo_smtp=error_msg)
-            if callback:
-                callback(False, error_msg)
+            return False, error_msg
+
+    def _enviar_correo_sync(self, destinatario, asunto, cuerpo_html, cuerpo_texto="", adjuntos=None, callback=None):
+        """Método de compatibilidad con llamadas anteriores que pasan callback."""
+        exito, msg = self.enviar_correo_sync(destinatario, asunto, cuerpo_html, cuerpo_texto, adjuntos)
+        if callback:
+            callback(exito, msg)
+        return exito, msg
 
     def _registrar_simulacion(self, destinatario, asunto, cuerpo_html, adjuntos=None, fallo_smtp=None):
         """Registra el email en un archivo de log para pruebas sin SMTP real."""
