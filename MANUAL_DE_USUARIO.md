@@ -27,13 +27,19 @@ Bienvenido al **Sistema de Gestión y Abastecimiento de Rosario Compras**. Esta 
 
 ### Pestaña 2: 📜 Historial de Mis Pedidos
 1. **Monitoreo Completo:** Consulta tus pedidos pasados con su Nro. de Pedido seguro (`RC-ORD-XXXXXX`), fecha de registro, estado (`Pendiente`, `Consolidado`, `Procesado`), cantidad de productos y monto total estimado.
-2. **Notificaciones y Remitos:** Recibirás alertas automáticas en la campana `🔔` ante modificaciones realizadas por el Ejecutivo, confirmación de consolidación y cuando tu **Remito oficial en PDF** esté generado.
+2. **Notificaciones:** Recibirás alertas automáticas en la campana `🔔` ante modificaciones realizadas por el Ejecutivo, confirmación de consolidación y cuando tu mercadería esté despachada.
+
+### Menú Lateral: 📄 Mis Remitos de Entrega (RF-18)
+1. **Acceso Directo al Comprobante:** Consulta la lista completa de remitos emitidos para tus pedidos.
+2. **Visualización y Descarga:** Puedes visualizar la fecha, proveedor emisor, pedido de referencia, detalle de mercadería y total de unidades.
+3. **Apertura de PDF:** Presiona el botón **"📥 Ver PDF"** o haz doble clic en cualquier fila para abrir el remito oficial con membrete corporativo en tu lector PDF predeterminado.
+4. **Búsqueda Rápida:** Filtra por proveedor o escribe cualquier artículo o código en la barra de búsqueda superior.
 
 ---
 
 ## 3. Guía para el Ejecutivo de Cuentas y Administradores
 
-El flujo operativo se organiza en **3 Módulos Principales**:
+El flujo operativo se organiza en **4 Módulos Principales**:
 
 ### Módulo 1: 📑 Listas y Proveedores
 - **Solicitud de Cotización:** Presiona **"📧 Solicitar Lista"** para generar un email formal con membrete corporativo hacia el proveedor.
@@ -69,6 +75,15 @@ El flujo operativo se organiza en **3 Módulos Principales**:
   - Emite **un Remito PDF oficial por cada proveedor para cada socio**, guardado en `remitos_pdf/`.
   - Notifica formalmente a cada socio con su remito emitido.
   - Botón **"📂 Ver Carpeta de Remitos PDF"** para abrir el directorio de documentos.
+
+### Módulo 4: 📄 Consulta y Descarga de Remitos Emitidos (RF-18)
+- **Centro Unificado de Remitos:** Monitoreo global de toda la mercadería despachada a los socios.
+- **Filtros Dinámicos:**
+  - Desplegable de **Socios** para auditar un comercio en particular.
+  - Desplegable de **Proveedores** para controlar entregas por distribuidor.
+  - Barra de búsqueda textual para encontrar comprobantes, fechas o productos al instante.
+- **Descarga y Apertura Inmediata:** Botón **"📥 Ver PDF"** en cada fila para abrir el archivo oficial. Si algún documento no estuviera en disco, el sistema lo regenera automáticamente al instante.
+- **Acceso a Carpeta:** Botón **"📁 Carpeta de Remitos"** para explorar el almacenamiento local en Windows.
 
 ---
 

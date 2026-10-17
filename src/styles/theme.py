@@ -253,7 +253,8 @@ QPushButton#btn_solicitar_lista,
 QPushButton#btn_seleccionar_archivo,
 QPushButton#btn_refrescar,
 QPushButton#btn_guardar_comprobante,
-QPushButton#btn_actualizar_stock {
+QPushButton#btn_actualizar_stock,
+QPushButton#btn_abrir_carpeta {
     background-color: #ffffff;
     color: #334155;
     border: 1px solid #cbd5e1;
@@ -263,7 +264,8 @@ QPushButton#btn_solicitar_lista:hover,
 QPushButton#btn_seleccionar_archivo:hover,
 QPushButton#btn_refrescar:hover,
 QPushButton#btn_guardar_comprobante:hover,
-QPushButton#btn_actualizar_stock:hover {
+QPushButton#btn_actualizar_stock:hover,
+QPushButton#btn_abrir_carpeta:hover {
     background-color: #f1f5f9;
     border-color: #94a3b8;
     color: #0f172a;
@@ -304,6 +306,24 @@ QPushButton#btn_manual:hover {
 
 QPushButton#btn_manual:pressed {
     background-color: #4338ca;
+}
+
+/* 7. Botones de Acción de Documento / PDF */
+QPushButton#btn_ver_pdf {
+    background-color: #0284c7;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+QPushButton#btn_ver_pdf:hover {
+    background-color: #0369a1;
+}
+
+QPushButton#btn_ver_pdf:pressed {
+    background-color: #075985;
 }
 
 /* --- TARJETAS GROUPBOX --- */

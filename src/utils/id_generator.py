@@ -17,10 +17,10 @@ def generar_codigo_comprobante(id_proveedor: int = 0) -> str:
     token = uuid.uuid4().hex[:6].upper()
     return f"CMP-REC-{token}"
 
-def generar_codigo_remito(id_remito: int, id_socio: int = 0) -> str:
+def generar_codigo_remito(id_remito: int, id_socio: int = 0, id_proveedor: int = 0) -> str:
     """
     Genera un identificador comercial ofuscado para remitos tipo 'RC-REM-B7C410'.
     """
-    semilla = f"REMITO-{id_remito}-{id_socio}-ROSARIO-COMPRAS"
+    semilla = f"REMITO-{id_remito}-{id_socio}-{id_proveedor}-ROSARIO-COMPRAS"
     hash_hex = hashlib.sha256(semilla.encode('utf-8')).hexdigest()[:6].upper()
     return f"RC-REM-{hash_hex}"

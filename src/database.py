@@ -51,6 +51,18 @@ def migrar_db(conn):
     if "precio_base" not in cols_pn:
         cursor.execute("ALTER TABLE PRECIOS_NEGOCIADOS ADD COLUMN precio_base REAL DEFAULT 0.0;")
 
+    # 5. Verificar columnas en REMITOS
+    cursor.execute("PRAGMA table_info(REMITOS);")
+    cols_rem = [row[1] for row in cursor.fetchall()]
+    if "codigo_remito" not in cols_rem:
+        cursor.execute("ALTER TABLE REMITOS ADD COLUMN codigo_remito TEXT;")
+    if "archivo_pdf" not in cols_rem:
+        cursor.execute("ALTER TABLE REMITOS ADD COLUMN archivo_pdf TEXT;")
+    if "id_proveedor" not in cols_rem:
+        cursor.execute("ALTER TABLE REMITOS ADD COLUMN id_proveedor INTEGER;")
+    if "id_pedido" not in cols_rem:
+        cursor.execute("ALTER TABLE REMITOS ADD COLUMN id_pedido INTEGER;")
+
 def inicializar_db():
     """
     Inicializa la base de datos ejecutando el script de creación y

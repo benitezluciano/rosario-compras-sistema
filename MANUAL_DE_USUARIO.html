@@ -272,6 +272,7 @@
         <a href="#modulo-pedidos" class="nav-link">Carga de Pedidos</a>
         <a href="#modulo-consolidacion" class="nav-link">Consolidación y Órdenes</a>
         <a href="#modulo-reparto" class="nav-link">Recepción y Reparto</a>
+        <a href="#modulo-remitos" class="nav-link">Consulta de Remitos PDF (RF-18)</a>
 
         <div class="nav-section-title">Ayuda</div>
         <a href="#faq" class="nav-link">Preguntas Frecuentes (FAQ)</a>
@@ -472,13 +473,21 @@
                     <div class="step-desc">En la barra superior verás avisos cuando el Ejecutivo envíe el pedido a los proveedores y cuando se emita tu Remito final con los productos listos para entrega.</div>
                 </div>
             </div>
+
+            <div class="step-item">
+                <div class="step-circle">4</div>
+                <div class="step-body">
+                    <div class="step-title">Mis Remitos de Entrega en PDF (RF-18) 📄</div>
+                    <div class="step-desc">Ingresa a la opción <strong>"📄 Mis Remitos de Entrega"</strong> en el menú lateral. Podrás revisar el historial completo de comprobantes emitidos, la cantidad exacta recibida de cada producto y hacer clic en <strong>"📥 Ver PDF"</strong> o doble clic en la fila para abrir el remito oficial con membrete corporativo en tu lector de PDFs predeterminado.</div>
+                </div>
+            </div>
         </section>
 
         <!-- 5. GUÍA PARA EL EJECUTIVO -->
         <section id="guia-ejecutivo">
             <h2>5. Guía Paso a Paso para el Ejecutivo de Cuentas</h2>
             <div class="alert alert-success">
-                💼 <strong>Panel de Control Total:</strong> El Ejecutivo orquesta las 4 etapas del circuito comercial.
+                💼 <strong>Panel de Control Total:</strong> El Ejecutivo orquesta las 4 etapas del circuito comercial y la auditoría de remitos.
             </div>
 
             <h3 id="modulo-listas">Módulo 1: Listas de Proveedores (Catálogo Único)</h3>
@@ -491,7 +500,7 @@
                 </ol>
             </div>
 
-            <h3 id="modulo-consolidacion">Módulo 3: Consolidación y Envío a Proveedores</h3>
+            <h3 id="modulo-consolidacion">Módulo 2: Consolidación y Envío a Proveedores</h3>
             <div class="card">
                 <p>En este módulo se suman automáticamente los pedidos de todos los socios:</p>
                 <ol>
@@ -501,19 +510,31 @@
                 </ol>
             </div>
 
-            <h3 id="modulo-reparto">Módulo 4: Recepción de Mercadería y Reparto Automático</h3>
+            <h3 id="modulo-reparto">Módulo 3: Recepción de Mercadería y Reparto Automático</h3>
             <div class="card">
                 <ol>
-                    <li><strong>Llegada del camión/proveedor:</strong> Ingresa el número de Factura o Remito (ej. <code>FC-A-0001-0004521</code>).</li>
+                    <li><strong>Llegada del camión/proveedor:</strong> Selecciona el Proveedor y el Nro. de Pedido Consolidado correspondiente.</li>
                     <li><strong>Doble Control:</strong>
                         <ul>
                             <li><strong>Control de Logística:</strong> Verifica o ajusta la columna <em>"Cant. Recibida (Logística)"</em> según lo que realmente llegó al depósito.</li>
                             <li><strong>Control de Compras:</strong> Verifica que el <em>"Precio Facturado"</em> coincida con el precio acordado en catálogo.</li>
                         </ul>
                     </li>
-                    <li>Presiona <strong>"💾 1. Asentar Comprobante y Registrar Stock Físico"</strong> para guardar la factura en el historial y actualizar el stock.</li>
-                    <li>Presiona <strong>"🚚 2. Ejecutar Reparto Automático y Generar Remitos"</strong>. Si hubo faltantes de mercadería, el sistema aplicará automáticamente el prorrateo equitativo, generará los remitos individuales y notificará a cada socio.</li>
+                    <li>Presiona <strong>"💾 1. Asentar Comprobante y Registrar Stock Físico"</strong> para asentar el comprobante interno seguro y actualizar el inventario.</li>
+                    <li>Presiona <strong>"🚚 2. Ejecutar Reparto Automático y Generar Remitos PDF Oficiales"</strong>. Si hubo faltantes de mercadería, el sistema aplicará automáticamente el prorrateo equitativo, generará un <strong>Remito PDF oficial por cada proveedor para cada socio</strong> en la carpeta <code>remitos_pdf/</code> y notificará formalmente a cada socio.</li>
                 </ol>
+            </div>
+
+            <h3 id="modulo-remitos">Módulo 4: Consulta y Descarga de Remitos Emitidos (RF-18)</h3>
+            <div class="card">
+                <p>Módulo centralizado para auditar, buscar y abrir todos los remitos emitidos en el sistema:</p>
+                <ul>
+                    <li><strong>Filtro por Socio:</strong> Selecciona un socio en particular para auditar únicamente sus entregas.</li>
+                    <li><strong>Filtro por Proveedor:</strong> Filtra las entregas realizadas según el origen de la mercadería.</li>
+                    <li><strong>Buscador Universal:</strong> Escribe cualquier texto (número de remito, código de pedido, detalle de mercadería) para filtrar en tiempo real.</li>
+                    <li><strong>Apertura de PDF:</strong> Haz clic en <strong>"📥 Ver PDF"</strong> o doble clic en cualquier fila para abrir el documento oficial. Si un archivo fue borrado o movido de disco, el sistema lo regenera automáticamente al instante.</li>
+                    <li><strong>Carpeta de Archivos:</strong> Haz clic en <strong>"📁 Carpeta de Remitos"</strong> para abrir directamente la carpeta local de Windows donde residen todos los archivos PDF.</li>
+                </ul>
             </div>
         </section>
 

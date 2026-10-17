@@ -262,24 +262,82 @@ def seed():
         """)
         
         remitos = [
-            (1, 4, 1, '2026-09-29 16:30:00', 'Remito de entrega correspondiente a consolidado semanal'),
-            (2, 5, 1, '2026-09-29 16:35:00', 'Remito de entrega correspondiente a consolidado semanal'),
+            (1, 4, 1, 1, 1, 'RC-REM-1001-A', '2026-09-29', 'Entrega Café Central - Distribuidora Central', None),
+            (2, 4, 1, 2, 1, 'RC-REM-1001-B', '2026-09-29', 'Entrega Café Central - Lácteos del Litoral', None),
+            (3, 5, 1, 2, 2, 'RC-REM-1002-A', '2026-09-29', 'Entrega La Rosa - Lácteos del Litoral', None),
+            (4, 6, 1, 4, 3, 'RC-REM-1003-A', '2026-09-30', 'Entrega Restaurante Italia - Frigorífico del Paraná', None),
+            (5, 7, 1, 5, 6, 'RC-REM-1004-A', '2026-10-01', 'Entrega Bodegón Pellegrini - Bebidas Rosario', None),
         ]
         cursor.executemany("""
-            INSERT INTO REMITOS (id_remito, id_user, id_proceso, fecha_emision, detalle_entrega)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO REMITOS (id_remito, id_user, id_proceso, id_proveedor, id_pedido, codigo_remito, fecha_emision, detalle_entrega, archivo_pdf)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, remitos)
         
         detalles_remitos = [
-            (1, 1, 4),   # Café Central recibió 4 Café
-            (1, 6, 12),  # Café Central recibió 12 Leche (prorrateado)
-            (2, 6, 38),  # Panadería La Rosa recibió 38 Leche (prorrateado)
+            # Remito 1: Café Central (Distribuidora Central)
+            (1, 1, 4),   # 4 Café
+            (1, 2, 2),   # 2 Endulzante
+            # Remito 2: Café Central (Lácteos del Litoral)
+            (2, 6, 12),  # 12 Leche (prorrateado)
+            # Remito 3: Panadería La Rosa (Lácteos del Litoral)
+            (3, 6, 38),  # 38 Leche (prorrateado)
+            (3, 7, 5),   # 5 Crema de Leche
+            # Remito 4: Restaurante Italia (Carnes del Paraná)
+            (4, 15, 2),  # 2 Bife de Chorizo
+            (4, 16, 3),  # 3 Lomo Vacuno
+            # Remito 5: Bar Pellegrini (Bebidas Rosario)
+            (5, 19, 4),  # 4 Packs Gaseosa
+            (5, 20, 2),  # 2 Barriles Cerveza
         ]
         cursor.executemany("""
             INSERT INTO DETALLE_REMITOS (id_remito, id_articulo, cantidad_entregada)
             VALUES (?, ?, ?)
         """, detalles_remitos)
-        print(f"OK: Historial de procesos de reparto y remitos insertado.")
+        print(f"OK: {len(remitos)} Remitos oficiales y {len(detalles_remitos)} líneas de detalle insertados.")
+
+        # Generar PDFs para los remitos de prueba si el entorno GUI está disponible
+        try:
+            from PyQt6.QtWidgets import QApplication
+            from src.services.pdf_service import PdfService
+            _app = QApplication.instance() or QApplication(sys.argv)
+            pdf_service = PdfService.get_instance()
+            
+            cursor.execute("""
+                SELECT r.id_remito, r.codigo_remito, r.fecha_emision, r.detalle_entrega,
+                       u.nombre AS socio_nombre, u.email AS socio_email,
+                       pr.nombre AS proveedor_nombre,
+                       p.codigo_comercial AS codigo_pedido
+                FROM REMITOS r
+                JOIN USERS u ON r.id_user = u.id
+                JOIN PROVEEDORES pr ON r.id_proveedor = pr.id_proveedor
+                LEFT JOIN PEDIDOS p ON r.id_pedido = p.id_pedido
+            """)
+            remitos_db = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
+
+            for rem in remitos_db:
+                cursor.execute("""
+                    SELECT a.id_articulo, a.id_articulo_proveedor AS codigo, a.detalle, dr.cantidad_entregada AS cantidad
+                    FROM DETALLE_REMITOS dr
+                    JOIN ARTICULOS a ON dr.id_articulo = a.id_articulo
+                    WHERE dr.id_remito = ?
+                """, (rem['id_remito'],))
+                items_r = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
+
+                datos_remito = {
+                    'codigo_remito': rem['codigo_remito'],
+                    'codigo_pedido': rem.get('codigo_pedido') or f"RC-ORD-{rem['id_remito']}",
+                    'nro_comprobante': rem['detalle_entrega'],
+                    'fecha': rem['fecha_emision'],
+                    'socio_nombre': rem['socio_nombre'],
+                    'socio_email': rem['socio_email'],
+                    'proveedor_nombre': rem['proveedor_nombre'],
+                    'items': items_r
+                }
+                pdf_path = pdf_service.generar_remito_pdf(datos_remito)
+                cursor.execute("UPDATE REMITOS SET archivo_pdf = ? WHERE id_remito = ?", (pdf_path, rem['id_remito']))
+            print(f"OK: {len(remitos_db)} Archivos PDF de remitos oficiales generados exitosamente.")
+        except Exception as e:
+            print(f"Nota: Generación previa de PDFs en seed diferida a apertura bajo demanda: {e}")
 
         # 9. Insertar Notificaciones Realistas para Todos los Roles
         notificaciones = [

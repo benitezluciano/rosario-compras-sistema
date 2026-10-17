@@ -279,19 +279,17 @@ class RepartoModel:
             for pedido in pedidos_consolidados:
                 id_pedido = pedido['id_pedido']
                 id_user = pedido['id_user']
+                prov_id_item = pedido['id_proveedor']
                 cod_ped = pedido.get('codigo_comercial') or generar_codigo_pedido(id_pedido, pedido.get('fecha', ''))
                 
                 query_items = """
-                    SELECT dp.id_articulo, dp.cantidad_pedida, a.detalle, a.id_articulo_proveedor
+                    SELECT DISTINCT dp.id_articulo, dp.cantidad_pedida, a.detalle, a.id_articulo_proveedor
                     FROM DETALLE_PEDIDOS dp
                     JOIN ARTICULOS a ON dp.id_articulo = a.id_articulo
                     JOIN PRECIOS_NEGOCIADOS pn ON a.id_articulo = pn.id_articulo
-                    WHERE dp.id_pedido = ?
+                    WHERE dp.id_pedido = ? AND pn.id_proveedor = ?
                 """
-                params_items = [id_pedido]
-                if id_proveedor is not None:
-                    query_items += " AND pn.id_proveedor = ?"
-                    params_items.append(id_proveedor)
+                params_items = [id_pedido, prov_id_item]
 
                 cursor.execute(query_items, params_items)
                 items = cursor.fetchall()
@@ -330,13 +328,13 @@ class RepartoModel:
                 )
                 
                 # Insertar remito en la base de datos
-                cod_remito = generar_codigo_remito(id_pedido, id_user)
+                cod_remito = generar_codigo_remito(id_pedido, id_user, prov_id_item)
                 cursor.execute(
                     """
-                    INSERT INTO REMITOS (id_user, id_proceso, fecha_emision, detalle_entrega)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO REMITOS (id_user, id_proceso, id_proveedor, id_pedido, codigo_remito, fecha_emision, detalle_entrega)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (id_user, id_proceso, fecha_emision, f"Remito {cod_remito} emitido para pedido {cod_ped}")
+                    (id_user, id_proceso, prov_id_item, id_pedido, cod_remito, fecha_emision, f"Remito {cod_remito} emitido para pedido {cod_ped}")
                 )
                 id_remito = cursor.lastrowid
                 
@@ -371,6 +369,9 @@ class RepartoModel:
             try:
                 ruta_pdf = pdf_service.generar_remito_pdf(r_data)
                 rutas_pdf_generados.append(ruta_pdf)
+                with Database() as conn_up:
+                    cursor_up = conn_up.cursor()
+                    cursor_up.execute("UPDATE REMITOS SET archivo_pdf = ? WHERE id_remito = ?", (ruta_pdf, r_data['id_remito']))
             except Exception as e:
                 print(f"Advertencia al generar PDF para {r_data['codigo_remito']}: {e}")
 
@@ -384,3 +385,83 @@ class RepartoModel:
                 print(f"Advertencia al notificar remito: {e}")
 
         return True, rutas_pdf_generados
+
+    def obtener_remitos(self, id_user=None, id_proveedor=None, rol='admin'):
+        """
+        Retorna la lista de remitos oficiales emitidos con su detalle resumido.
+        Filtra por socio si rol == 'socio' o si id_user es provisto.
+        Filtra por proveedor si id_proveedor es provisto.
+        """
+        query = """
+            SELECT r.id_remito,
+                   COALESCE(r.codigo_remito, 'RC-REM-' || r.id_remito) AS codigo_remito,
+                   r.fecha_emision,
+                   r.id_user,
+                   u.nombre AS socio_nombre,
+                   u.email AS socio_email,
+                   COALESCE(pr.id_proveedor, r.id_proveedor, 0) AS id_proveedor,
+                   COALESCE(pr.nombre, 'Proveedor General') AS proveedor_nombre,
+                   COALESCE(p.id_pedido, r.id_pedido, 0) AS id_pedido,
+                   COALESCE(p.codigo_comercial, 'RC-ORD-' || r.id_pedido) AS codigo_pedido,
+                   r.archivo_pdf,
+                   r.detalle_entrega,
+                   COALESCE(SUM(dr.cantidad_entregada), 0) AS total_unidades,
+                   group_concat(a.detalle || ' (' || dr.cantidad_entregada || ' u.)', ', ') AS resumen_articulos
+            FROM REMITOS r
+            JOIN USERS u ON r.id_user = u.id
+            LEFT JOIN PROVEEDORES pr ON r.id_proveedor = pr.id_proveedor
+            LEFT JOIN PEDIDOS p ON r.id_pedido = p.id_pedido
+            LEFT JOIN DETALLE_REMITOS dr ON r.id_remito = dr.id_remito
+            LEFT JOIN ARTICULOS a ON dr.id_articulo = a.id_articulo
+            WHERE 1=1
+        """
+        params = []
+        if rol == 'socio' or (id_user is not None and rol not in ['admin', 'ejecutivo']):
+            query += " AND r.id_user = ?"
+            params.append(id_user)
+        elif id_user is not None:
+            query += " AND r.id_user = ?"
+            params.append(id_user)
+
+        if id_proveedor is not None:
+            query += " AND (r.id_proveedor = ? OR pr.id_proveedor = ?)"
+            params.append(id_proveedor)
+            params.append(id_proveedor)
+
+        query += " GROUP BY r.id_remito ORDER BY r.id_remito DESC;"
+
+        with Database() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            return [dict(row) for row in cursor.fetchall()]
+
+    def obtener_detalle_remito(self, id_remito):
+        """Retorna los renglones individuales de mercadería de un remito específico."""
+        query = """
+            SELECT dr.id_articulo,
+                   a.id_articulo_proveedor AS codigo,
+                   a.detalle,
+                   a.rubro,
+                   dr.cantidad_entregada
+            FROM DETALLE_REMITOS dr
+            JOIN ARTICULOS a ON dr.id_articulo = a.id_articulo
+            WHERE dr.id_remito = ?
+            ORDER BY a.detalle ASC;
+        """
+        with Database() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query, (id_remito,))
+            return [dict(row) for row in cursor.fetchall()]
+
+    def obtener_socios_con_remitos(self):
+        """Devuelve los socios que poseen al menos un remito emitido para poblar filtros."""
+        query = """
+            SELECT DISTINCT u.id, u.nombre, u.email
+            FROM USERS u
+            JOIN REMITOS r ON u.id = r.id_user
+            ORDER BY u.nombre ASC;
+        """
+        with Database() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query)
+            return [dict(row) for row in cursor.fetchall()]

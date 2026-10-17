@@ -151,11 +151,17 @@ CREATE TABLE IF NOT EXISTS REMITOS (
     -- Reemplaza a id_socio. Apunta al usuario socio que recibe el remito.
 
     id_proceso       INTEGER NOT NULL,
+    id_proveedor     INTEGER,
+    id_pedido        INTEGER,
+    codigo_remito    TEXT,
+    archivo_pdf      TEXT,
     fecha_emision    TEXT    NOT NULL,
     detalle_entrega  TEXT,
 
-    FOREIGN KEY (id_user)    REFERENCES USERS(id),
-    FOREIGN KEY (id_proceso) REFERENCES PROCESOS_REPARTO(id_proceso)
+    FOREIGN KEY (id_user)      REFERENCES USERS(id),
+    FOREIGN KEY (id_proceso)   REFERENCES PROCESOS_REPARTO(id_proceso),
+    FOREIGN KEY (id_proveedor) REFERENCES PROVEEDORES(id_proveedor),
+    FOREIGN KEY (id_pedido)    REFERENCES PEDIDOS(id_pedido)
 );
 
 
