@@ -21,35 +21,40 @@ def migrar_db(conn):
     """
     Aplica migraciones incrementales automáticas y seguras
     para garantizar compatibilidad con bases de datos existentes.
+    Las bases nuevas ya se crean con estas columnas desde rosario_compras.sql;
+    esto solo completa columnas faltantes en bases creadas con versiones anteriores.
     """
     cursor = conn.cursor()
-    
-    # 1. Verificar columnas en PROVEEDORES
-    cursor.execute("PRAGMA table_info(PROVEEDORES);")
-    cols_prov = [row[1] for row in cursor.fetchall()]
-    
-    if "email" not in cols_prov:
-        cursor.execute("ALTER TABLE PROVEEDORES ADD COLUMN email TEXT;")
-    if "telefono" not in cols_prov:
-        cursor.execute("ALTER TABLE PROVEEDORES ADD COLUMN telefono TEXT;")
 
-    # 2. Verificar columnas en PEDIDOS
-    cursor.execute("PRAGMA table_info(PEDIDOS);")
-    cols_ped = [row[1] for row in cursor.fetchall()]
-    if "codigo_comercial" not in cols_ped:
-        cursor.execute("ALTER TABLE PEDIDOS ADD COLUMN codigo_comercial TEXT;")
+    def columnas(tabla):
+        cursor.execute(f"PRAGMA table_info({tabla});")
+        return [row[1] for row in cursor.fetchall()]
 
-    # 3. Verificar columnas en COMPROBANTES_PROVEEDOR
-    cursor.execute("PRAGMA table_info(COMPROBANTES_PROVEEDOR);")
-    cols_comp = [row[1] for row in cursor.fetchall()]
-    if "codigo_comercial" not in cols_comp:
-        cursor.execute("ALTER TABLE COMPROBANTES_PROVEEDOR ADD COLUMN codigo_comercial TEXT;")
+    def agregar_si_falta(tabla, columna, definicion):
+        if columna not in columnas(tabla):
+            cursor.execute(f"ALTER TABLE {tabla} ADD COLUMN {columna} {definicion};")
 
-    # 4. Verificar columnas en PRECIOS_NEGOCIADOS
-    cursor.execute("PRAGMA table_info(PRECIOS_NEGOCIADOS);")
-    cols_pn = [row[1] for row in cursor.fetchall()]
-    if "precio_base" not in cols_pn:
-        cursor.execute("ALTER TABLE PRECIOS_NEGOCIADOS ADD COLUMN precio_base REAL DEFAULT 0.0;")
+    # PROVEEDORES: contacto y ciclo de la lista de precios
+    agregar_si_falta("PROVEEDORES", "email", "TEXT")
+    agregar_si_falta("PROVEEDORES", "telefono", "TEXT")
+    agregar_si_falta("PROVEEDORES", "lista_habilitada", "INTEGER NOT NULL DEFAULT 0")
+    agregar_si_falta("PROVEEDORES", "fecha_habilitacion", "TEXT")
+
+    # PEDIDOS: código comercial y proveedor del pedido
+    agregar_si_falta("PEDIDOS", "codigo_comercial", "TEXT")
+    agregar_si_falta("PEDIDOS", "id_proveedor", "INTEGER REFERENCES PROVEEDORES(id_proveedor)")
+
+    # DETALLE_PEDIDOS: precio congelado
+    agregar_si_falta("DETALLE_PEDIDOS", "precio_unitario", "REAL NOT NULL DEFAULT 0.0")
+
+    # REMITOS: vínculo con pedido/proveedor y código único
+    agregar_si_falta("REMITOS", "id_pedido", "INTEGER REFERENCES PEDIDOS(id_pedido)")
+    agregar_si_falta("REMITOS", "id_proveedor", "INTEGER REFERENCES PROVEEDORES(id_proveedor)")
+    agregar_si_falta("REMITOS", "codigo_comercial", "TEXT")
+
+    # COMPROBANTES_PROVEEDOR y PRECIOS_NEGOCIADOS
+    agregar_si_falta("COMPROBANTES_PROVEEDOR", "codigo_comercial", "TEXT")
+    agregar_si_falta("PRECIOS_NEGOCIADOS", "precio_base", "REAL DEFAULT 0.0")
 
 def inicializar_db():
     """

@@ -81,25 +81,42 @@ class ConsolidacionController:
             self.vista.mostrar_mensaje_exito(mensaje)
 
     def procesar_consolidacion(self):
-        """Consolida los pedidos, registra el envío a los proveedores y notifica a cada socio."""
-        resumen = self.modelo.obtener_resumen_consolidado()
-        if not resumen:
-            self.vista.mostrar_mensaje_error("No hay pedidos pendientes para consolidar.")
+        """Consolida los pedidos del proveedor seleccionado, cierra su lista y notifica a cada socio."""
+        id_proveedor = self.vista.obtener_proveedor_seleccionado()
+        if not id_proveedor:
+            self.vista.mostrar_mensaje_error("Debes seleccionar un proveedor.")
+            return
+        nombre_prov = self.vista.obtener_nombre_proveedor_seleccionado()
+
+        if self.vista.obtener_modificaciones_pendientes():
+            self.vista.mostrar_mensaje_error(
+                "Tienes ajustes sin guardar en la matriz.\nGuárdalos (o actualiza la matriz para descartarlos) antes de consolidar."
+            )
             return
 
+        resumen = self.modelo.obtener_resumen_consolidado(id_proveedor)
+        if not resumen:
+            self.vista.mostrar_mensaje_error(f"'{nombre_prov}' no tiene pedidos pendientes para consolidar.")
+            return
+
+        total = sum(r.get('total_estimado') or 0 for r in resumen)
         confirmado = self.vista.confirmar_accion(
-            "Confirmar Envío a Proveedores y Consolidación",
-            "¿Estás seguro de consolidar y confirmar el envío de las órdenes de compra a los proveedores?\n\n"
-            "• Las órdenes quedarán formalmente registradas como enviadas a los proveedores.\n"
-            "• Los pedidos de los socios pasarán a estado 'Consolidado'.\n"
-            "• Cada socio recibirá una notificación automática avisando que su pedido fue enviado al proveedor.\n"
-            "• El sistema avanzará al módulo '3. Recepción y Reparto Automático'."
+            "Confirmar Consolidación y Envío al Proveedor",
+            f"¿Consolidar y confirmar el envío de la orden de compra a '{nombre_prov}'?\n\n"
+            f"• {len(resumen)} artículos · Total estimado ${total:,.2f}\n"
+            f"• Los pedidos de los socios para este proveedor pasarán a estado 'Consolidado' (precio congelado).\n"
+            f"• La lista de precios de '{nombre_prov}' se cerrará (fin del ciclo de pedidos).\n"
+            f"• Cada socio recibirá una notificación automática.\n"
+            f"• Los pedidos de otros proveedores no se modifican."
         )
         if not confirmado:
             return
 
-        cantidad = self.modelo.marcar_pedidos_como_consolidados()
-        self.vista.mostrar_mensaje_exito(f"¡Se consolidaron y despacharon {cantidad} pedidos hacia los proveedores!\nLos socios han sido notificados.")
+        cantidad = self.modelo.marcar_pedidos_como_consolidados(id_proveedor)
+        self.vista.mostrar_mensaje_exito(
+            f"¡Se consolidaron y despacharon {cantidad} pedido(s) a '{nombre_prov}'!\n"
+            f"La lista quedó cerrada y los socios fueron notificados."
+        )
         self.inicializar()
         
         if self.on_pedidos_consolidados:

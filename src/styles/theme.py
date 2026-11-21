@@ -137,6 +137,25 @@ QTabBar::tab:hover:!selected {
     color: #1e293b;
 }
 
+/* Pestañas inferiores estilo "hojas" de Excel (ej. listas por proveedor) */
+QTabBar::tab:bottom {
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border: 1px solid #cbd5e1;
+    border-top: none;
+    padding: 6px 16px;
+}
+
+QTabBar::tab:bottom:selected {
+    background-color: #ffffff;
+    color: #1e40af;
+    border: 1px solid #cbd5e1;
+    border-top: none;
+    border-bottom: 3px solid #2563eb;
+}
+
 /* --- TABLAS (QTableWidget) --- */
 QTableWidget, QTableView {
     background-color: #ffffff;

@@ -1,0 +1,60 @@
+# Bitácora de sesiones
+
+> Reglas: ver [README.md](README.md#bitácora-de-sesiones). Las entradas nuevas van arriba y las viejas no se editan.
+
+---
+
+## 2026-11-21 — Sesión 1
+**Duración aprox.:** (completar) · **Quién:** BenitezLuciano, con asistente (Claude Code)
+
+- **Objetivo de la sesión:** Analizar el repositorio, adaptar el portal del socio y corregir los tres errores clasificados como importantes en el análisis inicial.
+- **Hecho:**
+  - Análisis completo del repositorio. Se detectaron 7 observaciones técnicas: 3 importantes (#1 a #3), 4 medias (#4 a #7) y varias menores.
+  - Portal del socio: el historial pasó a ser una pantalla propia en el menú lateral, y las listas se muestran como hojas estilo Excel con contador y subtotal.
+  - Base de datos: `id_proveedor` en `PEDIDOS`; `lista_habilitada` y `fecha_habilitacion` en `PROVEEDORES`; `precio_unitario` en `DETALLE_PEDIDOS`; `id_pedido`, `id_proveedor` y `codigo_comercial` en `REMITOS`. `migrar_db` actualizado.
+  - Modelos reescritos para trabajar por proveedor: catálogo, pedidos, consolidación, reparto y proveedores.
+  - Pantallas actualizadas:
+    - Socio: botón por hoja, "Enviar todo" con resumen y anulación de pedidos.
+    - Módulo 1: botón Habilitar / Cerrar Lista.
+    - Módulo 2: consolidación del proveedor seleccionado.
+    - Módulo 3: sin "Todos los proveedores".
+  - Seed reescrito (recrea las tablas) y base reseteada.
+  - `tests/test_circuit_suite.py` reescrito para el flujo nuevo, sobre una copia temporal de la base: 8 de 8 pruebas OK. También se recorrieron todas las pantallas sin ventana visible, sobre una copia de la base.
+- **Decidido:** (ver [DECISIONES.md](DECISIONES.md))
+  - DEC-001 — Historial de Pedidos como pantalla propia en el menú lateral
+  - DEC-002 — Listas de precios por proveedor como "hojas" estilo Excel
+  - DEC-003 — Hoja "Resumen" en el portal del socio *(Propuesta)*
+  - DEC-004 — Un pedido corresponde a un socio y a un único proveedor
+  - DEC-005 — Cada artículo pertenece al catálogo de un único proveedor
+  - DEC-006 — Ciclo de la lista de precios: habilitada / cerrada
+  - DEC-007 — Un pedido pendiente por socio y proveedor, editable hasta consolidar
+  - DEC-008 — La consolidación se hace por proveedor
+  - DEC-009 — Reparto: proveedor obligatorio y un remito por pedido
+  - DEC-010 — Precio congelado en cada renglón del pedido
+  - DEC-011 — Una lista nueva actualiza el precio de los pedidos pendientes *(provisoria)*
+  - DEC-012 — Hoja en 0 con pedido vigente: se anula con confirmación
+  - DEC-013 — "Enviar todo" muestra un resumen por proveedor antes de confirmar
+  - DEC-014 — Manejo del stock al asentar un comprobante *(Propuesta)*
+  - DEC-015 — Resetear la base de datos con el seed
+  - DEC-016 — Las pruebas del circuito corren sobre una copia temporal de la base
+  - DEC-017 — Forma de trabajo: consultar antes de modificar
+- **Cerrado:**
+  - Observación #1: un pedido con varios proveedores quedaba incompleto en el reparto.
+  - Observación #2: el reparto con "Todos los proveedores" duplicaba remitos y descontaba stock de más.
+  - Observación #3: los artículos compartidos entre proveedores duplicaban filas en las consultas.
+  - Observación #5: la notificación de ajustes mostraba un código de pedido equivocado.
+  - Observación #6: la consolidación era global.
+  - Observación #4, en parte: el comprobante ya no se asigna por defecto al proveedor 1.
+- **Pendiente / abierto:**
+  - Observación #4, resto: sumar o reemplazar el stock (DEC-014, bloqueado por decisión del grupo).
+  - Observación #7: notificaciones compartidas entre ejecutivos.
+  - Ratificar DEC-011 con el grupo.
+  - Actualizar README, manual de usuario y walkthrough al flujo nuevo.
+  - `tests/test_proveedores_email.py` escribe sobre la base real.
+  - Commit de la rama `feature/limpieza-operativa`.
+- **Problemas o aprendizajes:**
+  - La causa común de los tres errores importantes era de **modelo de datos**: el pedido no registraba a qué proveedor pertenecía. Entender el proceso real del negocio (una lista negociada, un pedido por proveedor) resolvió los tres de raíz, mejor que parchear cada consulta.
+  - SQLite no permite modificar un CHECK ni agregar una columna NOT NULL con clave foránea a una tabla existente. Por eso el seed recrea las tablas.
+  - La consola de Windows (cp1252) falla al imprimir emojis: hay que correr los scripts con `PYTHONIOENCODING=utf-8`.
+- **Próximo paso:** Prueba manual con `python main.py` y commit.
+- **Dudas para retomar:** ¿El negocio opera con depósito y stock acumulado, o con paso directo (DEC-014)? ¿El grupo está de acuerdo con DEC-011?

@@ -20,6 +20,8 @@ class CatalogoController:
             self.vista.btn_seleccionar_archivo.clicked.connect(self.seleccionar_archivo)
         if hasattr(self.vista, 'btn_importar'):
             self.vista.btn_importar.clicked.connect(self.procesar_importacion)
+        if hasattr(self.vista, 'btn_toggle_lista'):
+            self.vista.btn_toggle_lista.clicked.connect(self.cambiar_estado_lista)
 
     def set_usuario_actual(self, usuario):
         """Actualiza la sesión del usuario conectado."""
@@ -112,6 +114,46 @@ class CatalogoController:
         if exito:
             self.vista.mostrar_mensaje_exito(mensaje)
             self.vista.limpiar_vista()
+            self.inicializar()
+            if self.on_catalogo_updated:
+                self.on_catalogo_updated()
+        else:
+            self.vista.mostrar_mensaje_error(mensaje)
+
+    def cambiar_estado_lista(self):
+        """Habilita o cierra la lista de precios del proveedor seleccionado."""
+        prov = self.vista.obtener_info_proveedor_seleccionado()
+        if not prov:
+            self.vista.mostrar_mensaje_error("Debes seleccionar un proveedor.")
+            return
+
+        habilitar = not prov.get('lista_habilitada')
+        if habilitar:
+            confirmado = self.vista.confirmar_accion(
+                "Habilitar Lista de Precios",
+                f"¿Habilitar la lista de '{prov['nombre']}' para que los socios carguen pedidos?\n\n"
+                f"• Se usarán los precios actualmente cargados ({prov.get('total_articulos', 0)} artículos).\n"
+                f"• Se notificará a todos los socios."
+            )
+        else:
+            pendientes = prov.get('pedidos_pendientes', 0)
+            aviso = (
+                f"\n\n⚠️ Hay {pendientes} pedido(s) pendiente(s) para este proveedor: se conservan, pero los socios "
+                f"no podrán modificarlos hasta que la lista se vuelva a habilitar. Podrás consolidarlos igualmente."
+                if pendientes else ""
+            )
+            confirmado = self.vista.confirmar_accion(
+                "Cerrar Lista de Precios",
+                f"¿Cerrar la lista de '{prov['nombre']}'?\n\nLos socios dejarán de verla y no podrán cargar pedidos."
+                + aviso
+            )
+        if not confirmado:
+            return
+
+        exito, mensaje = self.modelo.cambiar_estado_lista(prov['id_proveedor'], habilitar)
+        if exito:
+            self.vista.mostrar_mensaje_exito(mensaje)
+            self.inicializar()
             if self.on_catalogo_updated:
                 self.on_catalogo_updated()
         else:

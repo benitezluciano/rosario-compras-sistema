@@ -38,18 +38,26 @@ CREATE TABLE IF NOT EXISTS USERS (
 -- ============================================================
 -- TABLA 2: PROVEEDORES
 -- ============================================================
--- Cada proveedor es gestionado por un usuario con role = 'procurement'.
+-- Cada proveedor es gestionado por un usuario con role = 'ejecutivo' (o 'admin').
 -- La FK id_user apunta a USERS.
+--
+-- Ciclo de la lista de precios:
+--   lista_habilitada = 1 → los socios ven la lista y pueden cargar pedidos.
+--   Se habilita al importar una lista nueva (o manualmente) y se cierra
+--   automáticamente al consolidar los pedidos de ese proveedor.
 
 CREATE TABLE IF NOT EXISTS PROVEEDORES (
-    id_proveedor  INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_user       INTEGER NOT NULL,
-    -- Reemplaza a id_ejecutivo. Apunta al usuario ejecutivo responsable.
+    id_proveedor       INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_user            INTEGER NOT NULL,
+    -- Apunta al usuario ejecutivo responsable.
 
-    nombre        TEXT    NOT NULL,
-    email         TEXT,
-    telefono      TEXT,
-    direccion     TEXT,
+    nombre             TEXT    NOT NULL,
+    email              TEXT,
+    telefono           TEXT,
+    direccion          TEXT,
+    lista_habilitada   INTEGER NOT NULL DEFAULT 0 CHECK(lista_habilitada IN (0, 1)),
+    fecha_habilitacion TEXT,
+    -- Formato datetime: 'YYYY-MM-DD HH:MM:SS' (última habilitación)
 
     FOREIGN KEY (id_user) REFERENCES USERS(id)
 );
@@ -80,8 +88,9 @@ CREATE TABLE IF NOT EXISTS ARTICULOS (
 CREATE TABLE IF NOT EXISTS PRECIOS_NEGOCIADOS (
     id_proveedor  INTEGER NOT NULL,
     id_articulo   INTEGER NOT NULL,
-    precio_final  REAL    NOT NULL DEFAULT 0.0, -- Precio final acordado
-    descuento     REAL    NOT NULL DEFAULT 0.0, -- Descuento acordado (ej. porcentaje 0.10 o valor directo)
+    precio_base   REAL    NOT NULL DEFAULT 0.0, -- Precio de lista original del proveedor
+    precio_final  REAL    NOT NULL DEFAULT 0.0, -- Precio final acordado (con descuento aplicado)
+    descuento     REAL    NOT NULL DEFAULT 0.0, -- Descuento acordado (fracción, ej. 0.10 = 10%)
 
     PRIMARY KEY (id_proveedor, id_articulo),
     FOREIGN KEY (id_proveedor) REFERENCES PROVEEDORES(id_proveedor),
@@ -92,17 +101,27 @@ CREATE TABLE IF NOT EXISTS PRECIOS_NEGOCIADOS (
 -- ============================================================
 -- TABLA 5: PEDIDOS
 -- ============================================================
--- Un pedido es realizado por un usuario con role = 'socio'.
+-- Un pedido es realizado por un usuario con role = 'socio' sobre la lista
+-- de precios de UN proveedor. Si el socio carga varias listas a la vez,
+-- el sistema genera un pedido independiente por cada proveedor.
+-- Regla: un socio tiene como máximo un pedido 'Pendiente' por proveedor.
 
 CREATE TABLE IF NOT EXISTS PEDIDOS (
-    id_pedido  INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_user    INTEGER NOT NULL,
-    -- Reemplaza a id_socio. Apunta al usuario socio que hace el pedido.
+    id_pedido        INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_user          INTEGER NOT NULL,
+    -- Apunta al usuario socio que hace el pedido.
 
-    fecha      TEXT    NOT NULL,
-    estado     TEXT    NOT NULL DEFAULT 'Pendiente' CHECK(estado IN ('Pendiente', 'Consolidado', 'Procesado', 'Repartido')),
+    id_proveedor     INTEGER NOT NULL,
+    -- Proveedor (lista de precios) al que corresponde el pedido.
 
-    FOREIGN KEY (id_user) REFERENCES USERS(id)
+    codigo_comercial TEXT,
+    -- Identificador ofuscado tipo 'RC-ORD-XXXXXX'.
+
+    fecha            TEXT    NOT NULL,
+    estado           TEXT    NOT NULL DEFAULT 'Pendiente' CHECK(estado IN ('Pendiente', 'Consolidado', 'Procesado', 'Repartido')),
+
+    FOREIGN KEY (id_user)      REFERENCES USERS(id),
+    FOREIGN KEY (id_proveedor) REFERENCES PROVEEDORES(id_proveedor)
 );
 
 
@@ -111,11 +130,14 @@ CREATE TABLE IF NOT EXISTS PEDIDOS (
 -- ============================================================
 -- Resuelve la relación N:M entre PEDIDOS y ARTICULOS.
 -- PK compuesta: la combinación de id_pedido + id_articulo debe ser única.
+-- precio_unitario congela el precio negociado: se actualiza mientras el
+-- pedido está 'Pendiente' (si se importa una lista nueva) y queda fijo al consolidar.
 
 CREATE TABLE IF NOT EXISTS DETALLE_PEDIDOS (
     id_pedido       INTEGER NOT NULL,
     id_articulo     INTEGER NOT NULL,
     cantidad_pedida INTEGER NOT NULL DEFAULT 1,
+    precio_unitario REAL    NOT NULL DEFAULT 0.0,
 
     PRIMARY KEY (id_pedido, id_articulo),
 
@@ -144,18 +166,26 @@ CREATE TABLE IF NOT EXISTS PROCESOS_REPARTO (
 -- TABLA 8: REMITOS
 -- ============================================================
 -- Documento de entrega dirigido a un usuario con role = 'socio'.
+-- Un remito corresponde a un único pedido (y por lo tanto a un único proveedor).
 
 CREATE TABLE IF NOT EXISTS REMITOS (
     id_remito        INTEGER PRIMARY KEY AUTOINCREMENT,
     id_user          INTEGER NOT NULL,
-    -- Reemplaza a id_socio. Apunta al usuario socio que recibe el remito.
+    -- Apunta al usuario socio que recibe el remito.
 
     id_proceso       INTEGER NOT NULL,
+    id_pedido        INTEGER,
+    id_proveedor     INTEGER,
+    codigo_comercial TEXT,
+    -- Identificador ofuscado tipo 'RC-REM-XXXXXX' (derivado de id_remito, único).
+
     fecha_emision    TEXT    NOT NULL,
     detalle_entrega  TEXT,
 
-    FOREIGN KEY (id_user)    REFERENCES USERS(id),
-    FOREIGN KEY (id_proceso) REFERENCES PROCESOS_REPARTO(id_proceso)
+    FOREIGN KEY (id_user)      REFERENCES USERS(id),
+    FOREIGN KEY (id_proceso)   REFERENCES PROCESOS_REPARTO(id_proceso),
+    FOREIGN KEY (id_pedido)    REFERENCES PEDIDOS(id_pedido),
+    FOREIGN KEY (id_proveedor) REFERENCES PROVEEDORES(id_proveedor)
 );
 
 
@@ -204,6 +234,7 @@ CREATE TABLE IF NOT EXISTS COMPROBANTES_PROVEEDOR (
     id_proveedor      INTEGER NOT NULL,
     tipo_comprobante  TEXT NOT NULL DEFAULT 'Factura', -- 'Factura', 'Remito', 'Comprobante'
     nro_comprobante   TEXT NOT NULL,
+    codigo_comercial  TEXT,
     fecha_emision     TEXT NOT NULL,
     fecha_recepcion   TEXT NOT NULL,
     observaciones     TEXT,

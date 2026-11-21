@@ -1,25 +1,38 @@
 class PedidoController:
+    """
+    Portal del socio. Cada hoja (proveedor) es un pedido independiente:
+    - "Enviar pedido de esta hoja": crea, modifica o anula el pedido de ese proveedor.
+    - "Enviar todo": aplica los cambios de todas las hojas (un pedido por proveedor),
+      previa confirmación con un resumen.
+    """
+
+    ACCIONES = {
+        'nuevo': "🆕 Nuevo pedido",
+        'modificar': "✏️ Modificar pedido",
+        'anular': "🗑️ Anular pedido",
+    }
+
     def __init__(self, vista, modelo, on_pedido_creado=None):
         self.vista = vista
         self.modelo = modelo
         self.on_pedido_creado = on_pedido_creado
-        
+
         # Conectar eventos de la vista
         if hasattr(self.vista, 'btn_confirmar'):
-            self.vista.btn_confirmar.clicked.connect(self.confirmar_pedido)
+            self.vista.btn_confirmar.clicked.connect(self.enviar_todo)
+        if hasattr(self.vista, 'enviar_hoja_solicitado'):
+            self.vista.enviar_hoja_solicitado.connect(self.enviar_hoja)
         if hasattr(self.vista, 'cmb_socio_seleccion'):
             self.vista.cmb_socio_seleccion.currentIndexChanged.connect(self.al_cambiar_socio)
-        if hasattr(self.vista, 'btn_refrescar_historial'):
-            self.vista.btn_refrescar_historial.clicked.connect(self.refrescar_historial)
 
     def inicializar(self):
-        """Carga los socios disponibles, el catálogo y sincroniza el estado activo del socio."""
+        """Carga los socios, las listas habilitadas y los pedidos vigentes del socio actual."""
         socios = self.modelo.obtener_socios()
         self.vista.cargar_socios_selector(socios)
-        
+
         articulos = self.modelo.obtener_catalogo_articulos()
         self.vista.cargar_articulos(articulos)
-        
+
         self.sincronizar_estado_socio()
 
     def al_cambiar_socio(self):
@@ -27,75 +40,121 @@ class PedidoController:
         self.sincronizar_estado_socio()
 
     def sincronizar_estado_socio(self):
-        """Carga el pedido vigente (sin cerrar) y el historial de pedidos para el socio actual."""
+        """Carga los pedidos 'Pendiente' del socio (uno por proveedor)."""
         id_socio = self.vista.obtener_id_socio()
         if not id_socio:
             return
+        vigentes = self.modelo.obtener_pedidos_vigentes(id_socio)
+        self.vista.establecer_pedidos_vigentes(vigentes)
 
-        # 1. Cargar o actualizar pedido vigente
-        pedido_vigente = self.modelo.obtener_pedido_vigente(id_socio)
-        self.vista.establecer_pedido_vigente(pedido_vigente)
+    # ------------------------------------------------------------------
+    # Envío por hoja
+    # ------------------------------------------------------------------
 
-        # 2. Cargar historial de pedidos
-        self.refrescar_historial()
-
-    def refrescar_historial(self):
-        """Refresca la tabla de historial de pedidos."""
+    def enviar_hoja(self, id_proveedor):
+        """Crea, modifica o anula el pedido de una sola hoja (proveedor)."""
         id_socio = self.vista.obtener_id_socio()
-        if id_socio:
-            historial = self.modelo.obtener_historial_pedidos(id_socio)
-            self.vista.cargar_historial_pedidos(historial)
+        cambios = self.vista.obtener_cambios_por_hoja(id_proveedor)
 
-    def validar_entradas(self, items_pedido):
-        """Valida que haya artículos seleccionados con cantidades válidas."""
-        if not items_pedido:
-            return False, "Debes ingresar al menos una cantidad en cualquiera de los proveedores para confirmar tu pedido."
-
-        for item in items_pedido:
-            cant = item.get('cantidad', 0)
-            detalle = item.get('detalle', 'Artículo')
-            if cant <= 0:
-                return False, f"La cantidad para '{detalle}' debe ser mayor a cero."
-
-        return True, None
-
-    def confirmar_pedido(self):
-        """Valida el pedido y lo registra o actualiza según corresponda."""
-        id_socio = self.vista.obtener_id_socio()
-        items_seleccionados = self.vista.obtener_articulos_seleccionados()
-
-        es_valido, error_msg = self.validar_entradas(items_seleccionados)
-        if not es_valido:
-            self.vista.mostrar_mensaje_error(error_msg)
+        if id_proveedor not in cambios:
+            if self.vista.hoja_tiene_pedido_vigente(id_proveedor):
+                self.vista.mostrar_mensaje_info("No hay cambios para guardar en el pedido de esta hoja.")
+            else:
+                self.vista.mostrar_mensaje_error("Ingresa al menos una cantidad en esta hoja para emitir el pedido.")
             return
 
+        cambio = cambios[id_proveedor]
         try:
-            articulos_para_registro = [(item['id_articulo'], item['cantidad']) for item in items_seleccionados]
-            
-            if self.vista.id_pedido_vigente:
-                # Modificar pedido vigente existente
-                id_ped = self.vista.id_pedido_vigente
-                cod = self.vista.codigo_pedido_vigente or f"#{id_ped}"
-                self.modelo.actualizar_pedido_vigente(id_ped, articulos_para_registro)
-                
-                self.vista.mostrar_mensaje_exito(
-                    f"¡Pedido {cod} actualizado con éxito!\n\n"
-                    f"• {len(articulos_para_registro)} productos registrados en tu pedido vigente.\n"
-                    f"• Puedes seguir realizando ajustes mientras continúe en estado 'Pendiente'."
-                )
+            if cambio['accion'] == 'anular':
+                if not self.vista.confirmar_accion(
+                    "Anular Pedido",
+                    f"Dejaste todas las cantidades en 0 en la hoja de '{cambio['nombre']}'.\n\n"
+                    f"¿Confirmas que deseas ANULAR el pedido {cambio['codigo']}?\n"
+                    f"Esta acción no se puede deshacer."
+                ):
+                    return
+                codigo = self.modelo.anular_pedido_vigente(id_socio, id_proveedor)
+                self.vista.mostrar_mensaje_exito(f"El pedido {codigo} para '{cambio['nombre']}' fue anulado.")
             else:
-                # Registrar nuevo pedido
-                id_pedido = self.modelo.registrar_pedido(id_socio, articulos_para_registro)
-                self.vista.mostrar_mensaje_exito(
-                    f"¡Pedido registrado con éxito!\n\n"
-                    f"• {len(articulos_para_registro)} productos solicitados.\n"
-                    f"• El Ejecutivo de Cuentas ha sido notificado para su consolidación."
-                )
-
-            self.sincronizar_estado_socio()
-            
-            if self.on_pedido_creado:
-                self.on_pedido_creado()
-                
+                r = self.modelo.guardar_pedido_proveedor(id_socio, id_proveedor, cambio['items'])
+                if r['es_nuevo']:
+                    self.vista.mostrar_mensaje_exito(
+                        f"¡Pedido {r['codigo_comercial']} registrado con éxito!\n\n"
+                        f"• Proveedor: {r['proveedor_nombre']}\n"
+                        f"• {r['cantidad_productos']} productos · Total estimado ${cambio['total']:,.2f}\n"
+                        f"• El Ejecutivo de Cuentas fue notificado."
+                    )
+                else:
+                    self.vista.mostrar_mensaje_exito(
+                        f"¡Pedido {r['codigo_comercial']} actualizado con éxito!\n\n"
+                        f"• Proveedor: {r['proveedor_nombre']}\n"
+                        f"• {r['cantidad_productos']} productos · Total estimado ${cambio['total']:,.2f}\n"
+                        f"• Puedes seguir modificándolo mientras esté en estado 'Pendiente'."
+                    )
+        except ValueError as e:
+            self.vista.mostrar_mensaje_error(str(e))
+            return
         except Exception as e:
             self.vista.mostrar_mensaje_error(f"Error al procesar el pedido: {str(e)}")
+            return
+
+        self._despues_de_guardar()
+
+    # ------------------------------------------------------------------
+    # Enviar todo
+    # ------------------------------------------------------------------
+
+    def enviar_todo(self):
+        """Aplica los cambios de todas las hojas, previa confirmación con resumen por proveedor."""
+        id_socio = self.vista.obtener_id_socio()
+        cambios = self.vista.obtener_cambios_por_hoja()
+
+        if not cambios:
+            self.vista.mostrar_mensaje_info(
+                "No hay cambios para enviar.\nIngresa cantidades en una o más hojas, o modifica tus pedidos vigentes."
+            )
+            return
+
+        lineas = []
+        for c in cambios.values():
+            accion = self.ACCIONES[c['accion']]
+            ref = f" {c['codigo']}" if c['codigo'] else ""
+            if c['accion'] == 'anular':
+                lineas.append(f"• {c['nombre']}: {accion}{ref}")
+            else:
+                lineas.append(f"• {c['nombre']}: {accion}{ref} — {len(c['items'])} productos · ${c['total']:,.2f}")
+        total = sum(c['total'] for c in cambios.values())
+
+        if not self.vista.confirmar_accion(
+            "Confirmar Envío de Pedidos",
+            "Se procesará un pedido independiente por cada proveedor:\n\n"
+            + "\n".join(lineas)
+            + f"\n\nTotal estimado: ${total:,.2f}\n\n¿Confirmas el envío?"
+        ):
+            return
+
+        a_guardar = {p: c['items'] for p, c in cambios.items() if c['accion'] != 'anular'}
+        a_anular = [p for p, c in cambios.items() if c['accion'] == 'anular']
+
+        try:
+            resultados = self.modelo.guardar_pedidos(id_socio, a_guardar) if a_guardar else []
+            anulados = [self.modelo.anular_pedido_vigente(id_socio, p) for p in a_anular]
+        except ValueError as e:
+            self.vista.mostrar_mensaje_error(str(e))
+            return
+        except Exception as e:
+            self.vista.mostrar_mensaje_error(f"Error al procesar los pedidos: {str(e)}")
+            return
+
+        detalle = [
+            f"• {r['codigo_comercial']} — {r['proveedor_nombre']} ({'nuevo' if r['es_nuevo'] else 'actualizado'})"
+            for r in resultados
+        ] + [f"• {cod} — anulado" for cod in anulados if cod]
+        self.vista.mostrar_mensaje_exito("¡Pedidos procesados con éxito!\n\n" + "\n".join(detalle))
+
+        self._despues_de_guardar()
+
+    def _despues_de_guardar(self):
+        self.sincronizar_estado_socio()
+        if self.on_pedido_creado:
+            self.on_pedido_creado()

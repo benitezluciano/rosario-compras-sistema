@@ -14,6 +14,7 @@ class ProveedorModel:
                 p.email,
                 p.telefono,
                 p.direccion,
+                p.lista_habilitada,
                 u.nombre AS ejecutivo_nombre,
                 (SELECT COUNT(*) FROM PRECIOS_NEGOCIADOS pn WHERE pn.id_proveedor = p.id_proveedor) AS total_articulos
             FROM PROVEEDORES p
@@ -108,9 +109,14 @@ class ProveedorModel:
             if cursor.fetchone()[0] > 0:
                 return False, "No se puede eliminar el proveedor porque posee comprobantes de entrega o facturas históricas registradas."
 
-            # 2. Eliminar precios negociados vinculados
+            # 2. Validar pedidos de socios asociados
+            cursor.execute("SELECT COUNT(*) FROM PEDIDOS WHERE id_proveedor = ?", (id_proveedor,))
+            if cursor.fetchone()[0] > 0:
+                return False, "No se puede eliminar el proveedor porque tiene pedidos de socios registrados."
+
+            # 3. Eliminar precios negociados vinculados
             cursor.execute("DELETE FROM PRECIOS_NEGOCIADOS WHERE id_proveedor = ?", (id_proveedor,))
 
-            # 3. Eliminar proveedor
+            # 4. Eliminar proveedor
             cursor.execute("DELETE FROM PROVEEDORES WHERE id_proveedor = ?", (id_proveedor,))
             return True, "Proveedor y su catálogo asociado eliminados con éxito."

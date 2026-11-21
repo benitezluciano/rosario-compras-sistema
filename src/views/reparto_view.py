@@ -34,13 +34,26 @@ class RepartoView(QWidget):
         self.txt_nro_comprobante.setText(nuevo_id)
 
     def cargar_proveedores(self, proveedores):
-        """Puebla el ComboBox con los proveedores."""
+        """
+        Puebla el ComboBox con los proveedores que tienen pedidos consolidados.
+        Cada entrega llega de un único proveedor, por lo que la selección es obligatoria
+        (no existe la opción 'Todos'). Conserva la selección previa si sigue disponible.
+        """
+        seleccionado = self.cmb_proveedor_recepcion.currentData()
         self.cmb_proveedor_recepcion.blockSignals(True)
         self.cmb_proveedor_recepcion.clear()
-        self.cmb_proveedor_recepcion.addItem("🔍 Todos los Proveedores", None)
+        if not proveedores:
+            self.cmb_proveedor_recepcion.addItem("📭 No hay pedidos consolidados pendientes de recepción", None)
         for p in proveedores:
             self.cmb_proveedor_recepcion.addItem(f"🏢 {p['nombre']}", p['id_proveedor'])
+        idx = self.cmb_proveedor_recepcion.findData(seleccionado)
+        if idx >= 0:
+            self.cmb_proveedor_recepcion.setCurrentIndex(idx)
         self.cmb_proveedor_recepcion.blockSignals(False)
+
+        hay_proveedores = bool(proveedores)
+        self.btn_guardar_comprobante.setEnabled(hay_proveedores)
+        self.btn_ejecutar.setEnabled(hay_proveedores)
 
     def cargar_pedidos_consolidados_selector(self, pedidos):
         """Puebla el ComboBox con los pedidos consolidados pendientes de recepción."""

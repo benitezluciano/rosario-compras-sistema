@@ -20,16 +20,29 @@ class ConsolidacionView(QWidget):
         self.tabla_consolidado.itemChanged.connect(self.al_cambiar_celda)
 
     def cargar_proveedores(self, proveedores):
-        """Puebla el ComboBox con los proveedores."""
+        """Puebla el ComboBox con los proveedores y sus pedidos pendientes (conserva la selección)."""
+        seleccionado = self.cmb_proveedor.currentData()
         self.cmb_proveedor.blockSignals(True)
         self.cmb_proveedor.clear()
         for prov in proveedores:
-            self.cmb_proveedor.addItem(f"🏢 {prov['nombre']}", prov['id_proveedor'])
+            pendientes = prov.get('pedidos_pendientes', 0)
+            sufijo = f"  ({pendientes} pedido(s) pendiente(s))" if pendientes else "  (sin pedidos pendientes)"
+            self.cmb_proveedor.addItem(f"🏢 {prov['nombre']}{sufijo}", prov['id_proveedor'])
+            self.cmb_proveedor.setItemData(self.cmb_proveedor.count() - 1, prov['nombre'], Qt.ItemDataRole.UserRole + 1)
+        idx = self.cmb_proveedor.findData(seleccionado)
+        if idx < 0:
+            # Por defecto, el primer proveedor con pedidos pendientes
+            idx = next((i for i, p in enumerate(proveedores) if p.get('pedidos_pendientes')), 0)
+        if self.cmb_proveedor.count():
+            self.cmb_proveedor.setCurrentIndex(idx)
         self.cmb_proveedor.blockSignals(False)
 
     def obtener_proveedor_seleccionado(self):
         """Retorna el id_proveedor seleccionado en el combo."""
         return self.cmb_proveedor.currentData()
+
+    def obtener_nombre_proveedor_seleccionado(self):
+        return self.cmb_proveedor.currentData(Qt.ItemDataRole.UserRole + 1) or "el proveedor"
 
     def cargar_matriz_proveedor(self, datos_matriz):
         """
@@ -119,9 +132,16 @@ class ConsolidacionView(QWidget):
         self.tabla_consolidado.blockSignals(False)
 
         total_articulos_pedidos = sum(1 for a in self.articulos_actuales if a['total_cantidad'] > 0)
-        self.lbl_info_pedidos.setText(
-            f"📋 {total_articulos_pedidos} productos con demanda activa para este proveedor entre {len(self.socios_actuales)} socios con pedidos pendientes."
-        )
+        nombre_prov = self.obtener_nombre_proveedor_seleccionado()
+        if self.socios_actuales:
+            self.lbl_info_pedidos.setText(
+                f"📋 {total_articulos_pedidos} productos con demanda activa entre {len(self.socios_actuales)} "
+                f"socio(s) con pedido pendiente para '{nombre_prov}'."
+            )
+        else:
+            self.lbl_info_pedidos.setText(f"📭 '{nombre_prov}' no tiene pedidos pendientes para consolidar.")
+        self.btn_consolidar.setText(f"🚀 Consolidar y Despachar Pedidos de '{nombre_prov}'")
+        self.btn_consolidar.setEnabled(bool(self.socios_actuales))
         self.lbl_estado_ajustes.setText("")
 
     def al_cambiar_celda(self, item):

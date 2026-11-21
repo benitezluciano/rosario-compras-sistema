@@ -77,6 +77,10 @@ class NotificacionesDialog(QDialog):
                 icono = "📦"
             elif tipo == 'reparto':
                 icono = "🚚"
+            elif tipo == 'pedido_modificado':
+                icono = "⚠️"
+            elif tipo == 'pedido_anulado':
+                icono = "🗑️"
             else:
                 icono = "ℹ️"
                 

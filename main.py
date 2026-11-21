@@ -32,6 +32,7 @@ from src.views.catalogo_view import CatalogoView
 from src.views.pedido_view import PedidoView
 from src.views.consolidacion_view import ConsolidacionView
 from src.views.reparto_view import RepartoView
+from src.views.historial_view import HistorialView
 from src.views.notificaciones_dialog import NotificacionesDialog
 
 # Controladores
@@ -40,6 +41,7 @@ from src.controllers.catalogo_controller import CatalogoController
 from src.controllers.pedido_controller import PedidoController
 from src.controllers.consolidacion_controller import ConsolidacionController
 from src.controllers.reparto_controller import RepartoController
+from src.controllers.historial_controller import HistorialController
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -175,7 +177,15 @@ class MainWindow(QMainWindow):
             on_reparto_completado=self.al_completar_reparto
         )
         self.stacked_pantallas.addWidget(self.vista_reparto) # Índice 3
-        
+
+        # Portal del Socio: Historial de Pedidos (pantalla independiente)
+        self.vista_historial = HistorialView()
+        self.controlador_historial = HistorialController(
+            self.vista_historial,
+            self.modelo_pedido
+        )
+        self.stacked_pantallas.addWidget(self.vista_historial) # Índice 4
+
         self.menu_lateral.currentRowChanged.connect(self.navegar_pantalla)
 
     def al_iniciar_sesion(self, usuario):
@@ -188,6 +198,7 @@ class MainWindow(QMainWindow):
         self.lbl_usuario_info.setText(f"👤 {nombre}  |  Rol: {rol_display}")
         
         self.vista_pedido.establecer_socio_actual(usuario['id'], nombre, rol=rol)
+        self.controlador_historial.set_socio(usuario['id'])
         self.controlador_catalogo.set_usuario_actual(usuario)
         self.controlador_consolidacion.set_usuario_actual(usuario)
         self.actualizar_badge_notificaciones()
@@ -196,8 +207,9 @@ class MainWindow(QMainWindow):
         self.menu_lateral.clear()
         
         if rol == 'socio':
-            # Socio: Pedido Vigente e Historial
+            # Socio: Gestión de Pedidos e Historial (pantallas separadas)
             self.menu_lateral.addItem("🛍️ Gestión de Pedidos")
+            self.menu_lateral.addItem("📜 Historial de Pedidos")
             self.controlador_pedido.inicializar()
             self.menu_lateral.blockSignals(False)
             self.menu_lateral.setCurrentRow(0)
@@ -225,8 +237,12 @@ class MainWindow(QMainWindow):
             
         rol = self.usuario_actual.get('role', 'socio')
         if rol == 'socio':
-            self.stacked_pantallas.setCurrentWidget(self.vista_pedido)
-            self.controlador_pedido.inicializar()
+            if row == 0:
+                self.stacked_pantallas.setCurrentWidget(self.vista_pedido)
+                self.controlador_pedido.inicializar()
+            elif row == 1:
+                self.stacked_pantallas.setCurrentWidget(self.vista_historial)
+                self.controlador_historial.inicializar()
         else:
             if row == 0:
                 self.stacked_pantallas.setCurrentWidget(self.vista_catalogo)

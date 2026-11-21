@@ -47,15 +47,15 @@ class RepartoController:
             self.vista.txt_nro_comprobante.setText(nro_comprobante)
 
         id_proveedor = self.vista.obtener_proveedor_seleccionado()
+        if not id_proveedor:
+            self.vista.mostrar_mensaje_error("Debes seleccionar el proveedor que realizó la entrega.")
+            return
+
         items = self.vista.obtener_items_para_asentar()
-        
         if not items:
             self.vista.mostrar_mensaje_error("No hay artículos en la lista para asentar.")
             return
 
-        if not id_proveedor:
-            id_proveedor = 1 # Proveedor por defecto si está en 'Todos'
-            
         tipo_comprobante = self.vista.cmb_tipo_comprobante.currentText()
 
         try:
@@ -85,6 +85,10 @@ class RepartoController:
         """Valida el stock físico registrado, aplica prorrateo si hubo faltantes y emite remitos PDF oficiales."""
         id_proveedor = self.vista.obtener_proveedor_seleccionado()
         id_pedido_sel = self.vista.obtener_pedido_seleccionado()
+
+        if not id_proveedor:
+            self.vista.mostrar_mensaje_error("Debes seleccionar el proveedor cuya mercadería vas a repartir.")
+            return
 
         pedidos = self.modelo.obtener_pedidos_consolidados_por_proveedor(id_proveedor)
         if not pedidos:
@@ -118,7 +122,7 @@ class RepartoController:
             total_pdfs = len(lista_pdfs)
             self.vista.mostrar_mensaje_exito(
                 f"¡Reparto automático completado con éxito!\n\n"
-                f"• Se generaron {total_pdfs} Remitos Oficiales en formato PDF (uno por cada proveedor para cada socio).\n"
+                f"• Se generaron {total_pdfs} Remitos Oficiales en formato PDF (uno por cada pedido del proveedor).\n"
                 f"• Los remitos quedaron guardados en la carpeta 'remitos_pdf/'.\n"
                 f"• Cada socio ha recibido una notificación con su remito emitido.\n\n"
                 f"Puedes abrir la carpeta de remitos con el botón 'Ver Carpeta de Remitos PDF'."

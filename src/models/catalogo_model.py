@@ -1,12 +1,22 @@
 import os
+from datetime import datetime
 import pandas as pd
 from src.database import Database
 from src.models.notificacion_model import NotificacionModel
 
 class CatalogoModel:
     def obtener_proveedores(self):
-        """Devuelve la lista de proveedores registrados en la base de datos."""
-        query = "SELECT id_proveedor, nombre, email, telefono, direccion FROM PROVEEDORES ORDER BY nombre ASC"
+        """Devuelve la lista de proveedores registrados, con el estado de su lista de precios."""
+        query = """
+            SELECT pr.id_proveedor, pr.nombre, pr.email, pr.telefono, pr.direccion,
+                   pr.lista_habilitada, pr.fecha_habilitacion,
+                   (SELECT COUNT(*) FROM PRECIOS_NEGOCIADOS pn
+                    WHERE pn.id_proveedor = pr.id_proveedor) AS total_articulos,
+                   (SELECT COUNT(*) FROM PEDIDOS p
+                    WHERE p.id_proveedor = pr.id_proveedor AND p.estado = 'Pendiente') AS pedidos_pendientes
+            FROM PROVEEDORES pr
+            ORDER BY pr.nombre ASC
+        """
         with Database() as conn:
             cursor = conn.cursor()
             cursor.execute(query)
@@ -26,6 +36,48 @@ class CatalogoModel:
             cursor.execute(query, (id_proveedor,))
             row = cursor.fetchone()
             return dict(row) if row else None
+
+    def cambiar_estado_lista(self, id_proveedor, habilitada):
+        """
+        Habilita o cierra manualmente la lista de precios de un proveedor.
+        - Habilitada: los socios ven la hoja del proveedor y pueden cargar pedidos.
+        - Cerrada: la hoja deja de mostrarse a los socios.
+        Al habilitar se notifica a todos los socios.
+        Retorna (exito, mensaje).
+        """
+        with Database() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT nombre FROM PROVEEDORES WHERE id_proveedor = ?", (id_proveedor,))
+            row = cursor.fetchone()
+            if not row:
+                return False, "Proveedor no encontrado."
+            nombre_prov = row['nombre']
+
+            if habilitada:
+                cursor.execute(
+                    "SELECT COUNT(*) FROM PRECIOS_NEGOCIADOS WHERE id_proveedor = ?", (id_proveedor,)
+                )
+                if cursor.fetchone()[0] == 0:
+                    return False, f"'{nombre_prov}' no tiene una lista de precios importada para habilitar."
+                cursor.execute(
+                    "UPDATE PROVEEDORES SET lista_habilitada = 1, fecha_habilitacion = ? WHERE id_proveedor = ?",
+                    (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), id_proveedor)
+                )
+            else:
+                cursor.execute(
+                    "UPDATE PROVEEDORES SET lista_habilitada = 0 WHERE id_proveedor = ?", (id_proveedor,)
+                )
+
+        if habilitada:
+            try:
+                NotificacionModel().notificar_a_todos_los_socios(
+                    mensaje=f"La lista de precios de '{nombre_prov}' está habilitada. Ya puedes cargar tu pedido.",
+                    tipo="catalogo_actualizado"
+                )
+            except Exception as e:
+                print(f"Advertencia al notificar habilitación de lista: {e}")
+            return True, f"Lista de '{nombre_prov}' habilitada para pedidos de los socios."
+        return True, f"Lista de '{nombre_prov}' cerrada: los socios ya no pueden cargar pedidos sobre ella."
 
     def solicitar_lista_proveedor(self, id_proveedor):
         """
@@ -127,6 +179,10 @@ class CatalogoModel:
         """
         Interpreta la planilla del proveedor y actualiza o inserta los artículos
         y sus precios negociados en SQLite, guardando precio base, descuento y precio con descuento.
+        - Los artículos se buscan SOLO dentro del catálogo de este proveedor (por código y,
+          si no hay coincidencia, por detalle), para no pisar artículos de otros proveedores.
+        - Habilita la lista del proveedor para que los socios carguen pedidos.
+        - Actualiza el precio de los renglones de pedidos 'Pendiente' de este proveedor.
         Emite automáticamente una notificación a todos los socios informando la disponibilidad.
         """
         if not os.path.exists(ruta_archivo):
@@ -199,10 +255,29 @@ class CatalogoModel:
 
                     precio_final = precio_base * (1.0 - descuento)
 
-                    # 1. Verificar si el artículo ya existe por detalle o código
-                    cursor.execute("SELECT id_articulo FROM ARTICULOS WHERE LOWER(detalle) = LOWER(?)", (detalle,))
-                    art_row = cursor.fetchone()
-                    
+                    # 1. Verificar si el artículo ya existe dentro del catálogo de ESTE proveedor
+                    #    (primero por código del proveedor, luego por detalle)
+                    art_row = None
+                    if cod_prov:
+                        cursor.execute("""
+                            SELECT a.id_articulo FROM ARTICULOS a
+                            JOIN PRECIOS_NEGOCIADOS pn ON pn.id_articulo = a.id_articulo
+                            WHERE pn.id_proveedor = ? AND LOWER(a.id_articulo_proveedor) = LOWER(?)
+                        """, (id_proveedor, cod_prov))
+                        art_row = cursor.fetchone()
+                    if not art_row:
+                        cursor.execute("""
+                            SELECT a.id_articulo FROM ARTICULOS a
+                            JOIN PRECIOS_NEGOCIADOS pn ON pn.id_articulo = a.id_articulo
+                            WHERE pn.id_proveedor = ? AND LOWER(a.detalle) = LOWER(?)
+                        """, (id_proveedor, detalle))
+                        art_row = cursor.fetchone()
+
+                    if art_row:
+                        # El detalle también se actualiza (el proveedor puede haber renombrado el artículo)
+                        cursor.execute("UPDATE ARTICULOS SET detalle = ? WHERE id_articulo = ?",
+                                       (detalle, art_row['id_articulo']))
+
                     if art_row:
                         id_articulo = art_row['id_articulo']
                         cursor.execute("""
@@ -226,17 +301,43 @@ class CatalogoModel:
                     
                     articulos_insertados += 1
 
-            # 3. Notificación masiva automática a los socios
+                # 3. Habilitar la lista del proveedor para un nuevo ciclo de pedidos
+                cursor.execute(
+                    "UPDATE PROVEEDORES SET lista_habilitada = 1, fecha_habilitacion = ? WHERE id_proveedor = ?",
+                    (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), id_proveedor)
+                )
+
+                # 4. Los pedidos aún 'Pendiente' de este proveedor toman los precios nuevos
+                #    (los consolidados conservan su precio congelado)
+                cursor.execute("""
+                    UPDATE DETALLE_PEDIDOS
+                    SET precio_unitario = (
+                        SELECT pn.precio_final FROM PRECIOS_NEGOCIADOS pn
+                        WHERE pn.id_proveedor = ? AND pn.id_articulo = DETALLE_PEDIDOS.id_articulo
+                    )
+                    WHERE id_pedido IN (
+                        SELECT id_pedido FROM PEDIDOS WHERE id_proveedor = ? AND estado = 'Pendiente'
+                    )
+                    AND EXISTS (
+                        SELECT 1 FROM PRECIOS_NEGOCIADOS pn
+                        WHERE pn.id_proveedor = ? AND pn.id_articulo = DETALLE_PEDIDOS.id_articulo
+                    )
+                """, (id_proveedor, id_proveedor, id_proveedor))
+
+            # 5. Notificación masiva automática a los socios
             try:
                 notif = NotificacionModel()
                 notif.notificar_a_todos_los_socios(
-                    mensaje=f"El Ejecutivo actualizó el catálogo con {articulos_insertados} productos de '{nombre_prov}'. Ya puedes consultar precios y cargar tu pedido.",
+                    mensaje=f"El Ejecutivo habilitó la lista de precios de '{nombre_prov}' ({articulos_insertados} productos). Ya puedes cargar tu pedido.",
                     tipo="catalogo_actualizado"
                 )
             except Exception as e:
                 print(f"Advertencia al notificar actualización de catálogo: {e}")
 
-            return True, f"Se importaron y actualizaron con éxito {articulos_insertados} artículos en el catálogo único.\nSe notificó a los socios sobre la disponibilidad."
+            return True, (
+                f"Se importaron y actualizaron con éxito {articulos_insertados} artículos de '{nombre_prov}'.\n"
+                f"La lista quedó habilitada y se notificó a los socios."
+            )
 
         except Exception as e:
             return False, f"Error durante el procesamiento de la planilla: {str(e)}"
