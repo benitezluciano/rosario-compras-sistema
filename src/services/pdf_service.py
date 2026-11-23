@@ -277,3 +277,205 @@ class PdfService:
         if d.get('datos_simulados'):
             leyenda += " DATOS FISCALES SIMULADOS — completar con los datos reales del emisor y del destinatario."
         self._texto(p, X0, Y1 + 1.5, X1 - X0, 5, leyenda, 6.8, cursiva=True, color=GRIS, alineacion=centro)
+
+    # ------------------------------------------------------------------
+    # Nota de Pedido (copia del pedido del socio, con precios)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def nombre_archivo_nota_pedido(datos):
+        """Nota_Pedido_<RC-ORD-...>_<Proveedor>.pdf"""
+        prov = datos.get('proveedor', {}).get('nombre') or 'Proveedor'
+        prov_safe = "".join(c for c in prov if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+        return f"Nota_Pedido_{datos.get('codigo', '')}_{prov_safe}.pdf"
+
+    def generar_nota_pedido_pdf(self, datos, ruta_pdf):
+        """
+        Genera la Nota de Pedido del socio en `ruta_pdf` (una sola copia, con precios).
+        datos = {
+            'codigo' (RC-ORD-...), 'fecha', 'estado', 'leyenda_estado' (texto según el estado),
+            'emisor': {...como en el remito, más 'email'},
+            'socio': {'nombre', 'cuit_dni', 'condicion_iva', 'domicilio', 'email'},
+            'proveedor': {'nombre', 'email', 'telefono'},
+            'referencias': str,
+            'items': [{'cantidad', 'entregado' (None si no hubo entrega), 'unidad', 'codigo', 'detalle',
+                       'precio_unitario', 'subtotal'}],
+            'entregado': bool (agrega la columna ENTREG.), 'total', 'total_unidades', 'datos_simulados'
+        }
+        Retorna la ruta del PDF.
+        """
+        carpeta = os.path.dirname(os.path.abspath(ruta_pdf))
+        os.makedirs(carpeta, exist_ok=True)
+
+        writer = QPdfWriter(ruta_pdf)
+        writer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+        writer.setPageMargins(QMarginsF(0, 0, 0, 0), QPageLayout.Unit.Millimeter)
+        writer.setResolution(RESOLUCION)
+        writer.setTitle(f"Nota de Pedido {datos.get('codigo', '')}")
+        writer.setCreator("Rosario Compras - Sistema de Gestión")
+
+        items = datos.get('items', [])
+        hojas = [items[i:i + NP_FILAS_POR_HOJA] for i in range(0, len(items), NP_FILAS_POR_HOJA)] or [[]]
+
+        p = QPainter(writer)
+        try:
+            p.setRenderHint(QPainter.RenderHint.Antialiasing)
+            for nro_hoja, items_hoja in enumerate(hojas, start=1):
+                if nro_hoja > 1:
+                    writer.newPage()
+                self._dibujar_nota_pedido(p, datos, items_hoja, nro_hoja, len(hojas))
+        finally:
+            p.end()
+        return ruta_pdf
+
+    def _dibujar_nota_pedido(self, p, d, items, nro_hoja, total_hojas):
+        emisor = d.get('emisor', {})
+        socio = d.get('socio', {})
+        prov = d.get('proveedor', {})
+        izq = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        der = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        centro = Qt.AlignmentFlag.AlignCenter
+        arriba = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
+        columnas = NP_COLUMNAS_ENTREGA if d.get('entregado') else NP_COLUMNAS
+
+        if total_hojas > 1:
+            self._texto(p, X0, Y0 - 6, X1 - X0, 5, f"Hoja {nro_hoja} de {total_hojas}", 8, negrita=True, color=GRIS,
+                        alineacion=der)
+
+        # --- Recuadro y divisiones ---
+        p.setPen(QPen(NEGRO, 0.5 * MM))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawRect(self._r(X0, Y0, X1 - X0, Y1 - Y0))
+        for y in (NP_Y_CABECERA, NP_Y_PARTES, NP_Y_REFERENCIAS, NP_Y_PIE):
+            self._linea(p, X0, y, X1, y, 0.35)
+        self._linea(p, X0, NP_Y_ENCABEZADO_TABLA, X1, NP_Y_ENCABEZADO_TABLA, 0.3)
+        self._linea(p, XC, Y0, XC, NP_Y_PARTES, 0.35)
+
+        # --- Cabecera izquierda: emisor ---
+        self._texto(p, X0 + 4, Y0 + 3, XC - X0 - 8, 8, emisor.get('razon_social', ''), 14, negrita=True)
+        lineas = [
+            f"Domicilio: {emisor.get('domicilio', '')}",
+            f"C.U.I.T.: {emisor.get('cuit', '')} · IVA: {emisor.get('condicion_iva', '')}",
+            f"Email: {emisor.get('email', '')}",
+        ]
+        for i, linea in enumerate(lineas):
+            self._texto(p, X0 + 4, Y0 + 13 + i * 5, XC - X0 - 8, 5, linea, 7.8, color=GRIS)
+
+        # --- Cabecera derecha: datos del pedido ---
+        xd = XC + 5
+        ancho_d = X1 - xd - 4
+        self._texto(p, xd, Y0 + 2, ancho_d, 8, "NOTA DE PEDIDO", 16, negrita=True)
+        self._texto(p, xd, Y0 + 11, ancho_d, 7, f"N.º {d.get('codigo', '')}", 12, negrita=True)
+        self._texto(p, xd, Y0 + 19, ancho_d, 5, f"Fecha del pedido: {fecha_corta(d.get('fecha', ''))}", 9)
+        self._texto(p, xd, Y0 + 24, ancho_d, 5, f"Estado: {d.get('estado_visible') or d.get('estado', '')}", 9, negrita=True,
+                    color=NP_COLOR_ESTADO.get(d.get('estado'), NEGRO))
+        self._texto(p, xd, Y0 + 29.5, ancho_d, 5, "Documento no válido como factura ni como remito", 7, cursiva=True,
+                    color=GRIS_CLARO)
+
+        # --- Socio | Proveedor ---
+        self._esquinas(p, X0 + 3, NP_Y_CABECERA + 3, XC - X0 - 6, NP_Y_PARTES - NP_Y_CABECERA - 6)
+        self._esquinas(p, XC + 3, NP_Y_CABECERA + 3, X1 - XC - 6, NP_Y_PARTES - NP_Y_CABECERA - 6)
+        self._texto(p, X0 + 7, NP_Y_CABECERA + 4.5, 60, 5, "Socio:", 8.5, color=GRIS)
+        self._texto(p, X0 + 7, NP_Y_CABECERA + 9.5, XC - X0 - 14, 6, socio.get('nombre', ''), 11, negrita=True)
+        self._texto(p, X0 + 7, NP_Y_CABECERA + 16, XC - X0 - 14, 5,
+                    f"Domicilio: {socio.get('domicilio') or '—'}", 8)
+        self._texto(p, X0 + 7, NP_Y_CABECERA + 21, XC - X0 - 14, 5,
+                    f"C.U.I.T./D.N.I.: {socio.get('cuit_dni') or '—'} · IVA: {socio.get('condicion_iva') or '—'}", 8)
+        self._texto(p, XC + 7, NP_Y_CABECERA + 4.5, 60, 5, "Proveedor:", 8.5, color=GRIS)
+        self._texto(p, XC + 7, NP_Y_CABECERA + 9.5, X1 - XC - 14, 6, prov.get('nombre') or '—', 11, negrita=True)
+        self._texto(p, XC + 7, NP_Y_CABECERA + 16, X1 - XC - 14, 5, f"Email: {prov.get('email') or '—'}", 8)
+        self._texto(p, XC + 7, NP_Y_CABECERA + 21, X1 - XC - 14, 5, f"Teléfono: {prov.get('telefono') or '—'}", 8)
+
+        # --- Referencias ---
+        self._texto(p, X0 + 3, NP_Y_PARTES + 0.5, X1 - X0 - 6, NP_Y_REFERENCIAS - NP_Y_PARTES - 1,
+                    f"Referencias: {d.get('referencias') or '—'}", 7.8, alineacion=izq, ajustar=True)
+
+        # --- Tabla ---
+        for i, (x, titulo, _clave, _alin) in enumerate(columnas):
+            x_fin = columnas[i + 1][0] if i + 1 < len(columnas) else X1
+            if i > 0:
+                self._linea(p, x, NP_Y_REFERENCIAS, x, NP_Y_PIE, 0.3)
+            self._texto(p, x, NP_Y_REFERENCIAS, x_fin - x, NP_Y_ENCABEZADO_TABLA - NP_Y_REFERENCIAS, titulo, 7.2,
+                        negrita=True, alineacion=centro)
+
+        alineaciones = {'c': centro, 'i': izq, 'd': der}
+        y = NP_Y_ENCABEZADO_TABLA
+        for it in items:
+            faltante = it.get('entregado') is not None and it['entregado'] < (it.get('cantidad') or 0)
+            for i, (x, _titulo, clave, alin) in enumerate(columnas):
+                x_fin = columnas[i + 1][0] if i + 1 < len(columnas) else X1
+                valor = it.get(clave)
+                if clave in ('precio_unitario', 'subtotal'):
+                    texto = moneda(valor)
+                elif clave == 'unidad':
+                    texto = valor or 'Unidad'
+                elif valor is None:
+                    texto = '-'
+                else:
+                    texto = str(valor)
+                margen = 1.5 if alin != 'c' else 0.5
+                resaltar = clave == 'entregado' and faltante
+                self._texto(p, x + margen, y, x_fin - x - 2 * margen, ALTO_FILA, texto, 8.5,
+                            negrita=(clave == 'cantidad' or resaltar), color=NP_COLOR_FALTANTE if resaltar else NEGRO,
+                            alineacion=alineaciones[alin])
+            self._linea(p, X0, y + ALTO_FILA, X1, y + ALTO_FILA, 0.15, GRIS_CLARO, Qt.PenStyle.DotLine)
+            y += ALTO_FILA
+
+        x_desc = next(x for (x, _t, clave, _a) in columnas if clave == 'detalle')
+        x_precio = next(x for (x, _t, clave, _a) in columnas if clave == 'precio_unitario')
+        x_subtotal = columnas[-1][0]
+        if nro_hoja == total_hojas:
+            self._texto(p, x_desc + 1.5, y, x_precio - x_desc - 3, ALTO_FILA,
+                        f"TOTAL ({d.get('total_unidades', 0)} unidad(es) en {len(d.get('items', []))} renglón(es))",
+                        8.5, negrita=True, alineacion=der)
+            self._texto(p, x_subtotal + 1.5, y, X1 - x_subtotal - 3, ALTO_FILA, moneda(d.get('total')), 9,
+                        negrita=True, alineacion=der)
+        else:
+            self._texto(p, x_desc + 1.5, y, X1 - x_desc - 3, ALTO_FILA, "Continúa en la hoja siguiente…", 8.5,
+                        cursiva=True, color=GRIS, alineacion=izq)
+
+        # --- Pie: estado y aclaraciones ---
+        self._texto(p, X0 + 3, NP_Y_PIE + 1.5, 80, 5, "ESTADO DEL PEDIDO", 7.5, negrita=True, color=GRIS)
+        self._texto(p, X0 + 3, NP_Y_PIE + 7, X1 - X0 - 6, 12, d.get('leyenda_estado', ''), 9, alineacion=arriba,
+                    ajustar=True)
+        aclaracion = ("Precios unitarios congelados al momento de cargar el pedido (pueden actualizarse si el proveedor "
+                      "publica una lista nueva mientras el pedido esté Pendiente). Importes estimados, sin impuestos; "
+                      "el importe definitivo surge de la factura.")
+        if d.get('entregado'):
+            aclaracion += " La columna ENTREG. indica lo recibido según el remito."
+        self._texto(p, X0 + 3, NP_Y_PIE + 19, X1 - X0 - 6, 12, aclaracion, 7.3, cursiva=True, color=GRIS,
+                    alineacion=arriba, ajustar=True)
+
+        leyenda = "Copia del pedido emitida por el Sistema de Gestión Rosario Compras."
+        if d.get('datos_simulados'):
+            leyenda += " DATOS FISCALES SIMULADOS."
+        self._texto(p, X0, Y1 + 1.5, X1 - X0, 5, leyenda, 6.8, cursiva=True, color=GRIS, alineacion=centro)
+
+
+def moneda(valor):
+    """1234.5 → '$ 1.234,50' (formato argentino)."""
+    texto = f"{(valor or 0):,.2f}".replace(",", "#").replace(".", ",").replace("#", ".")
+    return f"$ {texto}"
+
+
+# Geometría de la Nota de Pedido (en mm)
+NP_Y_CABECERA = 50.0
+NP_Y_PARTES = 82.0
+NP_Y_REFERENCIAS = 90.0
+NP_Y_ENCABEZADO_TABLA = 96.0
+NP_FILAS_POR_HOJA = 23
+NP_Y_PIE = NP_Y_ENCABEZADO_TABLA + ALTO_FILA * (NP_FILAS_POR_HOJA + 1)
+# Columnas: (x inicial, título, clave del item, alineación c/i/d)
+NP_COLUMNAS = [
+    (X0, "CANT.", 'cantidad', 'c'), (28.0, "UNIDAD", 'unidad', 'c'), (48.0, "CÓDIGO", 'codigo', 'c'),
+    (72.0, "DESCRIPCIÓN DEL PRODUCTO", 'detalle', 'i'), (148.0, "P. UNITARIO", 'precio_unitario', 'd'),
+    (172.0, "SUBTOTAL", 'subtotal', 'd'),
+]
+NP_COLUMNAS_ENTREGA = [
+    (X0, "PEDIDO", 'cantidad', 'c'), (26.0, "ENTREG.", 'entregado', 'c'), (40.0, "UNIDAD", 'unidad', 'c'),
+    (58.0, "CÓDIGO", 'codigo', 'c'), (80.0, "DESCRIPCIÓN DEL PRODUCTO", 'detalle', 'i'),
+    (148.0, "P. UNITARIO", 'precio_unitario', 'd'), (172.0, "SUBTOTAL", 'subtotal', 'd'),
+]
+NP_COLOR_ESTADO = {'Pendiente': QColor("#b45309"), 'Consolidado': QColor("#1e3a8a"),
+                   'Procesado': QColor("#15803d"), 'Repartido': QColor("#15803d")}
+NP_COLOR_FALTANTE = QColor("#b45309")

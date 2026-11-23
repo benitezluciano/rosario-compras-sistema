@@ -404,3 +404,35 @@
   - El reparto genera el PDF desde la base, igual que la regeneración.
   - Hoy no hay pantalla para editar los datos fiscales de los socios (pendiente).
 - **Relacionado con:** DEC-009, DEC-022.
+
+---
+
+### DEC-024 — Historial del socio con detalle del pedido y Nota de Pedido en PDF
+
+- **Fecha:** 2026-11-23
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano, asistente (Claude Code)
+- **Contexto:** El socio enviaba pedidos pero no tenía dónde ver lo que había enviado. El historial mostraba lo pedido en una columna "Productos Solicitados" con todos los artículos concatenados, que no se leía bien y no servía en la práctica.
+- **Decisión:**
+  - **Se quita la columna "Productos Solicitados".** La lista queda con N° de Pedido · Fecha · Proveedor · Estado · Productos (cantidad) · Unidades · Total · Remito, más filtros por proveedor y por estado.
+  - **Detalle debajo de la lista** (igual que el historial del ejecutivo). Al seleccionar un pedido, en cualquier estado, se ve:
+    - El estado en lenguaje simple: "Pendiente" (se puede modificar hasta que se consolide), "Enviado al proveedor" o "Entregado" (con el número de remito).
+    - Los renglones: código, artículo, unidad, cantidad, precio unitario congelado y subtotal, con el total.
+    - Si ya se entregó, una columna "Entregado" según el remito, resaltada cuando es menor que lo pedido.
+  - **Nota de Pedido en PDF**, disponible en cualquier estado:
+    - Mismo estilo que el remito, pero con precios, una sola copia y la leyenda "no válido como factura ni como remito".
+    - Se puede **abrir** (se genera en una carpeta temporal) o **guardar como…** en la carpeta que elija el socio. No se guarda una copia en el proyecto: se genera siempre con los datos actuales de la base.
+  - **"🚚 Ver remito"** cuando el pedido ya se entregó (regenera el PDF si falta, como en DEC-023).
+  - **"✏️ Modificar pedido"** para los pedidos pendientes: abre Gestión de Pedidos en la hoja de ese proveedor. Solo se habilita si la lista sigue habilitada, y se vuelve a verificar al hacer clic.
+  - Cada socio solo puede ver sus propios pedidos: el modelo valida que el pedido le pertenezca.
+- **Alternativas consideradas:**
+  - Ventana emergente con el detalle: agrega un paso más que el panel debajo de la lista.
+  - Guardar la Nota de Pedido en una carpeta del proyecto, como los remitos: un pedido pendiente cambia y el archivo quedaría desactualizado.
+  - Exportar a Excel: el PDF es más simple de leer, imprimir y reenviar para el socio.
+  - Mostrar "pediste 10, se ajustó a 8" cuando el ejecutivo ajusta cantidades antes de consolidar: hoy no se guarda la cantidad original. Queda pendiente.
+- **Consecuencias:**
+  - `historial_view.py` se arma en código; `historial_pedidos.ui` queda sin uso.
+  - `PedidoModel` suma `obtener_detalle_pedido` y la generación de la Nota de Pedido; `pdf_service.py` suma `generar_nota_pedido_pdf`.
+  - `PedidoView.seleccionar_hoja` y `main.py` (`ir_a_modificar_pedido`) permiten ir del historial a la hoja del proveedor.
+  - La prueba integral suma el paso 8b: 12 de 12 pruebas OK.
+- **Relacionado con:** DEC-001, DEC-007, DEC-010, DEC-022, DEC-023.

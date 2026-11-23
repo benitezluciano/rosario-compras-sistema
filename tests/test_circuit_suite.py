@@ -252,7 +252,47 @@ def run_tests():
     assert len(historial) == 2 and all(h['proveedor_nombre'] for h in historial)
     h_lacteos = next(h for h in historial if h['id_pedido'] == id_ped_lacteos)
     assert abs(h_lacteos['total_estimado'] - 12 * precio_despues) < 0.01
-    print("[OK] 8. Historial con proveedor y totales calculados con el precio congelado.")
+    assert h_lacteos['numero_remito'] and h_lacteos['id_remito'] == id_rem_socio
+    h_central = next(h for h in historial if h['id_pedido'] == id_ped_central)
+    assert h_central['numero_remito'] is None and h_central['lista_habilitada'] == 1
+    assert 'resumen_productos' not in h_lacteos
+    print("[OK] 8. Historial con proveedor, remito y totales calculados con el precio congelado.")
+
+    # 8b. DETALLE DEL PEDIDO Y NOTA DE PEDIDO (cualquier estado)
+    det_lac = ped_model.obtener_detalle_pedido(socio_u['id'], id_ped_lacteos)
+    assert det_lac['estado'] == 'Procesado' and det_lac['entregado'] and det_lac['remito_visible'].startswith('X ')
+    assert det_lac['remito_visible'] in det_lac['leyenda_estado']
+    assert abs(det_lac['total'] - h_lacteos['total_estimado']) < 0.01
+    entregas = {r['id_articulo']: r['cantidad_entregada'] for r in consultar(
+        "SELECT id_articulo, cantidad_entregada FROM DETALLE_REMITOS WHERE id_remito=?", (id_rem_socio,))}
+    for r in det_lac['renglones']:
+        assert r['cantidad_pedida'] == 12 and r['unidad'] and r['cantidad_entregada'] == entregas.get(r['id_articulo'], 0)
+    det_cen = ped_model.obtener_detalle_pedido(socio_u['id'], id_ped_central)
+    assert det_cen['estado'] == 'Pendiente' and not det_cen['entregado'] and det_cen['lista_habilitada'] == 1
+    assert 'modificarlo' in det_cen['leyenda_estado'] and len(det_cen['renglones']) == 2
+    assert all(r['cantidad_entregada'] is None for r in det_cen['renglones'])
+    try:
+        ped_model.obtener_detalle_pedido(ejec_u['id'], id_ped_lacteos)
+        raise AssertionError("Un usuario no debe ver el pedido de otro socio")
+    except ValueError:
+        pass
+
+    for det, id_ped in ((det_lac, id_ped_lacteos), (det_cen, id_ped_central)):
+        ruta_nota = ped_model.generar_nota_pedido_pdf(
+            socio_u['id'], id_ped, os.path.join(TMP_DIR, ped_model.nombre_archivo_nota_pedido(socio_u['id'], id_ped)))
+        assert os.path.basename(ruta_nota).startswith(f"Nota_Pedido_{det['codigo_comercial']}_")
+        pdf_doc = QPdfDocument(None)
+        pdf_doc.load(ruta_nota)
+        assert pdf_doc.pageCount() == 1
+        texto_nota = pdf_doc.getAllText(0).text()
+        pdf_doc.close()
+        if texto_nota.strip():
+            assert 'NOTA DE PEDIDO' in texto_nota and det['codigo_comercial'] in texto_nota, texto_nota[:300]
+            assert ('ENTREG.' in texto_nota) == det['entregado']
+    ruta_temp = ped_model.generar_nota_pedido_pdf(socio_u['id'], id_ped_central)   # "Abrir": carpeta temporal
+    assert os.path.exists(ruta_temp)
+    os.remove(ruta_temp)
+    print("[OK] 8b. Detalle del pedido (pendiente y entregado, con lo entregado) y Nota de Pedido en PDF.")
 
     # 9. HISTORIAL DEL EJECUTIVO
     hist = HistorialEjecutivoModel()
@@ -284,7 +324,7 @@ def run_tests():
     assert any(d['diferencia'] < 0 for d in hist.obtener_detalle_comprobante(id_comp_test))
     print(f"[OK] 9. Historial del ejecutivo: {len(ordenes)} órdenes (filtros de entrega y envío), remitos con/sin PDF y comprobantes con diferencias.")
 
-    print("\n=== ¡CIRCUITO COMPLETO VERIFICADO CON ÉXITO (11/11 PRUEBAS OK)! ===")
+    print("\n=== ¡CIRCUITO COMPLETO VERIFICADO CON ÉXITO (12/12 PRUEBAS OK)! ===")
 
 
 if __name__ == '__main__':

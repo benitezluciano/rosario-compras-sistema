@@ -10,7 +10,8 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QLabel,
     QPushButton,
-    QFrame
+    QFrame,
+    QMessageBox
 )
 from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtGui import QDesktopServices
@@ -185,7 +186,8 @@ class MainWindow(QMainWindow):
         self.vista_historial = HistorialView()
         self.controlador_historial = HistorialController(
             self.vista_historial,
-            self.modelo_pedido
+            self.modelo_pedido,
+            on_modificar_pedido=self.ir_a_modificar_pedido
         )
         self.stacked_pantallas.addWidget(self.vista_historial) # Índice 4
 
@@ -270,6 +272,15 @@ class MainWindow(QMainWindow):
             elif row == 3:
                 self.stacked_pantallas.setCurrentWidget(self.vista_historial_ejecutivo)
                 self.controlador_historial_ejecutivo.inicializar()
+
+    def ir_a_modificar_pedido(self, id_proveedor):
+        """Desde el historial del socio: abre Gestión de Pedidos en la hoja de ese proveedor."""
+        self.menu_lateral.setCurrentRow(0)   # navegar_pantalla recarga las hojas
+        if not self.vista_pedido.seleccionar_hoja(id_proveedor):
+            QMessageBox.information(
+                self, "Información",
+                "La lista de ese proveedor ya no está habilitada, por lo que el pedido no puede modificarse."
+            )
 
     def actualizar_badge_notificaciones(self):
         """Actualiza el contador visual de notificaciones pendientes."""

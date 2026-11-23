@@ -4,6 +4,39 @@
 
 ---
 
+## 2026-11-23 — Sesión 3
+**Duración aprox.:** (completar) · **Quién:** BenitezLuciano, con asistente (Claude Code)
+
+- **Objetivo de la sesión:** Que el socio pueda ver lo que pidió. El historial mostraba los productos en una sola columna ("Productos Solicitados") que no se leía bien, y no había forma de ver el detalle ni de obtener un archivo.
+- **Hecho:**
+  - **Historial del socio rediseñado:**
+    - Se quitó la columna "Productos Solicitados".
+    - La lista tiene filtros por proveedor y por estado, y una columna con el número de remito.
+    - Debajo de la lista se ve el detalle del pedido seleccionado, en cualquier estado: estado explicado en lenguaje simple, renglones con unidad, cantidad, precio congelado y subtotal. Si ya se entregó, también lo entregado según el remito.
+  - **Nota de Pedido en PDF**, con el mismo estilo que el remito pero con precios: se puede abrir o guardar donde elija el socio.
+  - **Botones nuevos:** "Ver remito" (si ya se entregó) y "Modificar pedido" (si está pendiente y la lista sigue habilitada), que lleva a la hoja de ese proveedor en Gestión de Pedidos.
+  - Cada socio solo puede ver sus propios pedidos (lo valida el modelo).
+  - La prueba integral suma el paso 8b: 12 de 12 pruebas OK. También se revisaron las pantallas con capturas y los dos PDF renderizados.
+  - **Traspaso:** `ESTADO.md` quedó con una guía para quien retome y con cada pendiente explicado (por qué existe, qué archivos toca). Los pendientes se pasaron a Eros mediante un Issue.
+- **Decidido:** (ver [DECISIONES.md](DECISIONES.md))
+  - DEC-024 — Historial del socio con detalle del pedido y Nota de Pedido en PDF
+- **Cerrado:**
+  - El socio no tenía dónde ver lo que había enviado.
+  - La columna "Productos Solicitados" era ilegible.
+- **Pendiente / abierto:**
+  - Guardar la cantidad original del pedido antes de que el ejecutivo la ajuste (para mostrar "pediste 10, se ajustó a 8").
+  - Pantalla para cargar los datos fiscales de los socios.
+  - Documentación (README, manual, walkthrough) al flujo nuevo.
+  - Borrar `historial_pedidos.ui`, que quedó sin uso (falta confirmar).
+  - Lo que sigue abierto de las sesiones anteriores: DEC-011, DEC-014 y observación #7. La lista completa está en [ESTADO.md](ESTADO.md).
+- **Problemas o aprendizajes:**
+  - La Nota de Pedido no se guarda en el proyecto, a diferencia de los remitos: un pedido pendiente cambia y el archivo quedaría desactualizado. Se genera cada vez desde la base.
+  - El nombre del estado `Consolidado` no le dice nada al socio. En pantalla se muestra como "Enviado al proveedor" y `Procesado` como "Entregado".
+- **Próximo paso:** Eros retoma desde `ESTADO.md` (sección "Para quien retoma el trabajo"). Los puntos que dependen del grupo (DEC-011, observación #7, DEC-014) van a la próxima reunión.
+- **Dudas para retomar:** ¿Se borra `historial_pedidos.ui`? ¿El grupo ratifica DEC-011 y decide el manejo del stock (DEC-014)?
+
+---
+
 ## 2026-11-23 — Sesión 2
 **Duración aprox.:** (completar) · **Quién:** BenitezLuciano, con asistente (Claude Code)
 

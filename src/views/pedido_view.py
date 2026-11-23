@@ -402,6 +402,13 @@ class PedidoView(QWidget):
         self.btn_confirmar.setEnabled(bool(self.ids_hojas))
         self.calcular_totales()
 
+    def seleccionar_hoja(self, id_proveedor):
+        """Muestra la hoja (pestaña) del proveedor indicado. Retorna False si no está habilitada."""
+        if id_proveedor not in self.ids_hojas:
+            return False
+        self.tabs_proveedores.setCurrentIndex(self.ids_hojas.index(id_proveedor))
+        return True
+
     def sincronizar_cantidades_en_tablas(self):
         """Actualiza los valores de las celdas de cantidad y subtotal según self.carrito."""
         for tabla in self.tablas_proveedores.values():

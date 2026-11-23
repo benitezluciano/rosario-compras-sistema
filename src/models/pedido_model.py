@@ -1,6 +1,10 @@
+import os
+import tempfile
 from datetime import datetime
+from src.config.empresa import EMPRESA, LETRA_REMITO, DATOS_SIMULADOS
 from src.database import Database
 from src.models.notificacion_model import NotificacionModel
+from src.services.pdf_service import PdfService
 from src.utils.id_generator import generar_codigo_pedido
 
 
@@ -273,25 +277,27 @@ class PedidoModel:
 
     def obtener_historial_pedidos(self, id_socio):
         """
-        Consulta todos los pedidos registrados por el socio, con su proveedor, estado,
-        totales calculados con el precio congelado e identificadores comerciales protegidos.
+        Pedidos del socio (más recientes primero) con proveedor, estado, totales con el
+        precio congelado, si la lista sigue habilitada (para poder modificarlo) y su remito.
         """
         with Database() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT p.id_pedido, p.codigo_comercial, p.fecha, p.estado,
-                       pr.nombre AS proveedor_nombre,
+                SELECT p.id_pedido, p.codigo_comercial, p.fecha, p.estado, p.id_proveedor,
+                       pr.nombre AS proveedor_nombre, pr.lista_habilitada,
                        COUNT(dp.id_articulo) AS cantidad_articulos,
                        COALESCE(SUM(dp.cantidad_pedida), 0) AS total_unidades,
                        COALESCE(SUM(dp.cantidad_pedida * dp.precio_unitario), 0.0) AS total_estimado,
-                       group_concat(a.detalle || ' (' || dp.cantidad_pedida || 'u)', ', ') AS resumen_productos
+                       (SELECT r.id_remito FROM REMITOS r WHERE r.id_pedido = p.id_pedido
+                        ORDER BY r.id_remito DESC LIMIT 1) AS id_remito,
+                       (SELECT r.numero_remito FROM REMITOS r WHERE r.id_pedido = p.id_pedido
+                        ORDER BY r.id_remito DESC LIMIT 1) AS numero_remito
                 FROM PEDIDOS p
                 LEFT JOIN PROVEEDORES pr ON pr.id_proveedor = p.id_proveedor
                 LEFT JOIN DETALLE_PEDIDOS dp ON p.id_pedido = dp.id_pedido
-                LEFT JOIN ARTICULOS a ON dp.id_articulo = a.id_articulo
                 WHERE p.id_user = ?
                 GROUP BY p.id_pedido
-                ORDER BY p.id_pedido DESC
+                ORDER BY p.fecha DESC, p.id_pedido DESC
             """, (id_socio,))
 
             pedidos = []
@@ -301,3 +307,143 @@ class PedidoModel:
                     ped['codigo_comercial'] = generar_codigo_pedido(ped['id_pedido'], ped['fecha'])
                 pedidos.append(ped)
             return pedidos
+
+    def obtener_detalle_pedido(self, id_socio, id_pedido):
+        """
+        Detalle de un pedido del socio: cabecera (socio, proveedor, estado, orden y remito)
+        y renglones con unidad, cantidad pedida, precio congelado, subtotal y, si ya se
+        entregó, la cantidad entregada según el remito.
+        Lanza ValueError si el pedido no existe o no pertenece al socio.
+        """
+        with Database() as conn:
+            cab = conn.execute("""
+                SELECT p.id_pedido, p.codigo_comercial, p.fecha, p.estado, p.id_proveedor,
+                       u.nombre AS socio_nombre, u.email AS socio_email,
+                       u.cuit_dni, u.condicion_iva, u.domicilio,
+                       pr.nombre AS proveedor_nombre, pr.email AS proveedor_email,
+                       pr.telefono AS proveedor_telefono, pr.lista_habilitada,
+                       o.codigo_comercial AS orden_codigo,
+                       r.id_remito, r.numero_remito, r.fecha_emision AS remito_fecha
+                FROM PEDIDOS p
+                JOIN USERS u ON u.id = p.id_user
+                LEFT JOIN PROVEEDORES pr ON pr.id_proveedor = p.id_proveedor
+                LEFT JOIN ORDENES_COMPRA o ON o.id_orden_compra = p.id_orden_compra
+                LEFT JOIN REMITOS r ON r.id_remito = (
+                    SELECT MAX(r2.id_remito) FROM REMITOS r2 WHERE r2.id_pedido = p.id_pedido)
+                WHERE p.id_pedido = ? AND p.id_user = ?
+            """, (id_pedido, id_socio)).fetchone()
+            if not cab:
+                raise ValueError("El pedido no existe o no pertenece al socio.")
+            cab = dict(cab)
+            if not cab.get('codigo_comercial'):
+                cab['codigo_comercial'] = generar_codigo_pedido(cab['id_pedido'], cab['fecha'])
+
+            renglones = [dict(r) for r in conn.execute("""
+                SELECT a.id_articulo, a.id_articulo_proveedor AS codigo, a.detalle, a.unidad,
+                       dp.cantidad_pedida, dp.precio_unitario,
+                       ROUND(dp.cantidad_pedida * dp.precio_unitario, 2) AS subtotal,
+                       dr.cantidad_entregada
+                FROM DETALLE_PEDIDOS dp
+                JOIN ARTICULOS a ON a.id_articulo = dp.id_articulo
+                LEFT JOIN DETALLE_REMITOS dr ON dr.id_remito = ? AND dr.id_articulo = dp.id_articulo
+                WHERE dp.id_pedido = ?
+                ORDER BY a.detalle
+            """, (cab.get('id_remito'), id_pedido)).fetchall()]
+
+        entregado = cab.get('id_remito') is not None
+        for r in renglones:
+            if entregado and r['cantidad_entregada'] is None:
+                r['cantidad_entregada'] = 0   # el artículo no figuró en el remito
+        cab['renglones'] = renglones
+        cab['entregado'] = entregado
+        cab['total'] = round(sum(r['subtotal'] or 0 for r in renglones), 2)
+        cab['total_unidades'] = sum(r['cantidad_pedida'] or 0 for r in renglones)
+        cab['remito_visible'] = f"{LETRA_REMITO} {cab['numero_remito']}" if cab.get('numero_remito') else None
+        cab['leyenda_estado'] = self.leyenda_estado(cab)
+        return cab
+
+    # Cómo se le muestra al socio cada estado del pedido
+    ESTADOS_PARA_SOCIO = {
+        'Pendiente': "Pendiente",
+        'Consolidado': "Enviado al proveedor",
+        'Procesado': "Entregado",
+        'Repartido': "Entregado",
+    }
+
+    @staticmethod
+    def leyenda_estado(cab):
+        """Explicación del estado del pedido en lenguaje simple (pantalla y Nota de Pedido)."""
+        estado = cab.get('estado')
+        if estado == 'Pendiente':
+            return ("Todavía puedes modificarlo desde Gestión de Pedidos hasta que el ejecutivo "
+                    "lo consolide. Las cantidades y los precios pueden cambiar.")
+        if estado == 'Consolidado':
+            orden = f" (Orden de Compra {cab['orden_codigo']})" if cab.get('orden_codigo') else ""
+            return (f"El pedido ya se consolidó y se envió al proveedor{orden}; no puede modificarse. "
+                    "Está pendiente de entrega.")
+        if estado in ('Procesado', 'Repartido'):
+            if cab.get('remito_visible'):
+                fecha = cab.get('remito_fecha') or ""
+                fecha = f" del {fecha[8:10]}/{fecha[5:7]}/{fecha[0:4]}" if len(fecha) >= 10 else ""
+                return f"Se entregó con el Remito {cab['remito_visible']}{fecha}."
+            return "El pedido ya fue entregado."
+        return estado or ""
+
+    def obtener_datos_nota_pedido(self, id_socio, id_pedido):
+        """Datos para el PDF 'Nota de Pedido' (ver PdfService.generar_nota_pedido_pdf)."""
+        det = self.obtener_detalle_pedido(id_socio, id_pedido)
+        referencias = []
+        if det.get('orden_codigo'):
+            referencias.append(f"Orden de Compra {det['orden_codigo']}")
+        if det.get('remito_visible'):
+            referencias.append(f"Remito {det['remito_visible']}")
+        return {
+            'codigo': det['codigo_comercial'],
+            'fecha': det.get('fecha') or "",
+            'estado': det.get('estado') or "",
+            'estado_visible': self.ESTADOS_PARA_SOCIO.get(det.get('estado'), det.get('estado') or ""),
+            'leyenda_estado': det['leyenda_estado'],
+            'emisor': dict(EMPRESA),
+            'socio': {
+                'nombre': det.get('socio_nombre') or "",
+                'cuit_dni': det.get('cuit_dni'),
+                'condicion_iva': det.get('condicion_iva'),
+                'domicilio': det.get('domicilio'),
+                'email': det.get('socio_email'),
+            },
+            'proveedor': {
+                'nombre': det.get('proveedor_nombre'),
+                'email': det.get('proveedor_email'),
+                'telefono': det.get('proveedor_telefono'),
+            },
+            'referencias': " · ".join(referencias) or "Pedido todavía no consolidado en una orden de compra",
+            'items': [{
+                'cantidad': r['cantidad_pedida'],
+                'entregado': r['cantidad_entregada'] if det['entregado'] else None,
+                'unidad': r.get('unidad'),
+                'codigo': r.get('codigo'),
+                'detalle': r.get('detalle'),
+                'precio_unitario': r.get('precio_unitario'),
+                'subtotal': r.get('subtotal'),
+            } for r in det['renglones']],
+            'entregado': det['entregado'],
+            'total': det['total'],
+            'total_unidades': det['total_unidades'],
+            'datos_simulados': DATOS_SIMULADOS,
+        }
+
+    def generar_nota_pedido_pdf(self, id_socio, id_pedido, ruta=None):
+        """
+        Genera la Nota de Pedido en `ruta`; sin ruta, la guarda en una carpeta temporal
+        (para abrirla y verla). Retorna la ruta del PDF.
+        """
+        datos = self.obtener_datos_nota_pedido(id_socio, id_pedido)
+        servicio = PdfService.get_instance()
+        if not ruta:
+            carpeta = os.path.join(tempfile.gettempdir(), "RosarioCompras")
+            ruta = os.path.join(carpeta, servicio.nombre_archivo_nota_pedido(datos))
+        return servicio.generar_nota_pedido_pdf(datos, ruta)
+
+    def nombre_archivo_nota_pedido(self, id_socio, id_pedido):
+        """Nombre sugerido para 'Guardar como…'."""
+        return PdfService.nombre_archivo_nota_pedido(self.obtener_datos_nota_pedido(id_socio, id_pedido))
