@@ -223,4 +223,7 @@ __marimo__/
 
 # Python cache
 *.pyc
-*.pyo 
+*.pyo
+
+# Órdenes de compra generadas por el sistema al consolidar
+ordenes_compra/

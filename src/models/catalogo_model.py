@@ -215,6 +215,9 @@ class CatalogoModel:
             col_rub = find_col(['rubro', 'categoria', 'tipo', 'linea'])
             col_pre = find_col(['precio_final', 'precio', 'importe', 'costo', 'valor'])
             col_des = find_col(['descuento', 'desc', 'bonificacion'])
+            col_uni = find_col(['unidad', 'u. medida', 'medida', 'presentacion', 'presentación'])
+            if col_uni in (col_cod, col_det, col_rub, col_pre, col_des):
+                col_uni = None  # p. ej. "Precio por unidad" ya es la columna de precio
 
             if not col_det or not col_pre:
                 return False, "La planilla debe contener al menos una columna de 'Detalle/Artículo' y una de 'Precio'."
@@ -236,7 +239,8 @@ class CatalogoModel:
 
                     cod_prov = str(row[col_cod]).strip() if col_cod else ""
                     rubro = str(row[col_rub]).strip() if col_rub else "General"
-                    
+                    unidad = str(row[col_uni]).strip() if col_uni else ""
+
                     try:
                         raw_precio = str(row[col_pre]).replace('$', '').replace(' ', '').replace(',', '.')
                         precio_base = float(raw_precio) if raw_precio else 0.0
@@ -283,14 +287,15 @@ class CatalogoModel:
                         cursor.execute("""
                             UPDATE ARTICULOS 
                             SET id_articulo_proveedor = COALESCE(NULLIF(?, ''), id_articulo_proveedor),
-                                rubro = COALESCE(NULLIF(?, ''), rubro)
+                                rubro = COALESCE(NULLIF(?, ''), rubro),
+                                unidad = COALESCE(NULLIF(?, ''), unidad)
                             WHERE id_articulo = ?
-                        """, (cod_prov, rubro, id_articulo))
+                        """, (cod_prov, rubro, unidad, id_articulo))
                     else:
                         cursor.execute("""
-                            INSERT INTO ARTICULOS (id_articulo_proveedor, detalle, rubro, cantidad_stock)
-                            VALUES (?, ?, ?, 0)
-                        """, (cod_prov, detalle, rubro))
+                            INSERT INTO ARTICULOS (id_articulo_proveedor, detalle, rubro, cantidad_stock, unidad)
+                            VALUES (?, ?, ?, 0, ?)
+                        """, (cod_prov, detalle, rubro, unidad or 'Unidad'))
                         id_articulo = cursor.lastrowid
 
                     # 2. Insertar o actualizar el precio negociado con el proveedor

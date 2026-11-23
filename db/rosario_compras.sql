@@ -30,8 +30,13 @@ CREATE TABLE IF NOT EXISTS USERS (
     -- Se guarda el hash (resultado de aplicar bcrypt o sha256 a la contraseña).
     -- Ejemplo: '$2b$12$KIXxyz...' en lugar de 'micontraseña123'
 
-    role          TEXT    NOT NULL CHECK(role IN ('ejecutivo', 'socio', 'admin'))
+    role          TEXT    NOT NULL CHECK(role IN ('ejecutivo', 'socio', 'admin')),
     -- CHECK garantiza que solo se puedan insertar esos valores ('ejecutivo', 'socio', 'admin').
+
+    -- Datos fiscales y de entrega (se usan en los remitos de los socios; opcionales)
+    cuit_dni      TEXT,
+    condicion_iva TEXT,
+    domicilio     TEXT
 );
 
 
@@ -75,7 +80,9 @@ CREATE TABLE IF NOT EXISTS ARTICULOS (
 
     detalle               TEXT    NOT NULL,
     rubro                 TEXT,
-    cantidad_stock        INTEGER NOT NULL DEFAULT 0
+    cantidad_stock        INTEGER NOT NULL DEFAULT 0,
+    unidad                TEXT    NOT NULL DEFAULT 'Unidad'
+    -- Unidad de venta/entrega (Unidad, Caja, Pack, Bolsa, Bidón...). Se muestra en el remito.
 );
 
 
@@ -120,8 +127,12 @@ CREATE TABLE IF NOT EXISTS PEDIDOS (
     fecha            TEXT    NOT NULL,
     estado           TEXT    NOT NULL DEFAULT 'Pendiente' CHECK(estado IN ('Pendiente', 'Consolidado', 'Procesado', 'Repartido')),
 
-    FOREIGN KEY (id_user)      REFERENCES USERS(id),
-    FOREIGN KEY (id_proveedor) REFERENCES PROVEEDORES(id_proveedor)
+    id_orden_compra  INTEGER,
+    -- Orden de compra en la que se consolidó el pedido (NULL mientras está 'Pendiente').
+
+    FOREIGN KEY (id_user)         REFERENCES USERS(id),
+    FOREIGN KEY (id_proveedor)    REFERENCES PROVEEDORES(id_proveedor),
+    FOREIGN KEY (id_orden_compra) REFERENCES ORDENES_COMPRA(id_orden_compra)
 );
 
 
@@ -177,7 +188,10 @@ CREATE TABLE IF NOT EXISTS REMITOS (
     id_pedido        INTEGER,
     id_proveedor     INTEGER,
     codigo_comercial TEXT,
-    -- Identificador ofuscado tipo 'RC-REM-XXXXXX' (derivado de id_remito, único).
+    -- Referencia interna ofuscada tipo 'RC-REM-XXXXXX' (derivada de id_remito, única).
+
+    numero_remito    TEXT,
+    -- Número formal del remito: punto de venta + correlativo, ej. '0001-00000001'.
 
     fecha_emision    TEXT    NOT NULL,
     detalle_entrega  TEXT,
@@ -259,6 +273,39 @@ CREATE TABLE IF NOT EXISTS DETALLE_COMPROBANTES_PROVEEDOR (
     PRIMARY KEY (id_comprobante, id_articulo),
     FOREIGN KEY (id_comprobante) REFERENCES COMPROBANTES_PROVEEDOR(id_comprobante),
     FOREIGN KEY (id_articulo)    REFERENCES ARTICULOS(id_articulo)
+);
+
+
+-- ============================================================
+-- TABLA 13: ORDENES_COMPRA
+-- ============================================================
+-- Se genera una al consolidar los pedidos de un proveedor: agrupa esos
+-- pedidos (PEDIDOS.id_orden_compra) y guarda el archivo Excel que el
+-- ejecutivo envía al proveedor. Las cantidades y precios se obtienen de
+-- los pedidos vinculados (precio congelado en DETALLE_PEDIDOS).
+
+CREATE TABLE IF NOT EXISTS ORDENES_COMPRA (
+    id_orden_compra   INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_proveedor      INTEGER NOT NULL,
+    id_user           INTEGER,
+    -- Ejecutivo que consolidó y emitió la orden.
+
+    codigo_comercial  TEXT,
+    -- Identificador ofuscado tipo 'RC-OC-XXXXXX'.
+
+    fecha             TEXT    NOT NULL,
+    cantidad_pedidos  INTEGER NOT NULL DEFAULT 0,
+    total             REAL    NOT NULL DEFAULT 0.0,
+
+    archivo           TEXT,
+    -- Nombre del archivo .xlsx dentro de la carpeta ordenes_compra/.
+
+    fecha_envio_email TEXT,
+    email_destino     TEXT,
+    -- Último envío por correo al proveedor (NULL si todavía no se envió).
+
+    FOREIGN KEY (id_proveedor) REFERENCES PROVEEDORES(id_proveedor),
+    FOREIGN KEY (id_user)      REFERENCES USERS(id)
 );
 
 

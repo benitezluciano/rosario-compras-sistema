@@ -7,7 +7,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 from src.database import migrar_db
-from src.utils.id_generator import generar_codigo_pedido, generar_codigo_remito
+from src.config.empresa import PUNTO_VENTA_REMITOS
+from src.utils.id_generator import generar_codigo_pedido, generar_codigo_remito, generar_codigo_orden_compra, generar_numero_remito
 
 DB_PATH = os.path.join(BASE_DIR, "database.db")
 SQL_PATH = os.path.join(BASE_DIR, "db", "rosario_compras.sql")
@@ -22,6 +23,7 @@ TABLAS = [
     "NOTIFICACIONES",
     "DETALLE_PEDIDOS",
     "PEDIDOS",
+    "ORDENES_COMPRA",
     "PRECIOS_NEGOCIADOS",
     "ARTICULOS",
     "PROVEEDORES",
@@ -65,11 +67,30 @@ def seed():
             (10, 'Cervecería del Monumento (Monumento)', 'socio7@rosariocompras.com', pwd_socio, 'socio'),
             (11, 'Cafetería & Brunch El Parque (Parque Urquiza)', 'socio8@rosariocompras.com', pwd_socio, 'socio'),
         ]
+        # Datos fiscales y de entrega de los socios (se imprimen en los remitos).
+        # SIMULADOS: el CUIT queda como 'XX-XXXXXXXX-X' y los domicilios son ficticios.
+        CUIT_SIMULADO = 'XX-XXXXXXXX-X'
+        datos_socios = {
+            4: ('Responsable Inscripto', 'Bv. Oroño 1450, Pichincha, Rosario'),
+            5: ('Monotributista', 'Córdoba 1230, Centro, Rosario'),
+            6: ('Responsable Inscripto', 'Av. Pellegrini 1850, Rosario'),
+            7: ('Responsable Inscripto', 'Mendoza 3400, Echesortu, Rosario'),
+            8: ('Responsable Inscripto', 'Av. Costanera 500, Rosario'),
+            9: ('Monotributista', 'Av. Eva Perón 8100, Fisherton, Rosario'),
+            10: ('Responsable Inscripto', 'Santa Fe 1000, Monumento, Rosario'),
+            11: ('Monotributista', 'Av. Belgrano 2500, Parque Urquiza, Rosario'),
+        }
         cursor.executemany("""
-            INSERT INTO USERS (id, nombre, email, password_hash, role)
-            VALUES (?, ?, ?, ?, ?)
-        """, usuarios)
-        print(f"OK: {len(usuarios)} Usuarios insertados con contraseñas seguras.")
+            INSERT INTO USERS (id, nombre, email, password_hash, role, cuit_dni, condicion_iva, domicilio)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, [
+            (i, n, e, pw, r,
+             CUIT_SIMULADO if i in datos_socios else None,
+             datos_socios.get(i, (None, None))[0],
+             datos_socios.get(i, (None, None))[1])
+            for i, n, e, pw, r in usuarios
+        ])
+        print(f"OK: {len(usuarios)} Usuarios insertados con contraseñas seguras (datos fiscales de socios simulados).")
 
         # 3. Proveedores
         #    lista_habilitada = 1 → ciclo de pedidos abierto (los socios ven la hoja)
@@ -125,10 +146,19 @@ def seed():
             (22, 'LIM-001', 'Detergente Biodegradable Concentrado x 5L', 'Limpieza', 85),
             (23, 'LIM-002', 'Lavandina Concentrada Desinfectante x 5L', 'Limpieza', 90),
         ]
+        # Unidad de venta/entrega de cada artículo (se imprime en el remito)
+        unidades = {
+            1: 'Paquete', 2: 'Caja', 3: 'Caja', 4: 'Bidón', 5: 'Bolsa',
+            6: 'Unidad', 7: 'Unidad', 8: 'Barra', 9: 'Unidad', 10: 'Balde',
+            11: 'Bolsa', 12: 'Paquete', 13: 'Lata', 14: 'Balde',
+            15: 'Caja', 16: 'Caja', 17: 'Paquete',
+            18: 'Pack', 19: 'Pack', 20: 'Barril',
+            21: 'Paquete', 22: 'Bidón', 23: 'Bidón',
+        }
         cursor.executemany("""
-            INSERT INTO ARTICULOS (id_articulo, id_articulo_proveedor, detalle, rubro, cantidad_stock)
-            VALUES (?, ?, ?, ?, ?)
-        """, articulos)
+            INSERT INTO ARTICULOS (id_articulo, id_articulo_proveedor, detalle, rubro, cantidad_stock, unidad)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, [(*a, unidades.get(a[0], 'Unidad')) for a in articulos])
         print(f"OK: {len(articulos)} Artículos insertados.")
 
         # 5. Precios negociados (id_proveedor, id_articulo, precio_final, descuento)
@@ -148,7 +178,22 @@ def seed():
         precio_de = {(p, a): pf for p, a, pf, _ in precios}
         print(f"OK: {len(precios)} Precios negociados insertados.")
 
-        # 6. Pedidos: cada pedido es de UN socio para UN proveedor
+        # 6. Órdenes de compra de los ciclos ya consolidados
+        #    (id_orden, id_proveedor, id_user ejecutivo, fecha, fecha_envio_email, email_destino)
+        #    El archivo Excel no se incluye: el sistema lo genera al abrirlo por primera vez.
+        ordenes = [
+            (1, 4, 2, '2026-09-27 14:00:00', '2026-09-27 14:10:00', 'ventas@carnesdelparana.com.ar'),
+            (2, 6, 3, '2026-09-27 14:00:00', None, None),
+            (3, 1, 2, '2026-09-23 10:00:00', '2026-09-23 10:15:00', 'ventas@distribuidoracentral.com'),
+            (4, 2, 2, '2026-09-23 10:05:00', '2026-09-23 10:20:00', 'pedidos@lacteosdellitoral.com'),
+        ]
+        cursor.executemany("""
+            INSERT INTO ORDENES_COMPRA (id_orden_compra, id_proveedor, id_user, codigo_comercial, fecha, fecha_envio_email, email_destino)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, [(i, p, u, generar_codigo_orden_compra(i, f), f, fe, em) for i, p, u, f, fe, em in ordenes])
+        cod_oc = {i: generar_codigo_orden_compra(i, f) for i, _, _, f, _, _ in ordenes}
+
+        # 7. Pedidos: cada pedido es de UN socio para UN proveedor
         #    (id_pedido, id_user, id_proveedor, fecha, estado)
         pedidos = [
             # --- Ciclo abierto: 'Pendiente' (pantalla de Consolidación) ---
@@ -171,10 +216,12 @@ def seed():
             (15, 4, 1, '2026-09-22', 'Procesado'),    # Café Central → Distribuidora Central
             (16, 5, 2, '2026-09-22', 'Procesado'),    # Panadería La Rosa → Lácteos
         ]
+        # Pedidos ya consolidados → orden de compra en la que se agruparon
+        orden_de_pedido = {11: 1, 12: 1, 13: 2, 14: 2, 15: 3, 16: 4}
         cursor.executemany("""
-            INSERT INTO PEDIDOS (id_pedido, id_user, id_proveedor, codigo_comercial, fecha, estado)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, [(i, u, p, generar_codigo_pedido(i, f), f, e) for i, u, p, f, e in pedidos])
+            INSERT INTO PEDIDOS (id_pedido, id_user, id_proveedor, codigo_comercial, fecha, estado, id_orden_compra)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, [(i, u, p, generar_codigo_pedido(i, f), f, e, orden_de_pedido.get(i)) for i, u, p, f, e in pedidos])
         prov_de_pedido = {i: p for i, _, p, _, _ in pedidos}
 
         # (id_pedido, id_articulo, cantidad) — el precio se congela desde la lista del proveedor del pedido
@@ -202,7 +249,17 @@ def seed():
         """, [(ped, art, cant, precio_de[(prov_de_pedido[ped], art)]) for ped, art, cant in detalles_pedidos])
         print(f"OK: {len(pedidos)} Pedidos (uno por proveedor) y {len(detalles_pedidos)} ítems de detalle insertados.")
 
-        # 7. Historial de comprobantes de proveedor (doble control ya registrado)
+        # Totales y cantidad de pedidos de cada orden, calculados desde sus pedidos
+        cursor.execute("""
+            UPDATE ORDENES_COMPRA SET
+                cantidad_pedidos = (SELECT COUNT(*) FROM PEDIDOS p WHERE p.id_orden_compra = ORDENES_COMPRA.id_orden_compra),
+                total = (SELECT COALESCE(SUM(dp.cantidad_pedida * dp.precio_unitario), 0)
+                         FROM DETALLE_PEDIDOS dp JOIN PEDIDOS p ON p.id_pedido = dp.id_pedido
+                         WHERE p.id_orden_compra = ORDENES_COMPRA.id_orden_compra)
+        """)
+        print(f"OK: {len(ordenes)} Órdenes de compra insertadas (2 pendientes de entrega, 2 ya repartidas).")
+
+        # 8. Historial de comprobantes de proveedor (doble control ya registrado)
         comprobantes = [
             (1, 1, 'Factura', 'FC-A-0001-00045120', '2026-09-28', '2026-09-28 10:30:00', 'Recepción de pedido semanal - OK'),
             (2, 2, 'Remito', 'REM-R-0002-00018944', '2026-09-29', '2026-09-29 11:15:00', 'Faltante de 2 unidades de leche por rotura en flete'),
@@ -222,7 +279,7 @@ def seed():
         """, detalles_comprobantes)
         print(f"OK: {len(comprobantes)} Comprobantes históricos de proveedores insertados.")
 
-        # 8. Historial de repartos y remitos (un remito por pedido)
+        # 9. Historial de repartos y remitos (un remito por pedido)
         cursor.executemany("""
             INSERT INTO PROCESOS_REPARTO (id_proceso, fecha_proceso, archivo_consolidado, estado_reparto)
             VALUES (?, ?, ?, ?)
@@ -236,15 +293,16 @@ def seed():
             (1, 4, 1, 15, 1, '2026-09-28'),
             (2, 5, 2, 16, 2, '2026-09-29'),
         ]
-        codigos_remito = {}
+        numeros_remito = {}
         for id_rem, id_user, id_proc, id_ped, id_prov, fecha in remitos:
             cod_rem = generar_codigo_remito(id_rem, id_user)
-            codigos_remito[id_rem] = cod_rem
+            numero = generar_numero_remito(id_rem, PUNTO_VENTA_REMITOS)
+            numeros_remito[id_rem] = numero
             cursor.execute("""
-                INSERT INTO REMITOS (id_remito, id_user, id_proceso, id_pedido, id_proveedor, codigo_comercial, fecha_emision, detalle_entrega)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (id_rem, id_user, id_proc, id_ped, id_prov, cod_rem, fecha,
-                  f"Remito {cod_rem} emitido para pedido {generar_codigo_pedido(id_ped, '2026-09-22')}"))
+                INSERT INTO REMITOS (id_remito, id_user, id_proceso, id_pedido, id_proveedor, codigo_comercial, numero_remito, fecha_emision, detalle_entrega)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (id_rem, id_user, id_proc, id_ped, id_prov, cod_rem, numero, fecha,
+                  f"Remito {numero} (ref. {cod_rem}) emitido para pedido {generar_codigo_pedido(id_ped, '2026-09-22')}"))
 
         cursor.executemany("""
             INSERT INTO DETALLE_REMITOS (id_remito, id_articulo, cantidad_entregada)
@@ -255,7 +313,7 @@ def seed():
         ])
         print("OK: Historial de procesos de reparto y remitos insertado.")
 
-        # 9. Notificaciones realistas para todos los roles
+        # 10. Notificaciones realistas para todos los roles
         def cod(id_ped):
             fecha = next(f for i, _, _, f, _ in pedidos if i == id_ped)
             return generar_codigo_pedido(id_ped, fecha)
@@ -273,10 +331,10 @@ def seed():
             (4, "El Ejecutivo habilitó la lista de precios de 'Distribuidora Central Rosario' (5 productos). Ya puedes cargar tu pedido.", 'catalogo_actualizado', '2026-10-01 08:00:00', 1),
             (5, "El Ejecutivo habilitó la lista de precios de 'Lácteos del Litoral' (5 productos). Ya puedes cargar tu pedido.", 'catalogo_actualizado', '2026-10-01 08:05:00', 1),
             (6, "El Ejecutivo habilitó la lista de precios de 'Insumos Gastronómicos del Sur' (4 productos). Ya puedes cargar tu pedido.", 'catalogo_actualizado', '2026-10-01 08:10:00', 0),
-            (7, f"Tu Pedido {cod(12)} para 'Frigorífico & Carnes del Paraná' fue consolidado y enviado formalmente al proveedor para su preparación.", 'pedido_consolidado', '2026-09-27 14:00:00', 0),
-            (8, f"Tu Pedido {cod(13)} para 'Distribuidora Limpieza & Higiene Pro' fue consolidado y enviado formalmente al proveedor para su preparación.", 'pedido_consolidado', '2026-09-27 14:00:00', 0),
-            (4, f"¡Tu Remito {codigos_remito[1]} (Pedido {cod(15)}) de Distribuidora Central Rosario fue generado en formato PDF! La mercadería está lista para su entrega.", 'reparto', '2026-09-28 16:30:00', 1),
-            (5, f"¡Tu Remito {codigos_remito[2]} (Pedido {cod(16)}) de Lácteos del Litoral fue generado en formato PDF! La mercadería está lista para su entrega.", 'reparto', '2026-09-29 16:35:00', 1),
+            (7, f"Tu Pedido {cod(12)} para 'Frigorífico & Carnes del Paraná' fue consolidado en la Orden de Compra {cod_oc[1]} para su envío al proveedor.", 'pedido_consolidado', '2026-09-27 14:00:00', 0),
+            (8, f"Tu Pedido {cod(13)} para 'Distribuidora Limpieza & Higiene Pro' fue consolidado en la Orden de Compra {cod_oc[2]} para su envío al proveedor.", 'pedido_consolidado', '2026-09-27 14:00:00', 0),
+            (4, f"¡Tu Remito {numeros_remito[1]} (Pedido {cod(15)}) de Distribuidora Central Rosario fue emitido! La mercadería está lista para su entrega.", 'reparto', '2026-09-28 16:30:00', 1),
+            (5, f"¡Tu Remito {numeros_remito[2]} (Pedido {cod(16)}) de Lácteos del Litoral fue emitido! La mercadería está lista para su entrega.", 'reparto', '2026-09-29 16:35:00', 1),
         ]
         cursor.executemany("""
             INSERT INTO NOTIFICACIONES (id_user, mensaje, tipo, fecha, leida)

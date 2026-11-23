@@ -1,10 +1,14 @@
+from src.controllers.orden_compra_acciones import OrdenCompraAcciones
+
+
 class ConsolidacionController:
     def __init__(self, vista, modelo, on_pedidos_consolidados=None, usuario_actual=None):
         self.vista = vista
         self.modelo = modelo
         self.on_pedidos_consolidados = on_pedidos_consolidados
         self.usuario_actual = usuario_actual or {'id': 2, 'nombre': 'Ejecutivo de Cuentas', 'role': 'ejecutivo'}
-        
+        self.acciones_orden = OrdenCompraAcciones(vista, modelo, lambda: self.usuario_actual)
+
         # Conectar eventos de la vista
         if hasattr(self.vista, 'btn_refrescar'):
             self.vista.btn_refrescar.clicked.connect(self.recargar_matriz)
@@ -13,9 +17,7 @@ class ConsolidacionController:
         if hasattr(self.vista, 'btn_guardar_ajustes'):
             self.vista.btn_guardar_ajustes.clicked.connect(self.guardar_ajustes)
         if hasattr(self.vista, 'btn_exportar'):
-            self.vista.btn_exportar.clicked.connect(self.exportar_planilla_general)
-        if hasattr(self.vista, 'btn_exportar_proveedores'):
-            self.vista.btn_exportar_proveedores.clicked.connect(self.exportar_por_proveedor)
+            self.vista.btn_exportar.clicked.connect(self.exportar_planilla_borrador)
         if hasattr(self.vista, 'btn_consolidar'):
             self.vista.btn_consolidar.clicked.connect(self.procesar_consolidacion)
 
@@ -56,32 +58,26 @@ class ConsolidacionController:
         except Exception as e:
             self.vista.mostrar_mensaje_error(f"Error al guardar modificaciones: {str(e)}")
 
-    def exportar_planilla_general(self):
-        """Exporta la planilla global multi-hoja a Excel."""
-        ruta_archivo = self.vista.abrir_dialogo_guardar()
+    def exportar_planilla_borrador(self):
+        """Exporta la planilla de trabajo (resumen + detalle por socio) del proveedor seleccionado, antes de consolidar."""
+        id_proveedor = self.vista.obtener_proveedor_seleccionado()
+        if not id_proveedor:
+            self.vista.mostrar_mensaje_error("Debes seleccionar un proveedor.")
+            return
+        nombre_prov = self.vista.obtener_nombre_proveedor_seleccionado()
+
+        ruta_archivo = self.vista.abrir_dialogo_guardar(nombre_prov)
         if not ruta_archivo:
             return
 
-        exito, error = self.modelo.exportar_planilla(ruta_archivo)
+        exito, error = self.modelo.exportar_planilla(ruta_archivo, id_proveedor)
         if not exito:
             self.vista.mostrar_mensaje_error(error)
         else:
-            self.vista.mostrar_mensaje_exito(f"Planilla general exportada exitosamente en:\n{ruta_archivo}")
-
-    def exportar_por_proveedor(self):
-        """Exporta una orden de compra en Excel por cada proveedor."""
-        carpeta = self.vista.abrir_dialogo_carpeta()
-        if not carpeta:
-            return
-
-        exito, mensaje = self.modelo.exportar_ordenes_por_proveedor(carpeta)
-        if not exito:
-            self.vista.mostrar_mensaje_error(mensaje)
-        else:
-            self.vista.mostrar_mensaje_exito(mensaje)
+            self.vista.mostrar_mensaje_exito(f"Planilla borrador de '{nombre_prov}' exportada en:\n{ruta_archivo}")
 
     def procesar_consolidacion(self):
-        """Consolida los pedidos del proveedor seleccionado, cierra su lista y notifica a cada socio."""
+        """Consolida los pedidos del proveedor seleccionado, emite la orden de compra y la muestra."""
         id_proveedor = self.vista.obtener_proveedor_seleccionado()
         if not id_proveedor:
             self.vista.mostrar_mensaje_error("Debes seleccionar un proveedor.")
@@ -101,10 +97,11 @@ class ConsolidacionController:
 
         total = sum(r.get('total_estimado') or 0 for r in resumen)
         confirmado = self.vista.confirmar_accion(
-            "Confirmar Consolidación y Envío al Proveedor",
-            f"¿Consolidar y confirmar el envío de la orden de compra a '{nombre_prov}'?\n\n"
-            f"• {len(resumen)} artículos · Total estimado ${total:,.2f}\n"
-            f"• Los pedidos de los socios para este proveedor pasarán a estado 'Consolidado' (precio congelado).\n"
+            "Confirmar Consolidación y Orden de Compra",
+            f"¿Consolidar los pedidos de '{nombre_prov}' y emitir la orden de compra?\n\n"
+            f"• {len(resumen)} artículos · Total ${total:,.2f}\n"
+            f"• Se generará la Orden de Compra en Excel para enviar al proveedor.\n"
+            f"• Los pedidos de los socios pasarán a estado 'Consolidado' (precio congelado).\n"
             f"• La lista de precios de '{nombre_prov}' se cerrará (fin del ciclo de pedidos).\n"
             f"• Cada socio recibirá una notificación automática.\n"
             f"• Los pedidos de otros proveedores no se modifican."
@@ -112,12 +109,23 @@ class ConsolidacionController:
         if not confirmado:
             return
 
-        cantidad = self.modelo.marcar_pedidos_como_consolidados(id_proveedor)
-        self.vista.mostrar_mensaje_exito(
-            f"¡Se consolidaron y despacharon {cantidad} pedido(s) a '{nombre_prov}'!\n"
-            f"La lista quedó cerrada y los socios fueron notificados."
-        )
+        try:
+            orden = self.modelo.consolidar_proveedor(id_proveedor, ejecutivo=self.usuario_actual)
+        except Exception as e:
+            self.vista.mostrar_mensaje_error(
+                f"No se pudo consolidar ni generar la orden de compra.\nNo se modificó ningún pedido.\n\nDetalle: {e}"
+            )
+            return
+
         self.inicializar()
-        
         if self.on_pedidos_consolidados:
             self.on_pedidos_consolidados()
+
+        if not orden:
+            self.vista.mostrar_mensaje_error(f"'{nombre_prov}' ya no tiene pedidos pendientes para consolidar.")
+            return
+
+        self.acciones_orden.mostrar_orden(
+            orden['id_orden_compra'],
+            titulo=f"✅ Se consolidaron {orden.get('cantidad_pedidos', 0)} pedido(s) y se generó la Orden de Compra"
+        )

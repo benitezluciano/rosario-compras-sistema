@@ -1,8 +1,11 @@
 from datetime import datetime
 from src.database import Database
 from src.models.notificacion_model import NotificacionModel
-from src.utils.id_generator import generar_codigo_pedido, generar_codigo_comprobante, generar_codigo_remito
-from src.services.pdf_service import PdfService
+from src.config.empresa import PUNTO_VENTA_REMITOS
+from src.utils.id_generator import (
+    generar_codigo_pedido, generar_codigo_comprobante, generar_codigo_remito, generar_numero_remito
+)
+from src.models.remito_model import RemitoModel
 
 
 class RepartoModel:
@@ -308,9 +311,11 @@ class RepartoModel:
                 """, (id_user, id_proceso, id_pedido, id_proveedor, fecha_emision, None))
                 id_remito = cursor.lastrowid
                 cod_remito = generar_codigo_remito(id_remito, id_user)
+                numero_remito = generar_numero_remito(id_remito, PUNTO_VENTA_REMITOS)
                 cursor.execute(
-                    "UPDATE REMITOS SET codigo_comercial = ?, detalle_entrega = ? WHERE id_remito = ?",
-                    (cod_remito, f"Remito {cod_remito} emitido para pedido {cod_ped}", id_remito)
+                    "UPDATE REMITOS SET codigo_comercial = ?, numero_remito = ?, detalle_entrega = ? WHERE id_remito = ?",
+                    (cod_remito, numero_remito,
+                     f"Remito {numero_remito} (ref. {cod_remito}) emitido para pedido {cod_ped}", id_remito)
                 )
 
                 for it in items_finales_remito:
@@ -322,32 +327,28 @@ class RepartoModel:
                 remitos_para_pdf.append({
                     'id_remito': id_remito,
                     'codigo_remito': cod_remito,
+                    'numero_remito': numero_remito,
                     'codigo_pedido': cod_ped,
-                    'nro_comprobante': nro_comprobante,
-                    'fecha': fecha_emision,
                     'id_user': id_user,
-                    'socio_nombre': pedido['socio_nombre'],
-                    'socio_email': pedido.get('socio_email', ''),
                     'proveedor_nombre': pedido['proveedor_nombre'],
-                    'items': items_finales_remito
                 })
 
-        # Generar PDFs y emitir notificaciones
-        pdf_service = PdfService.get_instance()
+        # Generar PDFs (desde la base, igual que al regenerarlos) y emitir notificaciones
+        remito_model = RemitoModel()
         notif = NotificacionModel()
         rutas_pdf_generados = []
 
         for r_data in remitos_para_pdf:
             try:
-                rutas_pdf_generados.append(pdf_service.generar_remito_pdf(r_data))
+                rutas_pdf_generados.append(remito_model.generar_pdf(r_data['id_remito']))
             except Exception as e:
-                print(f"Advertencia al generar PDF para {r_data['codigo_remito']}: {e}")
+                print(f"Advertencia al generar PDF para {r_data['numero_remito']}: {e}")
 
             try:
                 notif.crear_notificacion(
                     mensaje=(
-                        f"¡Tu Remito {r_data['codigo_remito']} (Pedido {r_data['codigo_pedido']}) de "
-                        f"{r_data['proveedor_nombre']} fue generado en formato PDF! La mercadería está lista para su entrega."
+                        f"¡Tu Remito {r_data['numero_remito']} (Pedido {r_data['codigo_pedido']}) de "
+                        f"{r_data['proveedor_nombre']} fue emitido! La mercadería está lista para su entrega."
                     ),
                     tipo="reparto",
                     id_user=r_data['id_user']

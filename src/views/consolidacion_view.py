@@ -1,4 +1,5 @@
 import os
+from src.services.orden_compra_service import nombre_para_archivo
 from PyQt6.QtWidgets import QWidget, QFileDialog, QMessageBox, QTableWidgetItem, QHeaderView
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QFont
@@ -140,8 +141,9 @@ class ConsolidacionView(QWidget):
             )
         else:
             self.lbl_info_pedidos.setText(f"📭 '{nombre_prov}' no tiene pedidos pendientes para consolidar.")
-        self.btn_consolidar.setText(f"🚀 Consolidar y Despachar Pedidos de '{nombre_prov}'")
+        self.btn_consolidar.setText(f"🚀 Consolidar y Generar Orden de Compra de '{nombre_prov}'")
         self.btn_consolidar.setEnabled(bool(self.socios_actuales))
+        self.btn_exportar.setEnabled(bool(self.socios_actuales))
         self.lbl_estado_ajustes.setText("")
 
     def al_cambiar_celda(self, item):
@@ -233,23 +235,19 @@ class ConsolidacionView(QWidget):
                     })
         return modificaciones
 
-    def abrir_dialogo_guardar(self):
-        """Abre cuadro de diálogo para guardar la planilla general."""
+    def abrir_dialogo_guardar(self, nombre_proveedor=""):
+        """Abre cuadro de diálogo para guardar la planilla borrador del proveedor."""
         ruta_archivo, _ = QFileDialog.getSaveFileName(
             self,
-            "Guardar Planilla Consolidada General",
-            "Planilla_Consolidada_General.xlsx",
+            "Guardar Planilla Borrador del Proveedor",
+            f"Planilla_Borrador_{nombre_para_archivo(nombre_proveedor)}.xlsx",
             "Archivos Excel (*.xlsx);;Archivos CSV (*.csv);;Todos los archivos (*)"
         )
         return ruta_archivo if ruta_archivo else None
 
-    def abrir_dialogo_carpeta(self):
-        """Abre cuadro de diálogo para seleccionar la carpeta donde exportar las órdenes."""
-        carpeta = QFileDialog.getExistingDirectory(
-            self,
-            "Seleccionar Carpeta para Órdenes por Proveedor"
-        )
-        return carpeta if carpeta else None
+    def ejecutar_dialogo(self, dialogo):
+        """Muestra un diálogo modal y devuelve su resultado (separado para poder simularlo en pruebas)."""
+        return dialogo.exec()
 
     def confirmar_accion(self, titulo, mensaje):
         respuesta = QMessageBox.question(

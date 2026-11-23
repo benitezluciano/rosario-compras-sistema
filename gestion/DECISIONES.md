@@ -244,7 +244,7 @@
 ### DEC-016 — Las pruebas del circuito corren sobre una copia temporal de la base
 
 - **Fecha:** 2026-11-21
-- **Estado:** Cerrada
+- **Estado:** Reemplazada por DEC-021
 - **Participantes:** BenitezLuciano, asistente (Claude Code)
 - **Contexto:** `tests/test_circuit_suite.py` escribía sobre la `database.db` real: creaba pedidos, importaba listas y generaba PDFs.
 - **Decisión:** La suite copia la base y usa una carpeta de PDFs temporales, y borra todo al terminar.
@@ -266,3 +266,141 @@
   - Que el asistente aplique cambios directamente: rápido, pero quita control sobre decisiones de negocio.
 - **Consecuencias:** Cada cambio pasa por una ronda de preguntas. Las decisiones quedan registradas en este archivo.
 - **Relacionado con:** —
+
+---
+
+### DEC-018 — Al consolidar se genera automáticamente la orden de compra en Excel
+
+- **Fecha:** 2026-11-23
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano, asistente (Claude Code)
+- **Contexto:** Al consolidar, el sistema solo cambiaba estados, cerraba la lista y mostraba mensajes. No generaba ningún archivo. Los botones de exportar (planilla general y órdenes por proveedor) tomaban todos los proveedores y solo pedidos "Pendiente", así que después de consolidar ya no había forma de obtener la orden para enviarla al proveedor.
+- **Decisión:**
+  - Al consolidar un proveedor se genera su **orden de compra en Excel (.xlsx)**, el mismo formato con el que el proveedor envía su lista.
+  - Tiene un encabezado formal (Rosario Compras, proveedor, N° de orden `RC-OC-XXXXXX`, fecha, ejecutivo) y los **totales por artículo** (código del proveedor, detalle, cantidad, precio, subtotal y total), **sin desglose por socio**.
+  - Se guarda en la carpeta fija `ordenes_compra/`.
+  - Al terminar se abre una ventana con la orden y los botones **Abrir archivo**, **Abrir carpeta** y **Enviar al proveedor**. Este último usa la ventana de mail que ya existía, con la orden adjunta y el email del proveedor completado.
+  - Primero se genera el archivo y después se consolida, en una sola operación: si el archivo falla, no se consolida nada.
+- **Alternativas consideradas:**
+  - PDF o Excel y PDF: el PDF es más formal, pero el proveedor trabaja con Excel.
+  - Incluir el desglose por socio: no hace falta porque el proveedor entrega todo a Rosario Compras y el reparto lo hace el sistema.
+  - Preguntar dónde guardar el archivo cada vez: agrega un paso y el archivo queda disperso.
+- **Consecuencias:**
+  - Servicio nuevo `orden_compra_service.py` y ventana nueva `orden_compra_dialog.py`.
+  - Plantilla de mail `generar_plantilla_orden_compra`.
+  - La notificación al socio indica el N° de orden.
+  - Sin SMTP configurado, el envío queda registrado en modo simulación (como el resto de los mails) y la orden figura como enviada.
+- **Relacionado con:** DEC-008, DEC-019, DEC-020.
+
+---
+
+### DEC-019 — Las órdenes de compra se registran en la base
+
+- **Fecha:** 2026-11-23
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano, asistente (Claude Code)
+- **Contexto:** Si la orden queda solo como archivo en una carpeta, no se puede recuperar ni reenviar desde el programa, y el historial del ejecutivo no tendría de dónde salir.
+- **Decisión:**
+  - Tabla nueva `ORDENES_COMPRA`: proveedor, ejecutivo, código, fecha, cantidad de pedidos, total, nombre del archivo y último envío por mail (fecha y destinatario).
+  - Cada pedido consolidado guarda su orden en `PEDIDOS.id_orden_compra`.
+  - Los artículos de la orden se obtienen de los pedidos vinculados, con el precio congelado (DEC-010).
+  - Si el archivo no está (se borró la carpeta o la orden viene del seed), **se regenera** desde la base al abrirlo o enviarlo.
+- **Alternativas consideradas:**
+  - Solo el archivo en la carpeta: más simple, pero no se puede recuperar ni reenviar.
+  - Guardar también una copia de los renglones en la orden: duplica datos que ya están congelados en los pedidos.
+- **Consecuencias:**
+  - `migrar_db` agrega la columna a bases existentes y la tabla se crea sola al iniciar.
+  - El seed carga 4 órdenes para los pedidos consolidados y procesados.
+  - Es la base para el historial del ejecutivo (punto 2, pendiente).
+- **Relacionado con:** DEC-018, DEC-010.
+
+---
+
+### DEC-020 — Se quita "Órdenes por proveedor" y la planilla general pasa a ser un borrador del proveedor seleccionado
+
+- **Fecha:** 2026-11-23
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano, asistente (Claude Code)
+- **Contexto:** Con DEC-018, "Órdenes por proveedor" quedaba redundante. La "Planilla consolidada general" exportaba todos los proveedores, aunque la pantalla trabaja con uno.
+- **Decisión:**
+  - Se elimina el botón "Órdenes por proveedor (.xlsx)".
+  - La planilla pasa a llamarse **"Planilla Borrador del Proveedor"**. Exporta el resumen y el detalle por socio **solo del proveedor seleccionado**, como archivo de trabajo interno antes de consolidar.
+- **Alternativas consideradas:**
+  - Dejar los dos botones como estaban: generan confusión con la orden oficial.
+- **Consecuencias:** Se eliminó `exportar_ordenes_por_proveedor` del modelo.
+- **Relacionado con:** DEC-018.
+
+---
+
+### DEC-021 — La prueba integral crea su propia base con el seed
+
+- **Fecha:** 2026-11-23
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano, asistente (Claude Code)
+- **Contexto:** `tests/test_circuit_suite.py` copiaba `database.db` y dependía de que tuviera los datos del seed. Después de ejecutar `limpiar_db.py`, la base real no tiene pedidos y la suite fallaría.
+- **Decisión:** La suite ejecuta `seeds/seed_db.py` sobre una base en la carpeta temporal y ya no lee `database.db`. Confirmada por BenitezLuciano el 2026-11-23.
+- **Alternativas consideradas:**
+  - Seguir copiando la base real: la prueba depende del estado en que cada uno deje su base.
+- **Consecuencias:** La suite da el mismo resultado sin importar el estado de `database.db`. Reemplaza a DEC-016.
+  - En la misma fecha, `seeds/limpiar_db.py` pasó a borrar también `ORDENES_COMPRA` y los `.xlsx` de `ordenes_compra/`, y `ordenes_compra/` se agregó a `.gitignore`.
+- **Relacionado con:** DEC-016.
+
+---
+
+### DEC-022 — Historial del ejecutivo como pantalla propia con tres pestañas
+
+- **Fecha:** 2026-11-23
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano, asistente (Claude Code)
+- **Contexto:** El ejecutivo no tenía dónde consultar lo ya realizado. Una orden emitida no se podía volver a abrir ni reenviar, y no había un registro visible de remitos ni de comprobantes recibidos.
+- **Decisión:**
+  - Cuarto ítem en el menú del ejecutivo, **"📜 Historial"**, como pantalla propia (igual que DEC-001).
+  - Tiene tres pestañas:
+    1. **Órdenes de Compra**: estado de entrega (pendiente o repartida) y de envío (enviada o sin enviar). Al seleccionar una orden se ven sus pedidos, y con **"Ver Orden"** se abre la misma ventana de la consolidación (abrir archivo, abrir carpeta, reenviar).
+    2. **Remitos Emitidos**: con acceso al PDF. Si el archivo no está, se indica "PDF no disponible".
+    3. **Comprobantes de Proveedores**: resultado del doble control (faltantes, excedentes, diferencias de precio) y detalle por artículo.
+  - Filtros: proveedor en todas las pestañas, más estado (órdenes), socio (remitos) y resultado del control (comprobantes). El rango de fechas queda para más adelante.
+  - **Todos los ejecutivos ven todo.** Se revisará junto con la observación #7 (notificaciones compartidas).
+  - No se agrega una pestaña "Pedidos de socios": los pendientes están en el Módulo 2 y los demás aparecen dentro de cada orden.
+- **Alternativas consideradas:**
+  - Pestaña dentro de otro módulo: mezcla consulta con operación.
+  - Filtrar por los proveedores asignados a cada ejecutivo: queda para cuando se resuelva la observación #7.
+  - Regenerar ahora los PDF de remitos que faltan: se hará en el rediseño de remitos (punto 3), para no programarlo dos veces.
+- **Consecuencias:**
+  - Archivos nuevos: `historial_ejecutivo_model.py`, `historial_ejecutivo_view.py` y `historial_ejecutivo_controller.py`.
+  - Las acciones sobre la orden pasaron a `orden_compra_acciones.py`, que comparten la consolidación y el historial.
+- **Relacionado con:** DEC-001, DEC-018, DEC-019.
+
+---
+
+### DEC-023 — Rediseño del remito según el modelo estándar
+
+- **Fecha:** 2026-11-23
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano, asistente (Claude Code)
+- **Contexto:** El remito generado no seguía la estructura estándar de un remito argentino. BenitezLuciano aportó un modelo en PDF y la lista de datos que debe contener.
+- **Decisión:**
+  - **Diseño fiel al modelo**, dibujado directamente sobre el PDF:
+    - Cabecera con el emisor y el recuadro central de la letra **"X"** con "DOCUMENTO NO VÁLIDO COMO FACTURA".
+    - Datos del remito: N.º, fecha y lugar (Rosario).
+    - Bloques Señor(es) y Domicilio, con I.V.A. y C.U.I.T./D.N.I.
+    - Franja de **referencias** (pedido, orden de compra, proveedor y comprobante) en lugar de "Condición de venta".
+    - Tabla Cantidad · Unidad · Código · Descripción, **sin precios**.
+    - Pie de transporte y recepción.
+  - **Letra X**: el sistema no está autorizado por AFIP para emitir remitos "R".
+  - **Número formal `0001-00000001`** (punto de venta + correlativo, columna `REMITOS.numero_remito`). El código ofuscado `RC-REM-…` queda como **referencia interna**.
+  - **Datos del emisor** en `src/config/empresa.py`. **Datos del socio** en `USERS` (`cuit_dni`, `condicion_iva`, `domicilio`). **Unidad** en `ARTICULOS.unidad`, que la importación de listas lee de una columna "Unidad" opcional.
+  - **Observaciones automáticas**: pedido de origen y faltantes por prorrateo. Transportista, chofer y dominio quedan para completar a mano.
+  - **ORIGINAL y DUPLICADO** en el mismo PDF. Si hay más de 17 renglones, se agregan hojas ("Hoja n de m").
+  - Desde el historial, el PDF **se regenera** si falta (incluye los del formato anterior), a partir de los datos de la base.
+  - **Datos fiscales simulados**: los CUIT figuran como `XX-XXXXXXXX-X`, el domicilio y la condición frente al IVA del emisor como "Completar", y los domicilios de los socios son ficticios. El pie del remito lo aclara mientras `DATOS_SIMULADOS = True`.
+- **Alternativas consideradas:**
+  - Letra R: requiere autorización de AFIP.
+  - Reemplazar el código `RC-REM` por el correlativo: se pierde la referencia que ya usan el historial y las notificaciones.
+  - Mantener solo el código ofuscado: no respeta la numeración estándar del remito.
+  - Seguir generando el PDF desde HTML: no permite reproducir con precisión la grilla del modelo.
+- **Consecuencias:**
+  - `pdf_service.py` reescrito y modelo nuevo `remito_model.py`.
+  - El reparto genera el PDF desde la base, igual que la regeneración.
+  - Hoy no hay pantalla para editar los datos fiscales de los socios (pendiente).
+- **Relacionado con:** DEC-009, DEC-022.

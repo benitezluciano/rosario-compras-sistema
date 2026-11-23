@@ -4,6 +4,55 @@
 
 ---
 
+## 2026-11-23 — Sesión 2
+**Duración aprox.:** (completar) · **Quién:** BenitezLuciano, con asistente (Claude Code)
+
+- **Objetivo de la sesión:** Resolver tres temas urgentes surgidos de las pruebas:
+  1. El archivo para enviar al proveedor al consolidar.
+  2. El historial del ejecutivo.
+  3. El rediseño de los remitos.
+- **Hecho:**
+  - Se commiteó y pusheó la Sesión 1 en la rama `feature/pedidos-por-proveedor` (antes `feature/limpieza-operativa`).
+  - **Orden de compra:**
+    - Al consolidar se genera el Excel en `ordenes_compra/`.
+    - Se abre una ventana para abrirlo o enviarlo por mail al proveedor.
+    - Las órdenes quedan registradas en la tabla `ORDENES_COMPRA`.
+    - Se quitó "Órdenes por proveedor" y la planilla pasó a ser un borrador del proveedor seleccionado.
+  - **Historial del ejecutivo:** pantalla nueva con pestañas de órdenes de compra (con sus pedidos, ver y reenviar), remitos (abrir o regenerar el PDF) y comprobantes (resultado del control).
+  - **Remito estándar** según el modelo aportado:
+    - Letra X y número `0001-00000001`.
+    - Datos del emisor en `src/config/empresa.py` y del socio en `USERS`, todos simulados.
+    - Unidad de cada artículo.
+    - Referencias y observaciones automáticas.
+    - Original y duplicado.
+  - **Otros:**
+    - `limpiar_db.py` borra también las órdenes.
+    - `ordenes_compra/` está en `.gitignore`.
+    - La prueba integral crea su propia base: 11 de 11 pruebas OK.
+- **Decidido:** (ver [DECISIONES.md](DECISIONES.md))
+  - DEC-018 — Al consolidar se genera automáticamente la orden de compra en Excel
+  - DEC-019 — Las órdenes de compra se registran en la base
+  - DEC-020 — Se quita "Órdenes por proveedor" y la planilla general pasa a ser un borrador del proveedor seleccionado
+  - DEC-021 — La prueba integral crea su propia base con el seed (reemplaza a DEC-016)
+  - DEC-022 — Historial del ejecutivo como pantalla propia con tres pestañas
+  - DEC-023 — Rediseño del remito según el modelo estándar
+- **Cerrado:**
+  - El ejecutivo no tenía el archivo de la orden para enviar al proveedor.
+  - El ejecutivo no tenía historial.
+  - Los remitos no seguían el formato estándar.
+  - Los PDF de remitos que faltaban (por ejemplo, los del seed) ya se pueden regenerar.
+- **Pendiente / abierto:**
+  - Pantalla para editar los datos fiscales de los socios.
+  - Reemplazar los datos fiscales simulados por los reales.
+  - Lo que sigue abierto de la Sesión 1: DEC-011, DEC-014, observación #7 y documentación.
+- **Problemas o aprendizajes:**
+  - En modo sin pantalla (`QT_QPA_PLATFORM=offscreen`) no hay fuentes: los PDF salen sin texto. Para verificar los PDF hay que correr con la plataforma normal.
+  - Al aplicar cambios con scripts, los `\n` dentro de f-strings pueden convertirse en saltos de línea reales. Hay que compilar (`python -m compileall`) después de cada tanda.
+- **Próximo paso:** Continuar con las modificaciones que defina BenitezLuciano.
+- **Dudas para retomar:** ¿Cada ejecutivo debería ver solo sus proveedores en el historial (junto con la observación #7)?
+
+---
+
 ## 2026-11-21 — Sesión 1
 **Duración aprox.:** (completar) · **Quién:** BenitezLuciano, con asistente (Claude Code)
 

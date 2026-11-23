@@ -251,19 +251,16 @@ QPushButton#btn_login:pressed {
 }
 
 /* 2. Botones de Éxito / Exportación Excel - Verde Esmeralda */
-QPushButton#btn_exportar,
-QPushButton#btn_exportar_proveedores {
+QPushButton#btn_exportar {
     background-color: #10b981;
     color: #ffffff;
 }
 
-QPushButton#btn_exportar:hover,
-QPushButton#btn_exportar_proveedores:hover {
+QPushButton#btn_exportar:hover {
     background-color: #059669;
 }
 
-QPushButton#btn_exportar:pressed,
-QPushButton#btn_exportar_proveedores:pressed {
+QPushButton#btn_exportar:pressed {
     background-color: #047857;
 }
 

@@ -25,6 +25,7 @@ from src.models.pedido_model import PedidoModel
 from src.models.consolidacion_model import ConsolidacionModel
 from src.models.reparto_model import RepartoModel
 from src.models.notificacion_model import NotificacionModel
+from src.models.historial_ejecutivo_model import HistorialEjecutivoModel
 
 # Vistas
 from src.views.login_view import LoginView
@@ -33,6 +34,7 @@ from src.views.pedido_view import PedidoView
 from src.views.consolidacion_view import ConsolidacionView
 from src.views.reparto_view import RepartoView
 from src.views.historial_view import HistorialView
+from src.views.historial_ejecutivo_view import HistorialEjecutivoView
 from src.views.notificaciones_dialog import NotificacionesDialog
 
 # Controladores
@@ -42,6 +44,7 @@ from src.controllers.pedido_controller import PedidoController
 from src.controllers.consolidacion_controller import ConsolidacionController
 from src.controllers.reparto_controller import RepartoController
 from src.controllers.historial_controller import HistorialController
+from src.controllers.historial_ejecutivo_controller import HistorialEjecutivoController
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -186,6 +189,15 @@ class MainWindow(QMainWindow):
         )
         self.stacked_pantallas.addWidget(self.vista_historial) # Índice 4
 
+        # Ejecutivo: Historial (órdenes de compra, remitos y comprobantes)
+        self.vista_historial_ejecutivo = HistorialEjecutivoView()
+        self.controlador_historial_ejecutivo = HistorialEjecutivoController(
+            self.vista_historial_ejecutivo,
+            HistorialEjecutivoModel(),
+            self.modelo_consolidacion
+        )
+        self.stacked_pantallas.addWidget(self.vista_historial_ejecutivo) # Índice 5
+
         self.menu_lateral.currentRowChanged.connect(self.navegar_pantalla)
 
     def al_iniciar_sesion(self, usuario):
@@ -201,6 +213,7 @@ class MainWindow(QMainWindow):
         self.controlador_historial.set_socio(usuario['id'])
         self.controlador_catalogo.set_usuario_actual(usuario)
         self.controlador_consolidacion.set_usuario_actual(usuario)
+        self.controlador_historial_ejecutivo.set_usuario_actual(usuario)
         self.actualizar_badge_notificaciones()
         
         self.menu_lateral.blockSignals(True)
@@ -219,6 +232,7 @@ class MainWindow(QMainWindow):
             self.menu_lateral.addItem("📑 1. Listas y Proveedores")
             self.menu_lateral.addItem("📦 2. Previsualización y Consolidado")
             self.menu_lateral.addItem("🚚 3. Recepción y Reparto Automático")
+            self.menu_lateral.addItem("📜 Historial")
             
             self.controlador_catalogo.inicializar()
             self.controlador_consolidacion.inicializar()
@@ -253,6 +267,9 @@ class MainWindow(QMainWindow):
             elif row == 2:
                 self.stacked_pantallas.setCurrentWidget(self.vista_reparto)
                 self.controlador_reparto.inicializar()
+            elif row == 3:
+                self.stacked_pantallas.setCurrentWidget(self.vista_historial_ejecutivo)
+                self.controlador_historial_ejecutivo.inicializar()
 
     def actualizar_badge_notificaciones(self):
         """Actualiza el contador visual de notificaciones pendientes."""

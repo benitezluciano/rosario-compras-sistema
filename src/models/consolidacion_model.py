@@ -1,9 +1,10 @@
 import os
-import re
+from datetime import datetime
 import pandas as pd
 from src.database import Database
 from src.models.notificacion_model import NotificacionModel
-from src.utils.id_generator import generar_codigo_pedido
+from src.services.orden_compra_service import OrdenCompraService
+from src.utils.id_generator import generar_codigo_pedido, generar_codigo_orden_compra
 
 
 class ConsolidacionModel:
@@ -321,91 +322,80 @@ class ConsolidacionModel:
         except Exception as e:
             return False, f"Error al generar archivo consolidado: {str(e)}"
 
-    def exportar_ordenes_por_proveedor(self, carpeta_destino, id_proveedor=None):
-        """Genera un archivo Excel independiente por cada proveedor con pedidos pendientes."""
-        if not os.path.exists(carpeta_destino):
-            return False, f"La carpeta seleccionada no existe: {carpeta_destino}"
+    # ------------------------------------------------------------------
+    # Consolidación y órdenes de compra
+    # ------------------------------------------------------------------
 
-        detalles = self.obtener_pedidos_pendientes_detalle(id_proveedor)
-        if not detalles:
-            return False, "No hay pedidos pendientes para exportar por proveedor."
-
-        try:
-            por_proveedor = {}
-            for item in detalles:
-                por_proveedor.setdefault(item['proveedor_nombre'], []).append(item)
-
-            archivos_creados = []
-
-            for prov_nombre, items in por_proveedor.items():
-                df = pd.DataFrame(items)
-                df['id_articulo_proveedor'] = df['id_articulo_proveedor'].fillna('-')
-
-                df_orden = df.groupby(['id_articulo', 'id_articulo_proveedor', 'articulo_detalle', 'precio_unitario']).agg(
-                    cantidad_total=('cantidad_pedida', 'sum'),
-                    monto_total=('subtotal', 'sum')
-                ).reset_index()
-
-                df_orden = df_orden.rename(columns={
-                    'id_articulo': 'ID Art.',
-                    'id_articulo_proveedor': 'Cód. Proveedor',
-                    'articulo_detalle': 'Artículo / Detalle',
-                    'precio_unitario': 'Precio Unitario ($)',
-                    'cantidad_total': 'Cantidad Total Solicitada',
-                    'monto_total': 'Monto Total ($)'
-                })
-
-                prov_limpio = re.sub(r'[^a-zA-Z0-9_-]', '_', prov_nombre)
-                nombre_archivo = f"Orden_Compra_{prov_limpio}.xlsx"
-                ruta_final = os.path.join(carpeta_destino, nombre_archivo)
-
-                with pd.ExcelWriter(ruta_final, engine='openpyxl') as writer:
-                    df_orden.to_excel(writer, sheet_name='Orden de Compra', index=False)
-
-                archivos_creados.append(nombre_archivo)
-
-            return True, f"Se generaron {len(archivos_creados)} órdenes de compra en la carpeta:\n" + "\n".join(
-                [f"• {a}" for a in archivos_creados]
-            )
-        except Exception as e:
-            return False, f"Error al generar órdenes por proveedor: {str(e)}"
-
-    def marcar_pedidos_como_consolidados(self, id_proveedor):
+    def consolidar_proveedor(self, id_proveedor, ejecutivo=None):
         """
-        Consolida los pedidos 'Pendiente' de UN proveedor:
-        - Pasan a estado 'Consolidado' (su precio queda congelado).
-        - Se cierra la lista de precios del proveedor (fin del ciclo de pedidos).
-        - Se notifica a cada socio involucrado.
-        Retorna la cantidad de pedidos consolidados.
+        Consolida los pedidos 'Pendiente' de UN proveedor y emite su orden de compra:
+        - Crea la ORDEN DE COMPRA y vincula los pedidos (PEDIDOS.id_orden_compra).
+        - Los pedidos pasan a 'Consolidado' (precio congelado).
+        - Genera el archivo Excel de la orden en la carpeta ordenes_compra/.
+        - Cierra la lista de precios del proveedor (fin del ciclo de pedidos).
+        - Notifica a cada socio involucrado.
+        Todo ocurre en una sola transacción: si el archivo no puede generarse, no se consolida nada.
+        ejecutivo = {'id', 'nombre', 'email'} del usuario que consolida.
+        Retorna el dict de la orden (ver obtener_orden_compra) o None si no había pedidos pendientes.
         """
         if id_proveedor is None:
             raise ValueError("Debe indicarse el proveedor a consolidar.")
+        ejecutivo = ejecutivo or {}
+        fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ruta_generada = None
 
-        with Database() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT p.id_pedido, p.codigo_comercial, p.fecha, p.id_user, pr.nombre AS proveedor_nombre
-                FROM PEDIDOS p
-                JOIN PROVEEDORES pr ON pr.id_proveedor = p.id_proveedor
-                WHERE p.estado = 'Pendiente' AND p.id_proveedor = ?
-            """, (id_proveedor,))
-            pedidos_pendientes = []
-            for row in cursor.fetchall():
-                ped = dict(row)
-                if not ped.get('codigo_comercial'):
-                    ped['codigo_comercial'] = generar_codigo_pedido(ped['id_pedido'], ped['fecha'])
-                pedidos_pendientes.append(ped)
+        try:
+            with Database() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT p.id_pedido, p.codigo_comercial, p.fecha, p.id_user, pr.nombre AS proveedor_nombre
+                    FROM PEDIDOS p
+                    JOIN PROVEEDORES pr ON pr.id_proveedor = p.id_proveedor
+                    WHERE p.estado = 'Pendiente' AND p.id_proveedor = ?
+                """, (id_proveedor,))
+                pedidos_pendientes = []
+                for row in cursor.fetchall():
+                    ped = dict(row)
+                    if not ped.get('codigo_comercial'):
+                        ped['codigo_comercial'] = generar_codigo_pedido(ped['id_pedido'], ped['fecha'])
+                    pedidos_pendientes.append(ped)
 
-            if not pedidos_pendientes:
-                return 0
+                if not pedidos_pendientes:
+                    return None
 
-            cursor.execute(
-                "UPDATE PEDIDOS SET estado = 'Consolidado' WHERE estado = 'Pendiente' AND id_proveedor = ?",
-                (id_proveedor,)
-            )
-            cursor.execute(
-                "UPDATE PROVEEDORES SET lista_habilitada = 0 WHERE id_proveedor = ?", (id_proveedor,)
-            )
+                cursor.execute(
+                    "INSERT INTO ORDENES_COMPRA (id_proveedor, id_user, fecha, cantidad_pedidos) VALUES (?, ?, ?, ?)",
+                    (id_proveedor, ejecutivo.get('id'), fecha, len(pedidos_pendientes))
+                )
+                id_orden = cursor.lastrowid
+                codigo = generar_codigo_orden_compra(id_orden, fecha)
+
+                cursor.execute("""
+                    UPDATE PEDIDOS SET estado = 'Consolidado', id_orden_compra = ?
+                    WHERE estado = 'Pendiente' AND id_proveedor = ?
+                """, (id_orden, id_proveedor))
+                cursor.execute("UPDATE PROVEEDORES SET lista_habilitada = 0 WHERE id_proveedor = ?", (id_proveedor,))
+
+                cursor.execute(
+                    "UPDATE ORDENES_COMPRA SET codigo_comercial = ? WHERE id_orden_compra = ?", (codigo, id_orden)
+                )
+                datos = self._datos_orden(cursor, id_orden, ejecutivo)
+                servicio = OrdenCompraService.get_instance()
+                nombre_archivo = servicio.nombre_archivo(codigo, datos['proveedor']['nombre'], fecha)
+                ruta_generada = servicio.generar_excel(datos, nombre_archivo)
+
+                cursor.execute(
+                    "UPDATE ORDENES_COMPRA SET archivo = ?, total = ? WHERE id_orden_compra = ?",
+                    (nombre_archivo, datos['total'], id_orden)
+                )
+        except Exception:
+            # Si la transacción falló después de escribir el archivo, no dejar un archivo huérfano
+            if ruta_generada and os.path.exists(ruta_generada):
+                try:
+                    os.remove(ruta_generada)
+                except OSError:
+                    pass
+            raise
 
         try:
             notif = NotificacionModel()
@@ -413,7 +403,7 @@ class ConsolidacionModel:
                 notif.crear_notificacion(
                     mensaje=(
                         f"Tu Pedido {ped['codigo_comercial']} para '{ped['proveedor_nombre']}' fue consolidado "
-                        f"y enviado formalmente al proveedor para su preparación."
+                        f"en la Orden de Compra {codigo} para su envío al proveedor."
                     ),
                     tipo="pedido_consolidado",
                     id_user=ped['id_user']
@@ -421,4 +411,106 @@ class ConsolidacionModel:
         except Exception as e:
             print(f"Advertencia al emitir notificaciones de consolidación: {e}")
 
-        return len(pedidos_pendientes)
+        return self.obtener_orden_compra(id_orden)
+
+    def _datos_orden(self, cursor, id_orden, ejecutivo=None):
+        """Arma los datos de la orden (encabezado + totales por artículo) a partir de sus pedidos."""
+        cursor.execute("""
+            SELECT o.id_orden_compra, o.codigo_comercial, o.fecha, o.cantidad_pedidos, o.id_user,
+                   pr.id_proveedor, pr.nombre, pr.email, pr.telefono, pr.direccion,
+                   u.nombre AS ejecutivo_nombre, u.email AS ejecutivo_email
+            FROM ORDENES_COMPRA o
+            JOIN PROVEEDORES pr ON pr.id_proveedor = o.id_proveedor
+            LEFT JOIN USERS u ON u.id = o.id_user
+            WHERE o.id_orden_compra = ?
+        """, (id_orden,))
+        cab = cursor.fetchone()
+        if not cab:
+            raise ValueError(f"No existe la orden de compra {id_orden}.")
+        cab = dict(cab)
+
+        cursor.execute("""
+            SELECT a.id_articulo, a.id_articulo_proveedor AS codigo_proveedor, a.detalle,
+                   dp.precio_unitario, SUM(dp.cantidad_pedida) AS cantidad
+            FROM DETALLE_PEDIDOS dp
+            JOIN PEDIDOS p ON p.id_pedido = dp.id_pedido
+            JOIN ARTICULOS a ON a.id_articulo = dp.id_articulo
+            WHERE p.id_orden_compra = ?
+            GROUP BY a.id_articulo, dp.precio_unitario
+            HAVING SUM(dp.cantidad_pedida) > 0
+            ORDER BY a.detalle
+        """, (id_orden,))
+        items = []
+        for row in cursor.fetchall():
+            it = dict(row)
+            it['subtotal'] = round(it['cantidad'] * (it['precio_unitario'] or 0.0), 2)
+            items.append(it)
+
+        ejecutivo = ejecutivo or {}
+        return {
+            'id_orden_compra': cab['id_orden_compra'],
+            'codigo': cab['codigo_comercial'],
+            'fecha': cab['fecha'],
+            'cantidad_pedidos': cab['cantidad_pedidos'],
+            'proveedor': {
+                'id_proveedor': cab['id_proveedor'], 'nombre': cab['nombre'], 'email': cab['email'],
+                'telefono': cab['telefono'], 'direccion': cab['direccion'],
+            },
+            'ejecutivo': {
+                'nombre': cab['ejecutivo_nombre'] or ejecutivo.get('nombre', 'Ejecutivo de Cuentas'),
+                'email': cab['ejecutivo_email'] or ejecutivo.get('email', ''),
+            },
+            'items': items,
+            'total': round(sum(i['subtotal'] for i in items), 2),
+        }
+
+    def obtener_orden_compra(self, id_orden):
+        """
+        Devuelve la orden de compra con sus datos de cabecera, artículos y la ruta absoluta del archivo:
+        {id_orden_compra, codigo, fecha, cantidad_pedidos, proveedor{...}, ejecutivo{...}, items[...],
+         total, archivo, ruta_archivo, fecha_envio_email, email_destino}
+        """
+        with Database() as conn:
+            cursor = conn.cursor()
+            datos = self._datos_orden(cursor, id_orden)
+            cursor.execute(
+                "SELECT archivo, fecha_envio_email, email_destino FROM ORDENES_COMPRA WHERE id_orden_compra = ?",
+                (id_orden,)
+            )
+            extra = dict(cursor.fetchone())
+        datos.update(extra)
+        datos['ruta_archivo'] = (
+            OrdenCompraService.get_instance().ruta_archivo(extra['archivo']) if extra['archivo'] else None
+        )
+        return datos
+
+    def asegurar_archivo_orden(self, id_orden):
+        """
+        Devuelve la ruta del Excel de la orden. Si el archivo no existe (por ejemplo, se borró
+        la carpeta o la orden viene de los datos de prueba), lo vuelve a generar desde la base.
+        """
+        orden = self.obtener_orden_compra(id_orden)
+        if orden['ruta_archivo'] and os.path.exists(orden['ruta_archivo']):
+            return orden['ruta_archivo']
+
+        servicio = OrdenCompraService.get_instance()
+        nombre_archivo = orden['archivo'] or servicio.nombre_archivo(
+            orden['codigo'], orden['proveedor']['nombre'], orden['fecha']
+        )
+        ruta = servicio.generar_excel(orden, nombre_archivo)
+        with Database() as conn:
+            conn.execute(
+                "UPDATE ORDENES_COMPRA SET archivo = ?, total = ? WHERE id_orden_compra = ?",
+                (nombre_archivo, orden['total'], id_orden)
+            )
+        return ruta
+
+    def registrar_envio_orden(self, id_orden, email_destino):
+        """Registra que la orden fue enviada por correo al proveedor."""
+        fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with Database() as conn:
+            conn.execute(
+                "UPDATE ORDENES_COMPRA SET fecha_envio_email = ?, email_destino = ? WHERE id_orden_compra = ?",
+                (fecha, email_destino, id_orden)
+            )
+        return fecha

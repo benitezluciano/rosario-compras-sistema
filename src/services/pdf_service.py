@@ -1,6 +1,49 @@
 import os
-from PyQt6.QtGui import QTextDocument, QPdfWriter, QPageSize, QPageLayout
-from PyQt6.QtCore import QMarginsF
+from PyQt6.QtGui import QPdfWriter, QPageSize, QPageLayout, QPainter, QPen, QFont, QColor
+from PyQt6.QtCore import QMarginsF, QRectF, QPointF, Qt
+
+MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+         "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+RESOLUCION = 300                 # dpi del PDF
+MM = RESOLUCION / 25.4           # puntos de dispositivo por milímetro
+
+# Geometría de la hoja A4 (en mm), siguiendo el modelo de remito
+X0, X1 = 12.0, 198.0             # bordes izquierdo y derecho del recuadro
+XC = 105.0                       # divisor central
+Y0 = 14.0                        # borde superior del recuadro
+Y_CABECERA = 54.0                # fin de la cabecera (emisor | X | remito)
+Y_DESTINATARIO = 92.0            # fin del bloque Señor(es) / Domicilio
+Y_REFERENCIAS = 101.0            # fin de la franja de referencias
+Y_ENCABEZADO_TABLA = 107.0       # fin del encabezado de columnas
+ALTO_FILA = 6.5
+FILAS_POR_HOJA = 17              # renglones de artículos por hoja (+1 para el total)
+Y_PIE = Y_ENCABEZADO_TABLA + ALTO_FILA * (FILAS_POR_HOJA + 1)   # inicio del pie (transporte y recepción)
+Y1 = 284.0                       # borde inferior del recuadro
+
+# Columnas de la tabla de artículos: (x inicial, título)
+COLUMNAS = [(X0, "CANTIDAD"), (32.0, "UNIDAD"), (54.0, "CÓDIGO"), (82.0, "DESCRIPCIÓN DEL PRODUCTO")]
+
+NEGRO = QColor("#111827")
+GRIS = QColor("#4b5563")
+GRIS_CLARO = QColor("#9ca3af")
+
+
+def fecha_larga(fecha_iso):
+    """'2026-11-23' → '23 de noviembre de 2026'."""
+    try:
+        anio, mes, dia = fecha_iso[:10].split("-")
+        return f"{int(dia)} de {MESES[int(mes) - 1]} de {anio}"
+    except (ValueError, IndexError):
+        return fecha_iso or ""
+
+
+def fecha_corta(fecha_iso):
+    """'2026-11-23' → '23/11/2026'."""
+    if fecha_iso and len(fecha_iso) >= 10:
+        return f"{fecha_iso[8:10]}/{fecha_iso[5:7]}/{fecha_iso[0:4]}"
+    return fecha_iso or ""
+
 
 class PdfService:
     _instance = None
@@ -18,196 +61,219 @@ class PdfService:
         )
         os.makedirs(self.carpeta_remitos, exist_ok=True)
 
-    def generar_remito_pdf(self, datos_remito):
+    # ------------------------------------------------------------------
+    # API
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def nombre_archivo_remito(datos):
+        """Remito_X_0001-00000003_<Socio>_<RC-REM-...>.pdf (termina en el código interno para poder ubicarlo)."""
+        socio = datos.get('destinatario', {}).get('nombre', 'Socio')
+        socio_safe = "".join(c for c in socio if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+        return f"Remito_{datos.get('letra', 'X')}_{datos.get('numero', '')}_{socio_safe}_{datos.get('codigo', '')}.pdf"
+
+    def generar_remito_pdf(self, datos):
         """
-        Genera un remito corporativo oficial en formato PDF usando QTextDocument y QPdfWriter.
-        datos_remito = {
-            'codigo_remito': str,
-            'codigo_pedido': str,
-            'nro_comprobante': str,
-            'fecha': str,
-            'socio_nombre': str,
-            'socio_email': str,
-            'proveedor_nombre': str,
-            'items': [{'id_articulo': int, 'codigo': str, 'detalle': str, 'cantidad': int}]
+        Genera el remito en PDF con el formato del modelo (ORIGINAL y DUPLICADO).
+        datos = {
+            'letra', 'numero' ('0001-00000001'), 'codigo' (referencia interna RC-REM-...), 'fecha' (AAAA-MM-DD),
+            'emisor': {'razon_social', 'cuit', 'condicion_iva', 'domicilio', 'localidad'},
+            'destinatario': {'nombre', 'cuit_dni', 'condicion_iva', 'domicilio'},
+            'referencias': str,
+            'items': [{'cantidad', 'unidad', 'codigo', 'detalle'}],
+            'total_unidades': int,
+            'observaciones': str,
+            'datos_simulados': bool,
         }
         Retorna la ruta absoluta del PDF generado.
         """
-        cod_rem = datos_remito.get('codigo_remito', 'RC-REM-0001')
-        cod_ped = datos_remito.get('codigo_pedido', 'RC-ORD-0001')
-        nro_comp = datos_remito.get('nro_comprobante', 'CMP-AUTO')
-        fecha = datos_remito.get('fecha', '')
-        socio_nom = datos_remito.get('socio_nombre', 'Socio')
-        socio_mail = datos_remito.get('socio_email', '')
-        prov_nom = datos_remito.get('proveedor_nombre', 'Proveedor')
-        items = datos_remito.get('items', [])
+        os.makedirs(self.carpeta_remitos, exist_ok=True)
+        ruta_pdf = os.path.join(self.carpeta_remitos, self.nombre_archivo_remito(datos))
 
-        # Sanitizar nombre de archivo
-        socio_safe = "".join(c for c in socio_nom if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
-        prov_safe = "".join(c for c in prov_nom if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
-        nombre_pdf = f"Remito_{prov_safe}_{socio_safe}_{cod_rem}.pdf"
-        ruta_pdf = os.path.join(self.carpeta_remitos, nombre_pdf)
+        writer = QPdfWriter(ruta_pdf)
+        writer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+        writer.setPageMargins(QMarginsF(0, 0, 0, 0), QPageLayout.Unit.Millimeter)
+        writer.setResolution(RESOLUCION)
+        writer.setTitle(f"Remito {datos.get('letra', 'X')} {datos.get('numero', '')}")
+        writer.setCreator("Rosario Compras - Sistema de Gestión")
 
-        # Construir filas de la tabla HTML
-        filas_html = ""
-        total_unidades = 0
-        for idx, item in enumerate(items, start=1):
-            cant = item.get('cantidad', 0)
-            total_unidades += cant
-            cod = item.get('codigo') or f"ART-{item.get('id_articulo', idx)}"
-            det = item.get('detalle', 'Producto')
-            filas_html += f"""
-            <tr style="border-bottom: 1px solid #e2e8f0;">
-                <td style="padding: 8px; text-align: center;">{idx}</td>
-                <td style="padding: 8px; text-align: center; font-family: monospace;">{cod}</td>
-                <td style="padding: 8px;">{det}</td>
-                <td style="padding: 8px; text-align: center; font-weight: bold; color: #1e3a8a;">{cant} u.</td>
-                <td style="padding: 8px; text-align: center; color: #16a34a;">Conforme</td>
-            </tr>
-            """
+        items = datos.get('items', [])
+        hojas = [items[i:i + FILAS_POR_HOJA] for i in range(0, len(items), FILAS_POR_HOJA)] or [[]]
 
-        html_content = f"""
-        <html>
-        <head>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    color: #1e293b;
-                    margin: 20px;
-                }}
-                .header-table {{
-                    width: 100%;
-                    border-bottom: 2px solid #2563eb;
-                    padding-bottom: 15px;
-                    margin-bottom: 20px;
-                }}
-                .title {{
-                    font-size: 22px;
-                    font-weight: bold;
-                    color: #1e3a8a;
-                }}
-                .subtitle {{
-                    font-size: 11px;
-                    color: #64748b;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
-                }}
-                .box-info {{
-                    border: 1px solid #cbd5e1;
-                    background-color: #f8fafc;
-                    padding: 12px;
-                    border-radius: 6px;
-                    margin-bottom: 20px;
-                }}
-                .products-table {{
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 25px;
-                }}
-                .products-table th {{
-                    background-color: #1e293b;
-                    color: white;
-                    padding: 8px;
-                    font-size: 12px;
-                    text-align: left;
-                }}
-                .footer-signatures {{
-                    width: 100%;
-                    margin-top: 40px;
-                }}
-            </style>
-        </head>
-        <body>
-            <table class="header-table">
-                <tr>
-                    <td>
-                        <div class="title">ROSARIO COMPRAS</div>
-                        <div class="subtitle">Red de Abastecimiento Gastronómico y Comercial</div>
-                        <div style="font-size: 11px; color: #475569; margin-top: 4px;">Rosario, Santa Fe, Argentina</div>
-                    </td>
-                    <td style="text-align: right;">
-                        <div style="font-size: 18px; font-weight: bold; color: #2563eb;">REMITO DE ENTREGA</div>
-                        <div style="font-size: 14px; font-family: monospace; font-weight: bold;">{cod_rem}</div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Fecha de Emisión: {fecha}</div>
-                        <div style="font-size: 11px; color: #64748b;">Ref. Pedido: {cod_ped}</div>
-                        <div style="font-size: 11px; color: #64748b;">Comprobante Interno: {nro_comp}</div>
-                    </td>
-                </tr>
-            </table>
-
-            <table style="width: 100%; margin-bottom: 15px;">
-                <tr>
-                    <td style="width: 50%; vertical-align: top; padding-right: 10px;">
-                        <div class="box-info">
-                            <div style="font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 6px;">
-                                🏢 PROVEEDOR DE ORIGEN
-                            </div>
-                            <div><b>Razón Social:</b> {prov_nom}</div>
-                            <div><b>Despacho:</b> Central Logística Rosario Compras</div>
-                        </div>
-                    </td>
-                    <td style="width: 50%; vertical-align: top; padding-left: 10px;">
-                        <div class="box-info">
-                            <div style="font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 6px;">
-                                👤 SOCIO RECEPTOR
-                            </div>
-                            <div><b>Nombre:</b> {socio_nom}</div>
-                            <div><b>Contacto:</b> {socio_mail}</div>
-                        </div>
-                    </td>
-                </tr>
-            </table>
-
-            <table class="products-table">
-                <thead>
-                    <tr>
-                        <th style="text-align: center; width: 40px;">#</th>
-                        <th style="text-align: center; width: 100px;">Cód. Ref.</th>
-                        <th>Descripción del Artículo / Producto</th>
-                        <th style="text-align: center; width: 110px;">Cant. Entregada</th>
-                        <th style="text-align: center; width: 90px;">Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filas_html}
-                </tbody>
-                <tfoot>
-                    <tr style="background-color: #f1f5f9; font-weight: bold;">
-                        <td colspan="3" style="padding: 10px; text-align: right;">TOTAL GENERAL ENTREGADO:</td>
-                        <td style="padding: 10px; text-align: center; color: #1e3a8a;">{total_unidades} u.</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
-
-            <div style="font-size: 10px; color: #64748b; font-style: italic; margin-top: 10px;">
-                * Documento interno de control y remisión de mercadería emitido por el sistema de gestión Rosario Compras. Mercadería recibida en perfectas condiciones higiénico-sanitarias y operativas.
-            </div>
-
-            <table class="footer-signatures">
-                <tr>
-                    <td style="width: 45%; text-align: center; border-top: 1px solid #94a3b8; padding-top: 8px;">
-                        <div style="font-size: 11px; font-weight: bold;">Firma y Aclaración de Logística / Cadetería</div>
-                        <div style="font-size: 10px; color: #64748b;">Rosario Compras</div>
-                    </td>
-                    <td style="width: 10%;"></td>
-                    <td style="width: 45%; text-align: center; border-top: 1px solid #94a3b8; padding-top: 8px;">
-                        <div style="font-size: 11px; font-weight: bold;">Firma y Aclaración del Socio Receptor</div>
-                        <div style="font-size: 10px; color: #64748b;">Conformidad de Entrega</div>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-        """
-
-        # Generar el archivo PDF usando QTextDocument y QPdfWriter
-        pdf_writer = QPdfWriter(ruta_pdf)
-        pdf_writer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
-        pdf_writer.setPageMargins(QMarginsF(12, 12, 12, 12))
-        
-        doc = QTextDocument()
-        doc.setHtml(html_content)
-        doc.print(pdf_writer)
-
+        p = QPainter(writer)
+        try:
+            p.setRenderHint(QPainter.RenderHint.Antialiasing)
+            primera = True
+            for copia in ("ORIGINAL", "DUPLICADO"):
+                for nro_hoja, items_hoja in enumerate(hojas, start=1):
+                    if not primera:
+                        writer.newPage()
+                    primera = False
+                    self._dibujar_hoja(p, datos, items_hoja, copia, nro_hoja, len(hojas))
+        finally:
+            p.end()
         return ruta_pdf
+
+    # ------------------------------------------------------------------
+    # Dibujo
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _r(x, y, w, h):
+        return QRectF(x * MM, y * MM, w * MM, h * MM)
+
+    @staticmethod
+    def _linea(p, x1, y1, x2, y2, grosor=0.3, color=NEGRO, estilo=Qt.PenStyle.SolidLine):
+        pen = QPen(color, grosor * MM)
+        pen.setStyle(estilo)
+        p.setPen(pen)
+        p.drawLine(QPointF(x1 * MM, y1 * MM), QPointF(x2 * MM, y2 * MM))
+
+    def _texto(self, p, x, y, w, h, texto, puntos=9, negrita=False, cursiva=False, color=NEGRO,
+               alineacion=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, ajustar=False):
+        fuente = QFont("Arial")
+        fuente.setPointSizeF(puntos)
+        fuente.setBold(negrita)
+        fuente.setItalic(cursiva)
+        p.setFont(fuente)
+        p.setPen(color)
+        rect = self._r(x, y, w, h)
+        texto = "" if texto is None else str(texto)
+        if ajustar:
+            p.drawText(rect, int(alineacion | Qt.TextFlag.TextWordWrap), texto)
+        else:
+            texto = p.fontMetrics().elidedText(texto, Qt.TextElideMode.ElideRight, int(rect.width()))
+            p.drawText(rect, int(alineacion), texto)
+
+    def _esquinas(self, p, x, y, w, h, largo=3.0):
+        """Marcas en L en las cuatro esquinas (como los recuadros del modelo)."""
+        for (cx, cy, dx, dy) in ((x, y, 1, 1), (x + w, y, -1, 1), (x, y + h, 1, -1), (x + w, y + h, -1, -1)):
+            self._linea(p, cx, cy, cx + dx * largo, cy, 0.25)
+            self._linea(p, cx, cy, cx, cy + dy * largo, 0.25)
+
+    def _campo(self, p, x, y, w, etiqueta, puntos=8.5):
+        """Etiqueta seguida de una línea para completar a mano."""
+        fuente = QFont("Arial")
+        fuente.setPointSizeF(puntos)
+        p.setFont(fuente)
+        ancho_etiqueta = p.fontMetrics().horizontalAdvance(etiqueta + " ") / MM
+        self._texto(p, x, y - 4.5, ancho_etiqueta + 1, 5, etiqueta, puntos, alineacion=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom)
+        self._linea(p, x + ancho_etiqueta, y, x + w, y, 0.2, GRIS, Qt.PenStyle.DotLine)
+
+    def _dibujar_hoja(self, p, d, items, copia, nro_hoja, total_hojas):
+        emisor = d.get('emisor', {})
+        dest = d.get('destinatario', {})
+        izq = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        centro = Qt.AlignmentFlag.AlignCenter
+        arriba = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
+
+        # --- Sobre el recuadro: copia y hoja ---
+        etiqueta = copia if total_hojas == 1 else f"{copia} · Hoja {nro_hoja} de {total_hojas}"
+        self._texto(p, X0, Y0 - 6, X1 - X0, 5, etiqueta, 8, negrita=True, color=GRIS,
+                    alineacion=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+        # --- Recuadro exterior y divisiones horizontales ---
+        pen = QPen(NEGRO, 0.5 * MM)
+        p.setPen(pen)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawRect(self._r(X0, Y0, X1 - X0, Y1 - Y0))
+        for y in (Y_CABECERA, Y_DESTINATARIO, Y_REFERENCIAS, Y_PIE):
+            self._linea(p, X0, y, X1, y, 0.35)
+        self._linea(p, X0, Y_ENCABEZADO_TABLA, X1, Y_ENCABEZADO_TABLA, 0.3)
+
+        # --- Cabecera izquierda: emisor ---
+        self._texto(p, X0 + 4, Y0 + 3, 40, 6, "Nombre:", 11, negrita=True)
+        self._texto(p, X0 + 4, Y0 + 10, XC - X0 - 16, 7, emisor.get('razon_social', ''), 12.5, negrita=True)
+        lineas_emisor = [
+            f"Domicilio: {emisor.get('domicilio', '')}",
+            f"C.U.I.T.: {emisor.get('cuit', '')}",
+            f"Condición frente al IVA: {emisor.get('condicion_iva', '')}",
+        ]
+        for i, linea in enumerate(lineas_emisor):
+            self._texto(p, X0 + 4, Y0 + 19 + i * 5, XC - X0 - 17, 5, linea, 7.8, color=GRIS)
+
+        # --- Divisor central y recuadro de la letra ---
+        self._linea(p, XC, Y0, XC, Y_DESTINATARIO, 0.35)
+        caja_x, caja_y, caja_w, caja_h = XC - 10, Y0 + 3, 20, 31
+        p.setPen(QPen(NEGRO, 0.4 * MM))
+        p.setBrush(QColor("white"))
+        p.drawRect(self._r(caja_x, caja_y, caja_w, caja_h))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        self._texto(p, caja_x, caja_y + 1, caja_w, 13, d.get('letra', 'X'), 30, negrita=True, alineacion=centro)
+        self._texto(p, caja_x + 1, caja_y + 14, caja_w - 2, 16, "DOCUMENTO\nNO VÁLIDO\nCOMO\nFACTURA", 6.3,
+                    negrita=True, alineacion=centro, ajustar=True)
+
+        # --- Cabecera derecha: datos del remito ---
+        xd = XC + 14
+        self._texto(p, xd, Y0 + 2, X1 - xd - 3, 8, "REMITO", 17, negrita=True)
+        self._texto(p, xd, Y0 + 11, X1 - xd - 3, 7, f"N.º {d.get('numero', '')}", 13, negrita=True)
+        self._texto(p, xd, Y0 + 19.5, X1 - xd - 3, 5, f"Fecha de emisión: {fecha_corta(d.get('fecha', ''))}", 9)
+        self._texto(p, xd, Y0 + 24.5, X1 - xd - 3, 5,
+                    f"{emisor.get('localidad', 'Rosario')}, {fecha_larga(d.get('fecha', ''))}", 9, color=GRIS)
+        self._texto(p, xd, Y0 + 32, X1 - xd - 3, 5, f"Ref. interna: {d.get('codigo', '')}", 7.5, color=GRIS_CLARO)
+
+        # --- Destinatario: Señor(es) | Domicilio ---
+        alto = Y_DESTINATARIO - Y_CABECERA
+        self._esquinas(p, X0 + 3, Y_CABECERA + 3, XC - X0 - 6, alto - 13)
+        self._esquinas(p, XC + 3, Y_CABECERA + 3, X1 - XC - 6, alto - 13)
+        self._texto(p, X0 + 7, Y_CABECERA + 5.5, 60, 5, "Señor(es):", 8.5, color=GRIS)
+        self._texto(p, X0 + 7, Y_CABECERA + 11, XC - X0 - 14, 13, dest.get('nombre', ''), 11, negrita=True,
+                    alineacion=arriba, ajustar=True)
+        self._texto(p, X0 + 3, Y_DESTINATARIO - 8, XC - X0 - 6, 6,
+                    f"I.V.A.: {dest.get('condicion_iva') or '—'}", 9)
+        self._texto(p, XC + 7, Y_CABECERA + 5.5, 60, 5, "Domicilio de entrega:", 8.5, color=GRIS)
+        self._texto(p, XC + 7, Y_CABECERA + 11, X1 - XC - 14, 13, dest.get('domicilio') or '—', 10,
+                    alineacion=arriba, ajustar=True)
+        self._texto(p, XC + 3, Y_DESTINATARIO - 8, X1 - XC - 6, 6,
+                    f"C.U.I.T. / D.N.I. N.º: {dest.get('cuit_dni') or '—'}", 9)
+
+        # --- Referencias (franja de "Condición de venta" del modelo) ---
+        self._texto(p, X0 + 3, Y_DESTINATARIO + 0.5, X1 - X0 - 6, Y_REFERENCIAS - Y_DESTINATARIO - 1,
+                    f"Referencias: {d.get('referencias', '')}", 7.8, alineacion=izq, ajustar=True)
+
+        # --- Tabla de artículos ---
+        for i, (x, titulo) in enumerate(COLUMNAS):
+            x_fin = COLUMNAS[i + 1][0] if i + 1 < len(COLUMNAS) else X1
+            if i > 0:
+                self._linea(p, x, Y_REFERENCIAS, x, Y_PIE, 0.3)
+            self._texto(p, x, Y_REFERENCIAS, x_fin - x, Y_ENCABEZADO_TABLA - Y_REFERENCIAS, titulo, 7.5,
+                        negrita=True, alineacion=centro)
+
+        y = Y_ENCABEZADO_TABLA
+        for it in items:
+            valores = [str(it.get('cantidad', '')), it.get('unidad') or 'Unidad', it.get('codigo') or '-', it.get('detalle', '')]
+            for i, (x, _) in enumerate(COLUMNAS):
+                x_fin = COLUMNAS[i + 1][0] if i + 1 < len(COLUMNAS) else X1
+                alin = izq if i == 3 else centro
+                margen = 2 if i == 3 else 0.5
+                self._texto(p, x + margen, y, x_fin - x - 2 * margen, ALTO_FILA, valores[i], 9,
+                            negrita=(i == 0), alineacion=alin)
+            self._linea(p, X0, y + ALTO_FILA, X1, y + ALTO_FILA, 0.15, GRIS_CLARO, Qt.PenStyle.DotLine)
+            y += ALTO_FILA
+
+        if nro_hoja == total_hojas:
+            self._texto(p, COLUMNAS[3][0] + 2, y, X1 - COLUMNAS[3][0] - 4, ALTO_FILA,
+                        f"Total: {d.get('total_unidades', 0)} unidad(es) en {d.get('cantidad_renglones', len(items))} renglón(es)",
+                        8.5, negrita=True, cursiva=True, color=GRIS, alineacion=izq)
+        else:
+            self._texto(p, COLUMNAS[3][0] + 2, y, X1 - COLUMNAS[3][0] - 4, ALTO_FILA,
+                        "Continúa en la hoja siguiente…", 8.5, cursiva=True, color=GRIS, alineacion=izq)
+
+        # --- Pie: transporte y recepción ---
+        self._texto(p, X0 + 3, Y_PIE + 1.5, 80, 5, "TRANSPORTE Y RECEPCIÓN", 7.5, negrita=True, color=GRIS)
+        self._campo(p, X0 + 3, Y_PIE + 12, X1 - X0 - 6, "Transportista / Chofer / Dominio:")
+        self._texto(p, X0 + 3, Y_PIE + 14.5, 30, 5, "Observaciones:", 8.5, negrita=True)
+        self._texto(p, X0 + 28, Y_PIE + 14.5, X1 - X0 - 31, 15, d.get('observaciones', ''), 8, alineacion=arriba, ajustar=True)
+
+        y_firmas = Y_PIE + 41
+        ancho_col = (X1 - X0 - 12) / 2
+        self._campo(p, X0 + 3, y_firmas, ancho_col, "Recibí conforme:")
+        self._campo(p, X0 + 9 + ancho_col, y_firmas, ancho_col, "Aclaración:")
+        self._campo(p, X0 + 3, y_firmas + 11, ancho_col, "D.N.I.:")
+        self._campo(p, X0 + 9 + ancho_col, y_firmas + 11, ancho_col, "Fecha y hora de recepción:")
+
+        # --- Debajo del recuadro ---
+        leyenda = "Documento emitido por el Sistema de Gestión Rosario Compras."
+        if d.get('datos_simulados'):
+            leyenda += " DATOS FISCALES SIMULADOS — completar con los datos reales del emisor y del destinatario."
+        self._texto(p, X0, Y1 + 1.5, X1 - X0, 5, leyenda, 6.8, cursiva=True, color=GRIS, alineacion=centro)

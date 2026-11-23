@@ -216,3 +216,52 @@ CUERPO HTML:
         </body>
         </html>
         """
+
+    def generar_plantilla_orden_compra(self, nombre_proveedor, codigo_orden, fecha_orden, cantidad_articulos,
+                                       total, nombre_ejecutivo, email_ejecutivo):
+        """Cuerpo del correo con el que el ejecutivo envía la orden de compra (Excel adjunto) al proveedor."""
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {{ font-family: 'Segoe UI', Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; }}
+                .container {{ max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; }}
+                .header {{ background-color: #1e3a8a; color: #ffffff; padding: 24px; text-align: center; }}
+                .content {{ padding: 24px; line-height: 1.6; font-size: 14px; }}
+                .highlight-box {{ background-color: #f1f5f9; border-left: 4px solid #2563eb; padding: 12px 16px; margin: 18px 0; border-radius: 4px; }}
+                .footer {{ background-color: #f1f5f9; padding: 16px; text-align: center; font-size: 12px; color: #64748b; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2 style="margin: 0;">Rosario Compras</h2>
+                    <p style="margin: 4px 0 0 0; font-size: 14px; opacity: 0.9;">Orden de Compra {codigo_orden}</p>
+                </div>
+                <div class="content">
+                    <p>Estimado equipo de <strong>{nombre_proveedor}</strong>,</p>
+                    <p>Les enviamos adjunta la <strong>Orden de Compra {codigo_orden}</strong>, que consolida los pedidos de los socios de la red sobre la lista de precios negociada.</p>
+
+                    <div class="highlight-box">
+                        <strong>📄 Resumen de la orden</strong><br>
+                        N° de Orden: <strong>{codigo_orden}</strong><br>
+                        Fecha de emisión: {fecha_orden}<br>
+                        Artículos: {cantidad_articulos}<br>
+                        Total: <strong>${total:,.2f}</strong>
+                    </div>
+
+                    <p>Les pedimos confirmar la recepción de esta orden y la fecha estimada de entrega, e indicar el N° de Orden en el remito o factura correspondiente.</p>
+                    <ul>
+                        <li><strong>Ejecutivo a cargo:</strong> {nombre_ejecutivo}</li>
+                        <li><strong>Email de contacto:</strong> <a href="mailto:{email_ejecutivo}">{email_ejecutivo}</a></li>
+                    </ul>
+                </div>
+                <div class="footer">
+                    © {datetime.now().year} Rosario Compras S.A. - Rosario, Santa Fe, Argentina.
+                </div>
+            </div>
+        </body>
+        </html>
+        """

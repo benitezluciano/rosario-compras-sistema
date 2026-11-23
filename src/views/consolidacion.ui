@@ -198,27 +198,10 @@
         </font>
        </property>
        <property name="text">
-        <string>📊 Planilla Consolidada General (.xlsx)</string>
+        <string>📊 Planilla Borrador del Proveedor (.xlsx)</string>
        </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btn_exportar_proveedores">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>40</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <family>Arial</family>
-         <pointsize>10</pointsize>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>📥 Órdenes por Proveedor (.xlsx)</string>
+       <property name="toolTip">
+        <string>Planilla de trabajo con el resumen y el detalle por socio del proveedor seleccionado, antes de consolidar.</string>
        </property>
       </widget>
      </item>
@@ -238,7 +221,7 @@
         </font>
        </property>
        <property name="text">
-        <string>🚀 Confirmar Consolidación y Despacho a Proveedores</string>
+        <string>🚀 Consolidar y Generar Orden de Compra</string>
        </property>
       </widget>
      </item>

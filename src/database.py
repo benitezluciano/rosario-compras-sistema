@@ -43,6 +43,8 @@ def migrar_db(conn):
     # PEDIDOS: código comercial y proveedor del pedido
     agregar_si_falta("PEDIDOS", "codigo_comercial", "TEXT")
     agregar_si_falta("PEDIDOS", "id_proveedor", "INTEGER REFERENCES PROVEEDORES(id_proveedor)")
+    # (ORDENES_COMPRA se crea con CREATE TABLE IF NOT EXISTS desde rosario_compras.sql)
+    agregar_si_falta("PEDIDOS", "id_orden_compra", "INTEGER REFERENCES ORDENES_COMPRA(id_orden_compra)")
 
     # DETALLE_PEDIDOS: precio congelado
     agregar_si_falta("DETALLE_PEDIDOS", "precio_unitario", "REAL NOT NULL DEFAULT 0.0")
@@ -51,6 +53,22 @@ def migrar_db(conn):
     agregar_si_falta("REMITOS", "id_pedido", "INTEGER REFERENCES PEDIDOS(id_pedido)")
     agregar_si_falta("REMITOS", "id_proveedor", "INTEGER REFERENCES PROVEEDORES(id_proveedor)")
     agregar_si_falta("REMITOS", "codigo_comercial", "TEXT")
+
+    agregar_si_falta("REMITOS", "numero_remito", "TEXT")
+    # Completar el número formal de remitos emitidos antes de esta versión
+    from src.config.empresa import PUNTO_VENTA_REMITOS
+    cursor.execute(
+        "UPDATE REMITOS SET numero_remito = printf('%04d-%08d', ?, id_remito) WHERE numero_remito IS NULL",
+        (PUNTO_VENTA_REMITOS,)
+    )
+
+    # USERS: datos fiscales y de entrega del socio (remitos)
+    agregar_si_falta("USERS", "cuit_dni", "TEXT")
+    agregar_si_falta("USERS", "condicion_iva", "TEXT")
+    agregar_si_falta("USERS", "domicilio", "TEXT")
+
+    # ARTICULOS: unidad de venta/entrega
+    agregar_si_falta("ARTICULOS", "unidad", "TEXT NOT NULL DEFAULT 'Unidad'")
 
     # COMPROBANTES_PROVEEDOR y PRECIOS_NEGOCIADOS
     agregar_si_falta("COMPROBANTES_PROVEEDOR", "codigo_comercial", "TEXT")
