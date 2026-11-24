@@ -1,0 +1,107 @@
+<main class="page">
+  <header>
+    <h1>Circuito Rosario Compras</h1>
+    <p class="lede">El mismo recorrido, con las mismas filas y los mismos carriles, antes y después del módulo. Cada fila es una etapa. Lo que cambia es quién hace el trabajo.</p>
+  </header>
+
+  <div class="pair">
+    <figure>
+      <div class="figtitle"><h2>Hoy</h2><span class="tag pain">AS-IS</span></div>
+      <div class="figwrap">{{SVG_AS}}</div>
+      <figcaption>Los pedidos de los 12 socios llegan por mail en Excel y el ejecutivo los pasa a mano a una sola planilla. Después reparte artículo por artículo sobre papel. Los remitos salen recién al terminar el reparto.</figcaption>
+    </figure>
+    <figure>
+      <div class="figtitle"><h2>Con el módulo</h2><span class="tag auto">TO-BE</span></div>
+      <div class="figwrap">{{SVG_TO}}</div>
+      <figcaption>El socio carga el pedido en el sistema y el ejecutivo ve la matriz ya consolidada. La orden de compra, el reparto y el remito se generan solos. La línea punteada es el aviso nuevo al socio.</figcaption>
+    </figure>
+  </div>
+
+  <div class="legend" aria-label="Referencias">
+    <span><i class="sw pain"></i>Trabajo manual con problema</span>
+    <span><i class="sw auto"></i>Automatizado por el módulo</span>
+    <span><i class="sw"></i>Se mantiene</span>
+    <span><i class="sw ext"></i>Actor externo</span>
+    <span><i class="dot pain">1</i>Problema del relevamiento (rojo: ocurre hoy; verde: lo resuelve)</span>
+    <span><i class="dash"></i>Flujo nuevo</span>
+  </div>
+
+  <section>
+    <h2>Los cuatro problemas y su respuesta</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th></th><th>Problema</th><th>Dónde ocurre hoy</th><th>Qué hace el prototipo</th></tr></thead>
+        <tbody>
+          <tr><td class="n"><i class="dot pain">1</i></td><td><strong>Reparto manual</strong></td><td>Reparto artículo por artículo, tachando en planillas. La organización estima unas 4 horas por pedido.</td><td>Reparto automático con prorrateo cuando hay faltantes.</td></tr>
+          <tr><td class="n"><i class="dot pain">2</i></td><td><strong>Planillas físicas y Excel</strong></td><td>Los pedidos llegan por mail, se imprimen y se unifican a mano. Hay versiones duplicadas y pérdida de datos.</td><td>El socio carga el pedido en el sistema y la consolidación sale sin tipeo.</td></tr>
+          <tr><td class="n"><i class="dot pain">3</i></td><td><strong>Remitos tardíos</strong></td><td>El remito se emite después del reparto manual y retrasa el armado de palets.</td><td>Remito en PDF, original y duplicado, apenas termina el reparto.</td></tr>
+          <tr><td class="n"><i class="dot pain">4</i></td><td><strong>Planillas sin formato estándar</strong></td><td>Cada socio usa su propio formato, con columnas y nombres inconsistentes.</td><td>Catálogo único por proveedor. El pedido se carga sobre la lista habilitada.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Qué cambia y qué no</h2>
+    <p class="sub">Clasificación del documento de primeras conclusiones (03). La negociación y el control físico quedan en manos de las personas.</p>
+    <div class="three">
+      <div>
+        <h3><span class="tag pain">Eliminar</span></h3>
+        <ul>
+          <li>Impresión de las planillas de pedido</li>
+          <li>Transcripción manual de las cantidades de los 12 socios</li>
+          <li>Tachado en papel de lo ya repartido</li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="tag auto">Modificar</span></h3>
+        <ul>
+          <li>Pedido: del mail con Excel a la carga directa en el sistema</li>
+          <li>Reparto: de manual a automático</li>
+          <li>Remito: emisión inmediata después del reparto</li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="tag" style="background:var(--lane1);color:var(--ink);border:1px solid var(--line)">Mantener</span></h3>
+        <ul>
+          <li>Negociación de precios por los ejecutivos</li>
+          <li>Control físico de la mercadería</li>
+          <li>Carga de la factura y orden de pago</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Por qué conviene: lo que hay y lo que falta</h2>
+    <p class="sub">Esqueleto del bloque de valor. Hoy solo hay cifras estimadas por la organización. Los costos y el cronograma no figuran en los documentos entregados.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Dato</th><th>Hoy</th><th>Con el módulo</th><th>Fuente</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td>Reparto y armado de un pedido</td><td>Unas 4 horas</td><td>De horas a minutos, sin cifra medida</td><td>Doc 03 y factibilidad económica</td><td><span class="pill org">Estimado por la organización</span></td></tr>
+          <tr><td>Papel</td><td>Más de 500 hojas por mes</td><td>A confirmar: las planillas de pedido dejan de imprimirse, los remitos no necesariamente</td><td>Doc 03</td><td><span class="pill gap">Falta validar</span></td></tr>
+          <tr><td>Horas de trabajo liberadas</td><td></td><td>Unas 30 horas por semana</td><td>Doc 03</td><td><span class="pill org">Estimado por la organización</span></td></tr>
+          <tr><td>Errores en palets</td><td>Faltantes, sobrantes y, a veces, palets al socio equivocado</td><td></td><td>Entrevista a Logística</td><td><span class="pill gap">Sin cifra</span></td></tr>
+          <tr><td>Costo de desarrollo e implementación</td><td></td><td></td><td>Carpeta 06 o sección 5.6 del doc 05</td><td><span class="pill gap">Falta</span></td></tr>
+          <tr><td>Cronograma</td><td></td><td></td><td>Carpeta 06 o sección 5.6 del doc 05</td><td><span class="pill gap">Falta</span></td></tr>
+          <tr><td>Nube o servidores propios</td><td>Servidores en red y tres proveedores de internet</td><td></td><td>Entrevista a IT</td><td><span class="pill gap">Falta análisis</span></td></tr>
+          <tr><td>A medida o producto de mercado</td><td></td><td></td><td>Doc 05, sección prometida</td><td><span class="pill gap">Falta</span></td></tr>
+          <tr><td>Integración con el sistema de gestión y SAP</td><td>Sistema de 30 años mantenido por IT</td><td>Prototipo aislado</td><td>Doc 05, sección 5.1.4</td><td><span class="pill fut">Alcance futuro</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Para chequear antes de presentar</h2>
+    <ul class="notes">
+      <li>Contaduría aparece dentro de Administración. En el relevamiento es un carril propio y queda fuera del módulo.</li>
+      <li>Logística no tiene rol propio en el sistema. La recepción la registra un usuario ejecutivo o administrador (limitación L-04 del doc 05).</li>
+      <li>El manejo del stock al registrar la recepción sigue sin decidirse (DEC-014).</li>
+      <li>Las cifras de 4 horas, 500 hojas y 30 horas por semana son estimaciones de la organización, no medidas por el grupo. Así hay que rotularlas en las diapositivas.</li>
+    </ul>
+  </section>
+
+  <p class="src">Fuentes: documentos 02 a 05 de la carpeta documentacion (circuito vigente, problemas, primeras conclusiones y especificación) y decisiones DEC-004 a DEC-024 del prototipo.</p>
+</main>

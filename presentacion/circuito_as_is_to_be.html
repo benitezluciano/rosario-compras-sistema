@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circuito Rosario Compras</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+:root { color-scheme: light; }
+body { margin: 0; }
+/* Layout: header, two aligned swimlane figures side by side (stacked when narrow), then reference tables. */
+:root {
+  --bg: #F2F4F6; --surface: #FFFFFF; --ink: #17222D; --muted: #5B6874; --line: #CBD3DA;
+  --lane1: #ECF0F3; --lane2: #F6F8F9; --head: #DDE3E8;
+  --pain: #B4421A; --pain-tint: #FBE9E1;
+  --auto: #0B6E66; --auto-tint: #DDF2EE;
+  --on-accent: #FFFFFF;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-head: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12181E; --surface: #1B242C; --ink: #E6ECF1; --muted: #98A5B1; --line: #34414C;
+    --lane1: #19222A; --lane2: #151D24; --head: #243039;
+    --pain: #F08A5D; --pain-tint: #3A241B;
+    --auto: #4FC3B5; --auto-tint: #14332F;
+    --on-accent: #10161B;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12181E; --surface: #1B242C; --ink: #E6ECF1; --muted: #98A5B1; --line: #34414C;
+  --lane1: #19222A; --lane2: #151D24; --head: #243039;
+  --pain: #F08A5D; --pain-tint: #3A241B;
+  --auto: #4FC3B5; --auto-tint: #14332F;
+  --on-accent: #10161B;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+.page { max-width: 1280px; margin: 0 auto; padding-block: 32px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--font-head); line-height: 1.2; text-wrap: balance; margin: 0; }
+h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.25rem; font-weight: 700; }
+h3 { font-size: 1rem; font-weight: 700; }
+.lede { color: var(--muted); max-width: 68ch; margin: 8px 0 0; }
+section { margin-top: 44px; }
+section > h2 { margin-bottom: 12px; }
+.sub { color: var(--muted); max-width: 70ch; margin: 0 0 16px; }
+
+.pair { display: grid; grid-template-columns: 1fr; gap: 28px; margin-top: 24px; }
+@media (min-width: 1180px) { .pair { grid-template-columns: 1fr 1fr; } }
+figure { margin: 0; min-width: 0; }
+.figtitle { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.tag { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; }
+.tag.pain { background: var(--pain-tint); color: var(--pain); }
+.tag.auto { background: var(--auto-tint); color: var(--auto); }
+.figwrap { overflow-x: auto; border: 1px solid var(--line); background: var(--surface); }
+.figwrap svg { display: block; width: 100%; min-width: 560px; height: auto; color: var(--muted); }
+figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 8px; max-width: 70ch; }
+
+/* svg parts */
+.lane.l0 { fill: var(--lane1); } .lane.l1 { fill: var(--lane2); }
+.lanehead { fill: var(--head); }
+.lanename { fill: var(--ink); font: 600 11.5px var(--font-body); }
+.box { stroke-width: 1.5; }
+.box.keep { fill: var(--surface); stroke: var(--muted); }
+.box.ext { fill: var(--surface); stroke: var(--muted); stroke-dasharray: 4 3; }
+.box.pain { fill: var(--pain-tint); stroke: var(--pain); }
+.box.auto { fill: var(--auto-tint); stroke: var(--auto); }
+.btxt { fill: var(--ink); font: 500 11px var(--font-body); }
+.edge { fill: none; stroke: currentColor; stroke-width: 1.3; }
+.edge.new { stroke: var(--auto); color: var(--auto); stroke-dasharray: 5 3; stroke-width: 1.6; }
+.elabel { fill: var(--muted); font: 400 10.5px var(--font-body); paint-order: stroke; stroke: var(--lane2); stroke-width: 3px; stroke-linejoin: round; }
+.badge-pain { fill: var(--pain); } .badge-auto { fill: var(--auto); }
+.badgetxt { fill: var(--on-accent); font: 700 10.5px var(--font-body); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 20px; color: var(--muted); font-size: 0.86rem; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 22px; height: 14px; border: 1.5px solid var(--muted); background: var(--surface); border-radius: 3px; display: inline-block; }
+.sw.pain { background: var(--pain-tint); border-color: var(--pain); }
+.sw.auto { background: var(--auto-tint); border-color: var(--auto); }
+.sw.ext { border-style: dashed; }
+.dot { width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--on-accent); font: 700 10.5px var(--font-body); }
+.dot.pain { background: var(--pain); } .dot.auto { background: var(--auto); }
+.dash { width: 24px; border-top: 2px dashed var(--auto); display: inline-block; }
+
+/* tables */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.92rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+th { font-size: 0.74rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--lane2); }
+tr:last-child td { border-bottom: 0; }
+td.n { width: 2.4rem; }
+td.n .dot { width: 22px; height: 22px; font-size: 12px; }
+.pill { display: inline-block; font-size: 0.76rem; font-weight: 600; padding: 1px 8px; border-radius: 3px; white-space: nowrap; }
+.pill.org { background: var(--lane1); color: var(--ink); border: 1px solid var(--line); }
+.pill.gap { background: var(--pain-tint); color: var(--pain); }
+.pill.fut { background: var(--lane1); color: var(--muted); border: 1px solid var(--line); }
+
+.three { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.three > div { background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; min-width: 0; }
+.three h3 { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.three ul { margin: 0; padding-left: 1.1rem; }
+.three li { margin: 4px 0; }
+.notes { margin: 0; padding-left: 1.2rem; max-width: 80ch; }
+.notes li { margin: 6px 0; }
+.src { color: var(--muted); font-size: 0.84rem; margin-top: 40px; max-width: 80ch; }
+
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <h1>Circuito Rosario Compras</h1>
+    <p class="lede">El mismo recorrido, con las mismas filas y los mismos carriles, antes y después del módulo. Cada fila es una etapa. Lo que cambia es quién hace el trabajo.</p>
+  </header>
+
+  <div class="pair">
+    <figure>
+      <div class="figtitle"><h2>Hoy</h2><span class="tag pain">AS-IS</span></div>
+      <div class="figwrap"><svg viewBox="0 0 590 760" role="img" aria-label="Circuito actual en cinco carriles: los pedidos llegan por mail en Excel, el ejecutivo los tipea en una planilla y reparte artículo por artículo; cuatro problemas marcados.">
+<defs><marker id="as-arr" viewBox="0 0 8 8" refX="7.5" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+<rect class="lane l0" x="0" y="0" width="118" height="760"/>
+<rect class="lanehead" x="0" y="0" width="118" height="28"/>
+<text class="lanename" x="59.0" y="18.0" text-anchor="middle">Socios</text>
+<rect class="lane l1" x="118" y="0" width="118" height="760"/>
+<rect class="lanehead" x="118" y="0" width="118" height="28"/>
+<text class="lanename" x="177.0" y="18.0" text-anchor="middle">Ejecutivo</text>
+<rect class="lane l0" x="236" y="0" width="118" height="760"/>
+<rect class="lanehead" x="236" y="0" width="118" height="28"/>
+<text class="lanename" x="295.0" y="18.0" text-anchor="middle">Logística</text>
+<rect class="lane l1" x="354" y="0" width="118" height="760"/>
+<rect class="lanehead" x="354" y="0" width="118" height="28"/>
+<text class="lanename" x="413.0" y="18.0" text-anchor="middle">Administración</text>
+<rect class="lane l0" x="472" y="0" width="118" height="760"/>
+<rect class="lanehead" x="472" y="0" width="118" height="28"/>
+<text class="lanename" x="531.0" y="18.0" text-anchor="middle">Proveedor</text>
+<path class="edge" d="M177.0,99.0 V114.0 H59.0 V129.0" marker-end="url(#as-arr)"/>
+<text class="elabel" x="118.0" y="109.0" text-anchor="middle">lista</text>
+<path class="edge" d="M59.0,179.0 V194.0 H177.0 V209.0" marker-end="url(#as-arr)"/>
+<text class="elabel" x="118.0" y="189.0" text-anchor="middle">mail</text>
+<path class="edge" d="M177.0,259.0 V289.0" marker-end="url(#as-arr)"/>
+<path class="edge" d="M226.0,314.0 H482.0" marker-end="url(#as-arr)"/>
+<text class="elabel" x="354.0" y="309.0" text-anchor="middle">planilla consolidada</text>
+<path class="edge" d="M531.0,339.0 V354.0 H295.0 V369.0" marker-end="url(#as-arr)"/>
+<text class="elabel" x="413.0" y="349.0" text-anchor="middle">camión</text>
+<path class="edge" d="M246.0,394.0 H226.0" marker-end="url(#as-arr)"/>
+<path class="edge" d="M177.0,419.0 V434.0 H413.0 V449.0" marker-end="url(#as-arr)"/>
+<text class="elabel" x="365.8" y="429.0" text-anchor="middle">factura</text>
+<path class="edge" d="M413.0,499.0 V514.0 H177.0 V529.0" marker-end="url(#as-arr)"/>
+<path class="edge" d="M177.0,579.0 V594.0 H295.0 V609.0" marker-end="url(#as-arr)"/>
+<path class="edge" d="M295.0,659.0 V674.0 H59.0 V689.0" marker-end="url(#as-arr)"/>
+<rect class="box keep" x="128.0" y="49.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="71.5" text-anchor="middle">Sube listas</text>
+<text class="btxt" x="177.0" y="84.5" text-anchor="middle">negociadas</text>
+<rect class="box pain" x="10.0" y="129.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="59.0" y="151.5" text-anchor="middle">Pedido en Excel</text>
+<text class="btxt" x="59.0" y="164.5" text-anchor="middle">por mail</text>
+<circle class="badge-pain" cx="104.0" cy="129.0" r="9"/>
+<text class="badgetxt" x="104.0" y="132.8" text-anchor="middle">4</text>
+<circle class="badge-pain" cx="84.0" cy="129.0" r="9"/>
+<text class="badgetxt" x="84.0" y="132.8" text-anchor="middle">2</text>
+<rect class="box pain" x="128.0" y="209.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="231.5" text-anchor="middle">Imprime y tipea</text>
+<text class="btxt" x="177.0" y="244.5" text-anchor="middle">12 planillas</text>
+<circle class="badge-pain" cx="222.0" cy="209.0" r="9"/>
+<text class="badgetxt" x="222.0" y="212.8" text-anchor="middle">4</text>
+<circle class="badge-pain" cx="202.0" cy="209.0" r="9"/>
+<text class="badgetxt" x="202.0" y="212.8" text-anchor="middle">2</text>
+<rect class="box keep" x="128.0" y="289.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="311.5" text-anchor="middle">Envía planilla</text>
+<text class="btxt" x="177.0" y="324.5" text-anchor="middle">al proveedor</text>
+<rect class="box ext" x="482.0" y="289.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="531.0" y="311.5" text-anchor="middle">Prepara y</text>
+<text class="btxt" x="531.0" y="324.5" text-anchor="middle">entrega</text>
+<rect class="box keep" x="246.0" y="369.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="295.0" y="385.0" text-anchor="middle">Recibe y</text>
+<text class="btxt" x="295.0" y="398.0" text-anchor="middle">controla con</text>
+<text class="btxt" x="295.0" y="411.0" text-anchor="middle">remito</text>
+<rect class="box keep" x="128.0" y="369.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="385.0" text-anchor="middle">Controla</text>
+<text class="btxt" x="177.0" y="398.0" text-anchor="middle">precios y</text>
+<text class="btxt" x="177.0" y="411.0" text-anchor="middle">cantidades</text>
+<rect class="box keep" x="364.0" y="449.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="413.0" y="471.5" text-anchor="middle">Carga factura y</text>
+<text class="btxt" x="413.0" y="484.5" text-anchor="middle">orden de pago</text>
+<rect class="box pain" x="128.0" y="529.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="545.0" text-anchor="middle">Reparte</text>
+<text class="btxt" x="177.0" y="558.0" text-anchor="middle">artículo por</text>
+<text class="btxt" x="177.0" y="571.0" text-anchor="middle">artículo</text>
+<circle class="badge-pain" cx="222.0" cy="529.0" r="9"/>
+<text class="badgetxt" x="222.0" y="532.8" text-anchor="middle">1</text>
+<rect class="box pain" x="246.0" y="609.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="295.0" y="631.5" text-anchor="middle">Remitos tardíos</text>
+<text class="btxt" x="295.0" y="644.5" text-anchor="middle">y picking</text>
+<circle class="badge-pain" cx="340.0" cy="609.0" r="9"/>
+<text class="badgetxt" x="340.0" y="612.8" text-anchor="middle">3</text>
+<rect class="box keep" x="10.0" y="689.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="59.0" y="711.5" text-anchor="middle">Retira con su</text>
+<text class="btxt" x="59.0" y="724.5" text-anchor="middle">transporte</text>
+</svg></div>
+      <figcaption>Los pedidos de los 12 socios llegan por mail en Excel y el ejecutivo los pasa a mano a una sola planilla. Después reparte artículo por artículo sobre papel. Los remitos salen recién al terminar el reparto.</figcaption>
+    </figure>
+    <figure>
+      <div class="figtitle"><h2>Con el módulo</h2><span class="tag auto">TO-BE</span></div>
+      <div class="figwrap"><svg viewBox="0 0 590 760" role="img" aria-label="Circuito propuesto en los mismos cinco carriles: el socio carga el pedido en el sistema, la consolidación, la orden de compra, el reparto y el remito se generan automáticamente.">
+<defs><marker id="to-arr" viewBox="0 0 8 8" refX="7.5" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+<rect class="lane l0" x="0" y="0" width="118" height="760"/>
+<rect class="lanehead" x="0" y="0" width="118" height="28"/>
+<text class="lanename" x="59.0" y="18.0" text-anchor="middle">Socios</text>
+<rect class="lane l1" x="118" y="0" width="118" height="760"/>
+<rect class="lanehead" x="118" y="0" width="118" height="28"/>
+<text class="lanename" x="177.0" y="18.0" text-anchor="middle">Ejecutivo</text>
+<rect class="lane l0" x="236" y="0" width="118" height="760"/>
+<rect class="lanehead" x="236" y="0" width="118" height="28"/>
+<text class="lanename" x="295.0" y="18.0" text-anchor="middle">Logística</text>
+<rect class="lane l1" x="354" y="0" width="118" height="760"/>
+<rect class="lanehead" x="354" y="0" width="118" height="28"/>
+<text class="lanename" x="413.0" y="18.0" text-anchor="middle">Administración</text>
+<rect class="lane l0" x="472" y="0" width="118" height="760"/>
+<rect class="lanehead" x="472" y="0" width="118" height="28"/>
+<text class="lanename" x="531.0" y="18.0" text-anchor="middle">Proveedor</text>
+<path class="edge" d="M177.0,99.0 V114.0 H59.0 V129.0" marker-end="url(#to-arr)"/>
+<text class="elabel" x="118.0" y="109.0" text-anchor="middle">aviso</text>
+<path class="edge" d="M59.0,179.0 V194.0 H177.0 V209.0" marker-end="url(#to-arr)"/>
+<text class="elabel" x="118.0" y="189.0" text-anchor="middle">aviso</text>
+<path class="edge" d="M177.0,259.0 V289.0" marker-end="url(#to-arr)"/>
+<path class="edge" d="M226.0,314.0 H482.0" marker-end="url(#to-arr)"/>
+<text class="elabel" x="354.0" y="309.0" text-anchor="middle">orden .xlsx</text>
+<path class="edge" d="M531.0,339.0 V354.0 H295.0 V369.0" marker-end="url(#to-arr)"/>
+<text class="elabel" x="413.0" y="349.0" text-anchor="middle">camión</text>
+<path class="edge" d="M246.0,394.0 H226.0" marker-end="url(#to-arr)"/>
+<path class="edge" d="M177.0,419.0 V434.0 H413.0 V449.0" marker-end="url(#to-arr)"/>
+<text class="elabel" x="365.8" y="429.0" text-anchor="middle">factura</text>
+<path class="edge" d="M413.0,499.0 V514.0 H177.0 V529.0" marker-end="url(#to-arr)"/>
+<path class="edge" d="M177.0,579.0 V594.0 H295.0 V609.0" marker-end="url(#to-arr)"/>
+<path class="edge" d="M295.0,659.0 V674.0 H59.0 V689.0" marker-end="url(#to-arr)"/>
+<path class="edge new" d="M128.0,554.0 H43.0 V689.0" marker-end="url(#to-arr)"/>
+<text class="elabel" x="85.5" y="549.0" text-anchor="middle">aviso</text>
+<rect class="box auto" x="128.0" y="49.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="65.0" text-anchor="middle">Importa y</text>
+<text class="btxt" x="177.0" y="78.0" text-anchor="middle">habilita la</text>
+<text class="btxt" x="177.0" y="91.0" text-anchor="middle">lista</text>
+<rect class="box auto" x="10.0" y="129.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="59.0" y="151.5" text-anchor="middle">Carga su pedido</text>
+<text class="btxt" x="59.0" y="164.5" text-anchor="middle">en el sistema</text>
+<circle class="badge-auto" cx="104.0" cy="129.0" r="9"/>
+<text class="badgetxt" x="104.0" y="132.8" text-anchor="middle">4</text>
+<circle class="badge-auto" cx="84.0" cy="129.0" r="9"/>
+<text class="badgetxt" x="84.0" y="132.8" text-anchor="middle">2</text>
+<rect class="box auto" x="128.0" y="209.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="225.0" text-anchor="middle">Matriz</text>
+<text class="btxt" x="177.0" y="238.0" text-anchor="middle">automática y</text>
+<text class="btxt" x="177.0" y="251.0" text-anchor="middle">ajustes</text>
+<circle class="badge-auto" cx="222.0" cy="209.0" r="9"/>
+<text class="badgetxt" x="222.0" y="212.8" text-anchor="middle">4</text>
+<circle class="badge-auto" cx="202.0" cy="209.0" r="9"/>
+<text class="badgetxt" x="202.0" y="212.8" text-anchor="middle">2</text>
+<rect class="box auto" x="128.0" y="289.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="305.0" text-anchor="middle">Consolida y</text>
+<text class="btxt" x="177.0" y="318.0" text-anchor="middle">genera orden de</text>
+<text class="btxt" x="177.0" y="331.0" text-anchor="middle">compra</text>
+<rect class="box ext" x="482.0" y="289.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="531.0" y="311.5" text-anchor="middle">Recibe la orden</text>
+<text class="btxt" x="531.0" y="324.5" text-anchor="middle">por mail</text>
+<rect class="box keep" x="246.0" y="369.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="295.0" y="385.0" text-anchor="middle">Recibe y</text>
+<text class="btxt" x="295.0" y="398.0" text-anchor="middle">controla con</text>
+<text class="btxt" x="295.0" y="411.0" text-anchor="middle">remito</text>
+<rect class="box auto" x="128.0" y="369.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="385.0" text-anchor="middle">Registra</text>
+<text class="btxt" x="177.0" y="398.0" text-anchor="middle">recepción,</text>
+<text class="btxt" x="177.0" y="411.0" text-anchor="middle">doble control</text>
+<rect class="box keep" x="364.0" y="449.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="413.0" y="471.5" text-anchor="middle">Carga factura y</text>
+<text class="btxt" x="413.0" y="484.5" text-anchor="middle">orden de pago</text>
+<rect class="box auto" x="128.0" y="529.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="545.0" text-anchor="middle">Reparto</text>
+<text class="btxt" x="177.0" y="558.0" text-anchor="middle">automático con</text>
+<text class="btxt" x="177.0" y="571.0" text-anchor="middle">prorrateo</text>
+<circle class="badge-auto" cx="222.0" cy="529.0" r="9"/>
+<text class="badgetxt" x="222.0" y="532.8" text-anchor="middle">1</text>
+<rect class="box auto" x="246.0" y="609.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="295.0" y="625.0" text-anchor="middle">Remito PDF al</text>
+<text class="btxt" x="295.0" y="638.0" text-anchor="middle">instante y</text>
+<text class="btxt" x="295.0" y="651.0" text-anchor="middle">picking</text>
+<circle class="badge-auto" cx="340.0" cy="609.0" r="9"/>
+<text class="badgetxt" x="340.0" y="612.8" text-anchor="middle">3</text>
+<rect class="box auto" x="10.0" y="689.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="59.0" y="711.5" text-anchor="middle">Ve su pedido y</text>
+<text class="btxt" x="59.0" y="724.5" text-anchor="middle">retira</text>
+</svg></div>
+      <figcaption>El socio carga el pedido en el sistema y el ejecutivo ve la matriz ya consolidada. La orden de compra, el reparto y el remito se generan solos. La línea punteada es el aviso nuevo al socio.</figcaption>
+    </figure>
+  </div>
+
+  <div class="legend" aria-label="Referencias">
+    <span><i class="sw pain"></i>Trabajo manual con problema</span>
+    <span><i class="sw auto"></i>Automatizado por el módulo</span>
+    <span><i class="sw"></i>Se mantiene</span>
+    <span><i class="sw ext"></i>Actor externo</span>
+    <span><i class="dot pain">1</i>Problema del relevamiento (rojo: ocurre hoy; verde: lo resuelve)</span>
+    <span><i class="dash"></i>Flujo nuevo</span>
+  </div>
+
+  <section>
+    <h2>Los cuatro problemas y su respuesta</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th></th><th>Problema</th><th>Dónde ocurre hoy</th><th>Qué hace el prototipo</th></tr></thead>
+        <tbody>
+          <tr><td class="n"><i class="dot pain">1</i></td><td><strong>Reparto manual</strong></td><td>Reparto artículo por artículo, tachando en planillas. La organización estima unas 4 horas por pedido.</td><td>Reparto automático con prorrateo cuando hay faltantes.</td></tr>
+          <tr><td class="n"><i class="dot pain">2</i></td><td><strong>Planillas físicas y Excel</strong></td><td>Los pedidos llegan por mail, se imprimen y se unifican a mano. Hay versiones duplicadas y pérdida de datos.</td><td>El socio carga el pedido en el sistema y la consolidación sale sin tipeo.</td></tr>
+          <tr><td class="n"><i class="dot pain">3</i></td><td><strong>Remitos tardíos</strong></td><td>El remito se emite después del reparto manual y retrasa el armado de palets.</td><td>Remito en PDF, original y duplicado, apenas termina el reparto.</td></tr>
+          <tr><td class="n"><i class="dot pain">4</i></td><td><strong>Planillas sin formato estándar</strong></td><td>Cada socio usa su propio formato, con columnas y nombres inconsistentes.</td><td>Catálogo único por proveedor. El pedido se carga sobre la lista habilitada.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Qué cambia y qué no</h2>
+    <p class="sub">Clasificación del documento de primeras conclusiones (03). La negociación y el control físico quedan en manos de las personas.</p>
+    <div class="three">
+      <div>
+        <h3><span class="tag pain">Eliminar</span></h3>
+        <ul>
+          <li>Impresión de las planillas de pedido</li>
+          <li>Transcripción manual de las cantidades de los 12 socios</li>
+          <li>Tachado en papel de lo ya repartido</li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="tag auto">Modificar</span></h3>
+        <ul>
+          <li>Pedido: del mail con Excel a la carga directa en el sistema</li>
+          <li>Reparto: de manual a automático</li>
+          <li>Remito: emisión inmediata después del reparto</li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="tag" style="background:var(--lane1);color:var(--ink);border:1px solid var(--line)">Mantener</span></h3>
+        <ul>
+          <li>Negociación de precios por los ejecutivos</li>
+          <li>Control físico de la mercadería</li>
+          <li>Carga de la factura y orden de pago</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Por qué conviene: lo que hay y lo que falta</h2>
+    <p class="sub">Esqueleto del bloque de valor. Hoy solo hay cifras estimadas por la organización. Los costos y el cronograma no figuran en los documentos entregados.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Dato</th><th>Hoy</th><th>Con el módulo</th><th>Fuente</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td>Reparto y armado de un pedido</td><td>Unas 4 horas</td><td>De horas a minutos, sin cifra medida</td><td>Doc 03 y factibilidad económica</td><td><span class="pill org">Estimado por la organización</span></td></tr>
+          <tr><td>Papel</td><td>Más de 500 hojas por mes</td><td>A confirmar: las planillas de pedido dejan de imprimirse, los remitos no necesariamente</td><td>Doc 03</td><td><span class="pill gap">Falta validar</span></td></tr>
+          <tr><td>Horas de trabajo liberadas</td><td></td><td>Unas 30 horas por semana</td><td>Doc 03</td><td><span class="pill org">Estimado por la organización</span></td></tr>
+          <tr><td>Errores en palets</td><td>Faltantes, sobrantes y, a veces, palets al socio equivocado</td><td></td><td>Entrevista a Logística</td><td><span class="pill gap">Sin cifra</span></td></tr>
+          <tr><td>Costo de desarrollo e implementación</td><td></td><td></td><td>Carpeta 06 o sección 5.6 del doc 05</td><td><span class="pill gap">Falta</span></td></tr>
+          <tr><td>Cronograma</td><td></td><td></td><td>Carpeta 06 o sección 5.6 del doc 05</td><td><span class="pill gap">Falta</span></td></tr>
+          <tr><td>Nube o servidores propios</td><td>Servidores en red y tres proveedores de internet</td><td></td><td>Entrevista a IT</td><td><span class="pill gap">Falta análisis</span></td></tr>
+          <tr><td>A medida o producto de mercado</td><td></td><td></td><td>Doc 05, sección prometida</td><td><span class="pill gap">Falta</span></td></tr>
+          <tr><td>Integración con el sistema de gestión y SAP</td><td>Sistema de 30 años mantenido por IT</td><td>Prototipo aislado</td><td>Doc 05, sección 5.1.4</td><td><span class="pill fut">Alcance futuro</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Para chequear antes de presentar</h2>
+    <ul class="notes">
+      <li>Contaduría aparece dentro de Administración. En el relevamiento es un carril propio y queda fuera del módulo.</li>
+      <li>Logística no tiene rol propio en el sistema. La recepción la registra un usuario ejecutivo o administrador (limitación L-04 del doc 05).</li>
+      <li>El manejo del stock al registrar la recepción sigue sin decidirse (DEC-014).</li>
+      <li>Las cifras de 4 horas, 500 hojas y 30 horas por semana son estimaciones de la organización, no medidas por el grupo. Así hay que rotularlas en las diapositivas.</li>
+    </ul>
+  </section>
+
+  <p class="src">Fuentes: documentos 02 a 05 de la carpeta documentacion (circuito vigente, problemas, primeras conclusiones y especificación) y decisiones DEC-004 a DEC-024 del prototipo.</p>
+</main>
+
+</body>
+</html>

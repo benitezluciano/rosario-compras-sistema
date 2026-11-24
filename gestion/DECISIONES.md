@@ -436,3 +436,74 @@
   - `PedidoView.seleccionar_hoja` y `main.py` (`ir_a_modificar_pedido`) permiten ir del historial a la hoja del proveedor.
   - La prueba integral suma el paso 8b: 12 de 12 pruebas OK.
 - **Relacionado con:** DEC-001, DEC-007, DEC-010, DEC-022, DEC-023.
+
+---
+
+### DEC-025 — Formato y fuentes de la presentación del proyecto
+
+- **Fecha:** 2026-11-23
+- **Estado:** Propuesta
+- **Participantes:** BenitezLuciano, asistente (Claude Code). El grupo todavía está evaluando el formato.
+- **Contexto:** La presentación es grupal (4 integrantes), dura 10 minutos como máximo y se plantea ante la gerencia de Rosario Compras para lograr su aprobación de seguir con el desarrollo. El sistema es un prototipo: faltan cosas por afinar, pero el circuito ya se entiende de punta a punta.
+- **Decisión:** (propuesta)
+  - **Enfoque de negocio**, con diapositivas de apoyo. El circuito se muestra en video o capturas en lugar de en vivo, con la aplicación abierta por si los profesores piden ver algo puntual.
+  - **Ocho bloques:** contexto, problemas y su dimensión, propuesta (AS-IS y TO-BE lado a lado), qué cambia y qué no, prototipo, por qué conviene, alcance y próximos pasos, pedido de decisión.
+  - **AS-IS** a partir del relevamiento (documentos 02 a 05 de `documentacion/`). **TO-BE** a partir del flujo vigente del prototipo (DEC-004 a DEC-024), no del README ni del manual, que están desactualizados.
+  - Las cifras de 4 horas por pedido, más de 500 hojas por mes y 30 horas por semana se presentan como **estimaciones de la organización**, no como mediciones del grupo.
+  - El material vive en `presentacion/`.
+- **Alternativas consideradas:**
+  - Demostración en vivo del circuito: muestra el sistema real, pero depende de que la base y las pantallas respondan bien en el momento y consume tiempo de los 10 minutos.
+  - Solo diapositivas, sin prototipo: más seguro, pero la gerencia no vería que la propuesta ya funciona.
+  - Usar el swimlane original del documento 03 sin simplificar: es fiel, pero tiene 12 cajas en 6 carriles y no se lee en una diapositiva. Se redibujó con 5 carriles (Contaduría queda dentro de Administración).
+- **Consecuencias:**
+  - Carpeta nueva `presentacion/` con la página del circuito, los diagramas AS-IS y TO-BE (SVG y PNG) y el script que los genera.
+  - El bloque "por qué conviene" queda a medias: faltan costos, cronograma, nube vs servidores propios y a medida vs producto de mercado. Esas secciones están prometidas en el documento 05 pero no figuran en el PDF entregado.
+  - La herramienta de diapositivas está sin definir.
+  - Se detectaron diferencias entre el documento 05 y el sistema actual, anotadas en `ESTADO.md` para revisar con el grupo.
+- **Relacionado con:** DEC-014 (el manejo del stock aparece como punto abierto en el alcance).
+
+---
+
+### DEC-026 — Las diapositivas se arman en Gamma a partir de un texto fuente guardado en el repositorio
+
+- **Fecha:** 2026-11-24
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano, asistente (Claude Code). Sergio arma las diapositivas.
+- **Contexto:** La presentación es el 27/11/2026. Sergio va a usar Gamma para las diapositivas y el asistente no tiene conexión con esa herramienta. Llegó el documento 06 (conclusiones), que aporta las metas, los riesgos y la recomendación para el bloque de valor.
+- **Decisión:**
+  - El texto de las 10 diapositivas vive en `presentacion/contenido_diapositivas.md` (Parte A, lista para pegar en Gamma). Las notas del orador, los tiempos y las preguntas probables están en la Parte B, que no se pega.
+  - El guion del video está en `presentacion/guion_video.md`.
+  - El pedido de decisión a la dirección sigue la recomendación del documento 06: aprobar la etapa E4 y un piloto con dos socios (E5).
+  - Los tiempos suman 9:15 hablados, con el video de 2:10 incluido.
+- **Alternativas consideradas:**
+  - Un prompt libre en Gamma: es rápido, pero la herramienta suele inventar cifras y contenido, y acá todas las cifras son estimaciones que deben rotularse como tales.
+  - Que el asistente genere el borrador de diapositivas: queda como plan B si Gamma da problemas.
+  - Armar las diapositivas a mano en PowerPoint: más control, pero más tiempo con tres días de margen.
+- **Consecuencias:**
+  - Si cambia el contenido de una diapositiva, se cambia primero en `contenido_diapositivas.md`.
+  - Faltan la etapa E7, la duración de cada etapa y el costo de implementación (secciones 5.8 y 5.10.2 del documento 05, que no están en la versión disponible). La diapositiva 9 deja E7 como `[completar]` y ninguna diapositiva afirma un costo ni un plazo de recupero.
+  - El documento 06 ubica la corrección de L-01 en E4, pero el prototipo ya la resolvió (DEC-004 a DEC-009). El grupo debe decidir cómo mostrarlo.
+- **Relacionado con:** DEC-025.
+
+---
+
+### DEC-027 — Las diapositivas no incluyen duraciones ni costos de implementación
+
+- **Fecha:** 2026-11-24
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano, asistente (Claude Code)
+- **Contexto:** El texto de las diapositivas (DEC-026) se había armado con el documento 06, que habla de un plan de 6 semanas, de unas 3 semanas de integración con IT y de una etapa E7, y cita secciones del documento 05 (5.8 y 5.10.2) que no están en la versión disponible. El grupo aclaró que **no calculó ninguna duración ni costo de implementación**.
+- **Decisión:**
+  - Se sacan de las diapositivas el "plazo de 6 semanas", las "3 semanas" de integración y la etapa E7. Las etapas se nombran sin duración: E4 cierre de brechas críticas, E5 piloto con dos socios y, si el piloto funciona, integración con IT.
+  - Si preguntan por costo o plazo, la respuesta es que todavía no están calculados (queda en las preguntas probables).
+  - La corrección de L-01 no se aclara en la exposición: no es relevante para el pedido de decisión.
+  - "Sin licencias de terceros" se dice solo "en el prototipo", por la licencia de PyQt6.
+  - La portada (integrantes y materia) la completa Sergio.
+- **Alternativas consideradas:**
+  - Mantener las cifras del documento 06 en las diapositivas: están en un documento del grupo, pero nadie las calculó ni puede defenderlas ante una pregunta.
+  - Pedir ahora la versión del documento 05 con las secciones faltantes: no hay tiempo antes del 27/11 y el grupo confirmó que esos cálculos no existen.
+- **Consecuencias:**
+  - Reemplaza lo dicho en DEC-026 sobre dejar E7 como `[completar]`. El resto de DEC-026 sigue vigente.
+  - Si el grupo decide respaldar las cifras de plazo del documento 06, se agregan a las diapositivas 8 y 9.
+  - Quedan con el grupo: aclarar en el video que son datos de prueba y el cuarto criterio de éxito del documento 06.
+- **Relacionado con:** DEC-025, DEC-026.

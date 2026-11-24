@@ -1,6 +1,6 @@
 # Estado actual
 
-**Última actualización:** 2026-11-23
+**Última actualización:** 2026-11-24
 **Versión / hito actual:** Historial del socio con detalle y Nota de Pedido (rama `feature/pedidos-por-proveedor`)
 
 ## Para quien retoma el trabajo
@@ -46,6 +46,20 @@ Los puntos 1, 2 y 5 se pueden hacer ya. Los puntos 3 y 4 necesitan antes una dec
 ## Bloqueado
 - Manejo del stock al asentar comprobantes (sumar o reemplazar; depósito o paso directo). Lo destraba una decisión del grupo. — DEC-014
 
+## Presentación del proyecto (en paralelo al desarrollo)
+**Fecha de la presentación: 27/11/2026.** Formato y criterio en DEC-025 (propuesta) y DEC-026. Material en [../presentacion/](../presentacion/README.md): página AS-IS y TO-BE, diagramas en SVG y PNG, guion del video, texto de las diapositivas para Gamma (Sergio) y el script que genera los diagramas.
+- **Falta:**
+  1. Ensayar el recorrido del video con la base reseteada y confirmar el reparto esperado (2 / 4 / 3); decidir quién graba. La portada la completa Sergio.
+  2. Con el grupo: aclarar en el video que los datos son de prueba y decidir si se incluye el cuarto criterio de éxito del documento 06.
+  3. No hay duraciones ni costos de implementación calculados: las diapositivas no los incluyen (DEC-027). Si el grupo respalda las cifras de plazo del documento 06, se agregan.
+- **Diferencias entre el documento 05 (v1) y el sistema actual, para revisar con el grupo:**
+  - RF-18 figura como no implementado, pero hoy el socio accede a su remito desde el historial (DEC-024).
+  - L-01 parece resuelta por DEC-004 a DEC-009, y L-11 quedó vieja (hay una prueba integral de 12 pasos). L-02 (stock) y L-08 (cantidad original) siguen abiertas.
+  - Los datos de prueba tienen 8 socios gastronómicos; el caso real son 12 supermercadistas.
+  - El documento 02 repite el encabezado del 04, y el diagrama de contexto del 03 tiene una caja suelta.
+  - Los ejecutivos pidieron en la entrevista que los archivos se generen "según necesidad"; el sistema hoy guarda las órdenes de compra en la base (DEC-019). A verificar.
+- `presentacion/` se versiona desde el 24/11. `documentacion/` (los PDF de la cátedra) todavía no: decisión pendiente del grupo.
+
 ## Cerrado recientemente
 - Historial del socio: detalle del pedido en cualquier estado, Nota de Pedido en PDF (abrir o guardar), acceso al remito y a "Modificar pedido" (DEC-024) — 2026-11-23
 - Orden de compra en Excel generada al consolidar, con envío por mail y registro en la base (DEC-018 a DEC-020) — 2026-11-23
@@ -56,6 +70,8 @@ Los puntos 1, 2 y 5 se pueden hacer ya. Los puntos 3 y 4 necesitan antes una dec
 ## Próximo paso concreto
 Eros toma el punto 1 (cantidad original del pedido) o el 5 (documentación), según prefiera. Los puntos 3 y 4 se llevan a la próxima reunión del grupo.
 
+Presentación (27/11): Sergio arma las diapositivas en Gamma con `presentacion/contenido_diapositivas.md`; quien grabe el video ensaya con `presentacion/guion_video.md`; ensayo cronometrado del grupo el jueves 26.
+
 ## Dudas / riesgos abiertos
 - DEC-011 y DEC-014 dependen del grupo.
 - Los datos fiscales del emisor y de los socios son simulados: no usar los remitos ni las Notas de Pedido fuera de las pruebas.
@@ -63,6 +79,7 @@ Eros toma el punto 1 (cantidad original del pedido) o el 5 (documentación), seg
 
 ## Enlaces útiles
 - Decisiones: [DECISIONES.md](DECISIONES.md) · Bitácora: [BITACORA.md](BITACORA.md)
+- Presentación: [../presentacion/README.md](../presentacion/README.md) · Relevamiento: [../documentacion/](../documentacion)
 - Prueba integral: `python tests/test_circuit_suite.py`
 - Datos de la empresa: [../src/config/empresa.py](../src/config/empresa.py)
 - Esquema de base de datos: [../db/rosario_compras.sql](../db/rosario_compras.sql)

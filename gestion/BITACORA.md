@@ -4,6 +4,69 @@
 
 ---
 
+## 2026-11-24 — Sesión 5 (presentación: guion del video y texto para Gamma)
+**Duración aprox.:** (completar) · **Quién:** BenitezLuciano, con asistente (Claude Code)
+
+- **Objetivo de la sesión:** Avanzar con la presentación del 27/11/2026: guion del video del prototipo y texto fuente para que Sergio arme las diapositivas en Gamma. No se tocó el código del sistema.
+- **Hecho:**
+  - Se incorporó el documento 06 (conclusiones finales): metas del piloto (70 % menos de tiempo de reparto, 90 % menos de discrepancias, papel eliminado), unas 130 horas por mes liberadas, riesgos, plan de 6 semanas y recomendación de aprobar E4 y un piloto con dos socios (E5).
+  - **Guion del video** (`presentacion/guion_video.md`): 6 escenas, 2:10, con una sola historia (Lácteos del Litoral y la mozzarella). Se armó con los datos del seed y los textos reales de los botones.
+  - **Texto para Gamma** (`presentacion/contenido_diapositivas.md`): 10 diapositivas listas para pegar, notas del orador con tiempos y reparto entre 4, seis preguntas probables y siete puntos a confirmar con el grupo.
+  - `presentacion/README.md` actualizado con los dos archivos nuevos y el estado.
+- **Decidido:** (ver [DECISIONES.md](DECISIONES.md))
+  - DEC-026 — Las diapositivas se arman en Gamma a partir de un texto fuente guardado en el repositorio
+  - DEC-027 — Las diapositivas no incluyen duraciones ni costos de implementación
+- **Cerrado:**
+  - El bloque "por qué conviene" ya tiene contenido (con el documento 06).
+  - Las preguntas probables y sus respuestas quedaron aprobadas.
+  - Se sacaron de las diapositivas las cifras de plazo del documento 06 (6 semanas, 3 semanas de integración y E7), porque el grupo no calculó duraciones ni costos.
+  - La portada la completa Sergio; L-01 no se aclara en la exposición; "sin licencias de terceros" se dice solo "en el prototipo".
+  - Commit y push de `presentacion/` y `gestion/` para pasárselo a Sergio.
+- **Pendiente / abierto:**
+  - Ensayar el recorrido del video con la base reseteada y confirmar el reparto esperado (Italia 2 de 3, La Popular 4 de 5, Gran Hotel 3 de 4). Ese resultado se calculó a mano con la regla del documento 05.
+  - Elegir quién graba el video.
+  - Con el grupo: aclarar en el video que los datos son de prueba (socios gastronómicos contra 12 supermercadistas) y decidir si se incluye el cuarto criterio de éxito del documento 06.
+  - Si el grupo respalda las cifras de plazo del documento 06 (plan de 6 semanas, unas 3 semanas de integración con IT), agregarlas a las diapositivas 8 y 9. Hoy no figuran.
+- **Problemas o aprendizajes:**
+  - No hay conexión con Gamma desde esta herramienta. Con un texto fuente ya armado, Gamma solo diagrama; con un prompt libre suele inventar cifras.
+  - Corrección de un error de cálculo: el guion general de ayer sumaba 9:40, no 9:00 como se dijo. El nuevo reparto suma 9:15 con el video incluido.
+- **Próximo paso:** Sergio pega la Parte A en Gamma y sube `as-is.png` y `to-be.png`. Quien grabe el video ensaya el recorrido. Después, ensayo cronometrado del grupo el jueves 26.
+- **Dudas para retomar:** ¿Quién graba el video? ¿El grupo respalda las cifras de plazo del documento 06?
+
+---
+
+## 2026-11-23 — Sesión 4 (presentación del proyecto)
+**Duración aprox.:** (completar) · **Quién:** BenitezLuciano, con asistente (Claude Code)
+
+- **Objetivo de la sesión:** Empezar a planificar la presentación grupal (4 integrantes, máximo 10 minutos, enfoque de negocio ante la gerencia) con lo que ya está definido. No se tocó el código del sistema.
+- **Hecho:**
+  - Lectura de los cuatro documentos de `documentacion/` (02 Problemática, 03 Primeras conclusiones, 04 Relevamiento, 05 Armado de la solución) y extracción del AS-IS: circuito de 13 pasos, 4 problemas, roles, documentos que circulan y procesos críticos.
+  - Análisis de los documentos 03 y 05 contra el sistema actual (diferencias anotadas en `ESTADO.md`).
+  - **Guion v0** de 8 bloques con tiempos (9:00 hablados, objetivo 9:30) y reparto propuesto entre los 4. Quedó en el chat; el resumen está en la DEC-025.
+  - Carpeta nueva **`presentacion/`**:
+    - `circuito_as_is_to_be.html`: AS-IS y TO-BE lado a lado, los 4 problemas con su respuesta, tabla eliminar / modificar / mantener y esqueleto del bloque de valor con el estado de cada dato.
+    - `diagramas/`: `as-is` y `to-be` en SVG y PNG (1770 × 2292 px, fondo blanco).
+    - `fuente/`: `generar.py` y las plantillas, para regenerarlo todo. Instrucciones en `presentacion/README.md`.
+  - Se revisaron los PNG y se corrigieron dos detalles: una flecha punteada que se superponía con otra y una etiqueta mal ubicada.
+- **Decidido:** (ver [DECISIONES.md](DECISIONES.md))
+  - DEC-025 — Formato y fuentes de la presentación del proyecto *(Propuesta)*
+- **Cerrado:** nada.
+- **Pendiente / abierto:**
+  - Fuentes del bloque "por qué conviene": costos, cronograma, nube vs servidores propios y a medida vs producto de mercado. Faltan en el PDF del documento 05 (sección 5.6) y la carpeta 06 que menciona el documento 03 no está en `documentacion/`.
+  - Elegir la herramienta de diapositivas (PowerPoint, Google Slides o Canva).
+  - Escribir el guion escena por escena del video (6 escenas) y grabarlo cuando el sistema esté estable. Antes de grabar o de una demo hay que resetear la base con el seed.
+  - Repartir los bloques entre los 4 integrantes.
+  - Revisar con el grupo las diferencias entre el documento 05 y el sistema (ver `ESTADO.md`).
+  - `documentacion/` y `presentacion/` no están versionadas todavía; no se hizo commit.
+- **Problemas o aprendizajes:**
+  - El PDF del documento 05 se entregó incompleto: salta del 5.5.3 al 5.7 y no incluye la imagen del diagrama entidad-relación.
+  - Para leer los PDF no había poppler; se extrajo el texto con `pypdf` en una carpeta temporal, sin instalar nada en el proyecto. Los PNG se exportaron con Edge en modo headless.
+  - Las cifras de dimensión del problema (4 horas, 500 hojas, 30 horas por semana) son estimaciones de la organización: hay que rotularlas así en las diapositivas.
+- **Próximo paso:** Retomar por el bloque "por qué conviene" (¿existe la carpeta 06 o hay que construir costos y cronograma?) o por el guion del video, lo que el grupo prefiera.
+- **Dudas para retomar:** ¿Qué herramienta de diapositivas usa el grupo? ¿Cuándo es la presentación?
+
+---
+
 ## 2026-11-23 — Sesión 3
 **Duración aprox.:** (completar) · **Quién:** BenitezLuciano, con asistente (Claude Code)
 

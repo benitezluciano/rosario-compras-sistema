@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="590" height="760" viewBox="0 0 590 760" role="img" aria-label="Circuito actual en cinco carriles: los pedidos llegan por mail en Excel, el ejecutivo los tipea en una planilla y reparte artículo por artículo; cuatro problemas marcados.">
+<style>
+svg{color:#5B6874;font-family:Inter,'Segoe UI',Arial,sans-serif}
+.lane.l0{fill:#ECF0F3}.lane.l1{fill:#F6F8F9}.lanehead{fill:#DDE3E8}
+.lanename{fill:#17222D;font:600 11.5px Inter,'Segoe UI',Arial,sans-serif}
+.box{stroke-width:1.5}
+.box.keep{fill:#FFFFFF;stroke:#5B6874}
+.box.ext{fill:#FFFFFF;stroke:#5B6874;stroke-dasharray:4 3}
+.box.pain{fill:#FBE9E1;stroke:#B4421A}
+.box.auto{fill:#DDF2EE;stroke:#0B6E66}
+.btxt{fill:#17222D;font:500 11px Inter,'Segoe UI',Arial,sans-serif}
+.edge{fill:none;stroke:#5B6874;stroke-width:1.3}
+.edge.new{stroke:#0B6E66;color:#0B6E66;stroke-dasharray:5 3;stroke-width:1.6}
+.elabel{fill:#5B6874;font:400 10.5px Inter,'Segoe UI',Arial,sans-serif;paint-order:stroke;stroke:#F6F8F9;stroke-width:3px;stroke-linejoin:round}
+.badge-pain{fill:#B4421A}.badge-auto{fill:#0B6E66}
+.badgetxt{fill:#FFFFFF;font:700 10.5px Inter,'Segoe UI',Arial,sans-serif}
+</style>
+<rect width="590" height="760" fill="#FFFFFF"/>
+<defs><marker id="as-arr" viewBox="0 0 8 8" refX="7.5" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+<rect class="lane l0" x="0" y="0" width="118" height="760"/>
+<rect class="lanehead" x="0" y="0" width="118" height="28"/>
+<text class="lanename" x="59.0" y="18.0" text-anchor="middle">Socios</text>
+<rect class="lane l1" x="118" y="0" width="118" height="760"/>
+<rect class="lanehead" x="118" y="0" width="118" height="28"/>
+<text class="lanename" x="177.0" y="18.0" text-anchor="middle">Ejecutivo</text>
+<rect class="lane l0" x="236" y="0" width="118" height="760"/>
+<rect class="lanehead" x="236" y="0" width="118" height="28"/>
+<text class="lanename" x="295.0" y="18.0" text-anchor="middle">Logística</text>
+<rect class="lane l1" x="354" y="0" width="118" height="760"/>
+<rect class="lanehead" x="354" y="0" width="118" height="28"/>
+<text class="lanename" x="413.0" y="18.0" text-anchor="middle">Administración</text>
+<rect class="lane l0" x="472" y="0" width="118" height="760"/>
+<rect class="lanehead" x="472" y="0" width="118" height="28"/>
+<text class="lanename" x="531.0" y="18.0" text-anchor="middle">Proveedor</text>
+<path class="edge" d="M177.0,99.0 V114.0 H59.0 V129.0" marker-end="url(#as-arr)"/>
+<text class="elabel" x="118.0" y="109.0" text-anchor="middle">lista</text>
+<path class="edge" d="M59.0,179.0 V194.0 H177.0 V209.0" marker-end="url(#as-arr)"/>
+<text class="elabel" x="118.0" y="189.0" text-anchor="middle">mail</text>
+<path class="edge" d="M177.0,259.0 V289.0" marker-end="url(#as-arr)"/>
+<path class="edge" d="M226.0,314.0 H482.0" marker-end="url(#as-arr)"/>
+<text class="elabel" x="354.0" y="309.0" text-anchor="middle">planilla consolidada</text>
+<path class="edge" d="M531.0,339.0 V354.0 H295.0 V369.0" marker-end="url(#as-arr)"/>
+<text class="elabel" x="413.0" y="349.0" text-anchor="middle">camión</text>
+<path class="edge" d="M246.0,394.0 H226.0" marker-end="url(#as-arr)"/>
+<path class="edge" d="M177.0,419.0 V434.0 H413.0 V449.0" marker-end="url(#as-arr)"/>
+<text class="elabel" x="365.8" y="429.0" text-anchor="middle">factura</text>
+<path class="edge" d="M413.0,499.0 V514.0 H177.0 V529.0" marker-end="url(#as-arr)"/>
+<path class="edge" d="M177.0,579.0 V594.0 H295.0 V609.0" marker-end="url(#as-arr)"/>
+<path class="edge" d="M295.0,659.0 V674.0 H59.0 V689.0" marker-end="url(#as-arr)"/>
+<rect class="box keep" x="128.0" y="49.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="71.5" text-anchor="middle">Sube listas</text>
+<text class="btxt" x="177.0" y="84.5" text-anchor="middle">negociadas</text>
+<rect class="box pain" x="10.0" y="129.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="59.0" y="151.5" text-anchor="middle">Pedido en Excel</text>
+<text class="btxt" x="59.0" y="164.5" text-anchor="middle">por mail</text>
+<circle class="badge-pain" cx="104.0" cy="129.0" r="9"/>
+<text class="badgetxt" x="104.0" y="132.8" text-anchor="middle">4</text>
+<circle class="badge-pain" cx="84.0" cy="129.0" r="9"/>
+<text class="badgetxt" x="84.0" y="132.8" text-anchor="middle">2</text>
+<rect class="box pain" x="128.0" y="209.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="231.5" text-anchor="middle">Imprime y tipea</text>
+<text class="btxt" x="177.0" y="244.5" text-anchor="middle">12 planillas</text>
+<circle class="badge-pain" cx="222.0" cy="209.0" r="9"/>
+<text class="badgetxt" x="222.0" y="212.8" text-anchor="middle">4</text>
+<circle class="badge-pain" cx="202.0" cy="209.0" r="9"/>
+<text class="badgetxt" x="202.0" y="212.8" text-anchor="middle">2</text>
+<rect class="box keep" x="128.0" y="289.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="311.5" text-anchor="middle">Envía planilla</text>
+<text class="btxt" x="177.0" y="324.5" text-anchor="middle">al proveedor</text>
+<rect class="box ext" x="482.0" y="289.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="531.0" y="311.5" text-anchor="middle">Prepara y</text>
+<text class="btxt" x="531.0" y="324.5" text-anchor="middle">entrega</text>
+<rect class="box keep" x="246.0" y="369.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="295.0" y="385.0" text-anchor="middle">Recibe y</text>
+<text class="btxt" x="295.0" y="398.0" text-anchor="middle">controla con</text>
+<text class="btxt" x="295.0" y="411.0" text-anchor="middle">remito</text>
+<rect class="box keep" x="128.0" y="369.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="385.0" text-anchor="middle">Controla</text>
+<text class="btxt" x="177.0" y="398.0" text-anchor="middle">precios y</text>
+<text class="btxt" x="177.0" y="411.0" text-anchor="middle">cantidades</text>
+<rect class="box keep" x="364.0" y="449.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="413.0" y="471.5" text-anchor="middle">Carga factura y</text>
+<text class="btxt" x="413.0" y="484.5" text-anchor="middle">orden de pago</text>
+<rect class="box pain" x="128.0" y="529.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="177.0" y="545.0" text-anchor="middle">Reparte</text>
+<text class="btxt" x="177.0" y="558.0" text-anchor="middle">artículo por</text>
+<text class="btxt" x="177.0" y="571.0" text-anchor="middle">artículo</text>
+<circle class="badge-pain" cx="222.0" cy="529.0" r="9"/>
+<text class="badgetxt" x="222.0" y="532.8" text-anchor="middle">1</text>
+<rect class="box pain" x="246.0" y="609.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="295.0" y="631.5" text-anchor="middle">Remitos tardíos</text>
+<text class="btxt" x="295.0" y="644.5" text-anchor="middle">y picking</text>
+<circle class="badge-pain" cx="340.0" cy="609.0" r="9"/>
+<text class="badgetxt" x="340.0" y="612.8" text-anchor="middle">3</text>
+<rect class="box keep" x="10.0" y="689.0" width="98" height="50" rx="4"/>
+<text class="btxt" x="59.0" y="711.5" text-anchor="middle">Retira con su</text>
+<text class="btxt" x="59.0" y="724.5" text-anchor="middle">transporte</text>
+</svg>
