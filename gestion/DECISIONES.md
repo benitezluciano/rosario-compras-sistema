@@ -170,7 +170,7 @@
 - **Estado:** Cerrada
 - **Participantes:** BenitezLuciano, asistente (Claude Code)
 - **Contexto:** Si el ejecutivo importa una lista nueva de un proveedor mientras hay pedidos "Pendiente" de ese proveedor, hay que definir con qué precio quedan.
-- **Decisión:** Los pedidos **pendientes** toman los precios nuevos, porque todavía no se enviaron. Los **consolidados** conservan su precio congelado. **Aplicada en forma provisoria:** falta ratificarla con el grupo.
+- **Decisión:** Los pedidos **pendientes** toman los precios nuevos, porque todavía no se enviaron. Los **consolidados** conservan su precio congelado. **Aplicada en forma provisoria:** falta ratificarla con el grupo. *(Ratificada el 2026-11-25: ver DEC-031.)*
 - **Alternativas consideradas:**
   - Mantener el precio original del pedido pendiente: el socio pediría a un precio que ya no es el negociado.
   - Anular los pendientes y pedir que se carguen de nuevo: costoso para los socios.
@@ -210,7 +210,7 @@
 ### DEC-014 — Manejo del stock al asentar un comprobante
 
 - **Fecha:** 2026-11-21
-- **Estado:** Propuesta
+- **Estado:** Cerrada (resuelta en DEC-030: paso directo, sin stock)
 - **Participantes:** BenitezLuciano, asistente (Claude Code) — pendiente de discutir con el grupo
 - **Contexto:** Al asentar un comprobante, el stock del artículo se **reemplaza** por la cantidad recibida, en lugar de sumarse (observación #4). Ejemplo: había 10 kg en depósito, llegan 20 kg y los socios piden 25. El sistema considera 20 disponibles y prorratea, cuando en realidad hay 30.
 - **Decisión:** (Pendiente) Elegir entre:
@@ -538,3 +538,50 @@
   - Para la entrega académica se mantienen los datos simulados del emisor en `src/config/empresa.py` (`DATOS_SIMULADOS = True`).
 - **Consecuencias:** El socio puede mantener actualizados sus datos para Notas de Pedido y Remitos sin intervención manual en la base.
 - **Relacionado con:** DEC-023.
+
+---
+
+### DEC-030 — Rosario Compras no maneja stock: lo que llega se reparte (cierra DEC-014)
+
+- **Fecha:** 2026-11-25
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano (consulta hecha a Rosario Compras)
+- **Contexto:** DEC-014 quedó propuesta con dos opciones: depósito con stock acumulado (A) o paso directo (B). Había que saber cómo trabaja la organización.
+- **Decisión:** Rosario Compras **no maneja stock**: lo que llega de un proveedor se reparte y no queda en depósito. Corresponde la **opción B (paso directo)**: el reparto usa solo lo recibido en el comprobante.
+- **Alternativas consideradas:**
+  - A) Depósito con stock acumulado: descartada, porque la organización no guarda mercadería.
+- **Consecuencias:**
+  - Que el sistema reemplace el stock por lo recibido (observación #4) deja de ser un problema: coincide con el modo de trabajo real. No se programa ningún cambio por esta decisión.
+  - Se levanta el bloqueo de DEC-014. La limitación L-02 del documento 05 deja de ser una brecha.
+  - Queda como mejora futura, sin fecha, registrar el excedente (lo recibido que sobra tras el reparto) para que el ejecutivo decida. No está verificado si el sistema hoy lo registra.
+  - La diapositiva 9 menciona "Stock mal calculado tras una recepción: se corrige en E4". Con esta decisión ese riesgo ya no aplica y hay que revisarlo con el grupo.
+- **Relacionado con:** DEC-014, DEC-009.
+
+---
+
+### DEC-031 — Se ratifica que una lista nueva actualiza el precio de los pedidos pendientes
+
+- **Fecha:** 2026-11-25
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano
+- **Contexto:** DEC-011 estaba aplicada en forma provisoria, pendiente de ratificar.
+- **Decisión:** Se mantiene como está: una lista nueva actualiza los precios de los pedidos **pendientes**, y los consolidados conservan el precio congelado.
+- **Consecuencias:** No hay cambios de código. DEC-011 queda firme.
+- **Relacionado con:** DEC-011, DEC-010.
+
+---
+
+### DEC-032 — Observación #7 se deja como está en la entrega; mejoras futuras documentadas
+
+- **Fecha:** 2026-11-25
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano
+- **Contexto:** La observación #7 (notificaciones compartidas entre ejecutivos y qué ve cada uno en su historial, DEC-022) estaba pendiente de decisión del grupo.
+- **Decisión:** Se deja como está para la presentación. Hoy hay un solo ejecutivo, y el grupo prefiere llegar a la presentación con el sistema actual. Todos los ejecutivos siguen viendo todo el historial.
+- **Mejoras futuras (sin fecha ni prioridad):**
+  - Notificaciones compartidas entre ejecutivos cuando haya más de uno.
+  - Historial del ejecutivo filtrado por los proveedores asignados a cada uno.
+  - Al hacer clic en una notificación (por ejemplo, "tu remito fue emitido"), abrir ese pedido en el historial del socio.
+  - Registrar el excedente de recepción (ver DEC-030).
+- **Consecuencias:** Se retoman cuando haya más de un ejecutivo o después de la presentación.
+- **Relacionado con:** DEC-022.

@@ -115,7 +115,7 @@ Video de 2 minutos con el recorrido completo:
 5. Reparto automático con prorrateo ante faltantes
 6. Remito en PDF y consulta del socio
 
-Prueba integral del circuito: 12 de 12 verificaciones correctas. Los datos del video son de prueba.
+Prueba integral del circuito: 13 de 13 verificaciones correctas. Los datos del video son de prueba.
 
 ---
 

@@ -4,6 +4,22 @@
 
 ---
 
+## 2026-11-25 — Sesión 7 (integración con los cambios de Eros y decisiones del grupo)
+**Duración aprox.:** (completar) · **Quién:** BenitezLuciano
+
+- **Objetivo de la sesión:** Traer los cambios de Eros a la rama local y cerrar las decisiones que dependían del grupo.
+- **Hecho:**
+  - Se trajeron los cambios del remoto (`a553862`) y se resolvió el conflicto de `.gitignore` dejando las líneas de Eros y agregando `documentacion/`. Se subió en `830e971`.
+  - Prueba integral: 13 de 13 en verde.
+  - Se actualizó "13 de 13" en la diapositiva 7 y en `ESTADO.md`.
+- **Decidido:** (ver [DECISIONES.md](DECISIONES.md))
+  - DEC-030: Rosario Compras no maneja stock; cierra DEC-014.
+  - DEC-031: se ratifica DEC-011 (lista nueva, precios nuevos en pendientes).
+  - DEC-032: la observación #7 queda como está; mejoras futuras anotadas.
+- **Pendiente / abierto:** ensayar el video con el seed nuevo y confirmar el reparto 2/4/3; revisar con el grupo el riesgo de stock de la diapositiva 9 (ya no aplica, DEC-030); cuarto criterio del documento 06; quién graba el video.
+
+---
+
 ## 2026-11-24 — Sesión 6 (cierre de pendientes sesiones 1 a 3)
 **Duración aprox.:** (completar) · **Quién:** Eros David
 
