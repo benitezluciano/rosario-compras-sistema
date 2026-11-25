@@ -85,7 +85,9 @@ class ConsolidacionModel:
             # Renglones de los pedidos pendientes del proveedor
             marcadores = ",".join("?" for _ in map_pedido_socio)
             cursor.execute(f"""
-                SELECT dp.id_pedido, dp.id_articulo, dp.cantidad_pedida, dp.precio_unitario,
+                SELECT dp.id_pedido, dp.id_articulo, dp.cantidad_pedida,
+                       COALESCE(dp.cantidad_original, dp.cantidad_pedida) AS cantidad_original,
+                       dp.precio_unitario,
                        a.id_articulo_proveedor, a.detalle
                 FROM DETALLE_PEDIDOS dp
                 JOIN ARTICULOS a ON a.id_articulo = dp.id_articulo
@@ -103,7 +105,7 @@ class ConsolidacionModel:
                     'detalle': detalle,
                     'precio_unitario': precio,
                     'cantidades_por_socio': {
-                        s['id']: {'cantidad': 0, 'id_pedido': s['id_pedido']} for s in socios
+                        s['id']: {'cantidad': 0, 'cantidad_original': 0, 'id_pedido': s['id_pedido']} for s in socios
                     },
                     'total_cantidad': 0
                 }
@@ -117,6 +119,7 @@ class ConsolidacionModel:
             art = asegurar_articulo(r['id_articulo'], r['id_articulo_proveedor'], r['detalle'], r['precio_unitario'])
             id_socio = map_pedido_socio[r['id_pedido']]
             art['cantidades_por_socio'][id_socio]['cantidad'] = r['cantidad_pedida']
+            art['cantidades_por_socio'][id_socio]['cantidad_original'] = r['cantidad_original']
 
         lista_articulos = []
         for art in articulos_dict.values():
@@ -163,15 +166,17 @@ class ConsolidacionModel:
                     """, (ped['id_proveedor'], id_art))
                     pn = cursor.fetchone()
                     precio = pn['precio_final'] if pn else 0.0
-                    # Si el renglón existe, se conserva su precio; si es nuevo, toma el de la lista
+                    # Si el renglón ya existe, conserva precio_unitario y cantidad_original;
+                    # si es agregado por el ejecutivo, cantidad_original queda en 0.
                     cursor.execute("""
-                        INSERT INTO DETALLE_PEDIDOS (id_pedido, id_articulo, cantidad_pedida, precio_unitario)
-                        VALUES (?, ?, ?, ?)
+                        INSERT INTO DETALLE_PEDIDOS (id_pedido, id_articulo, cantidad_pedida, cantidad_original, precio_unitario)
+                        VALUES (?, ?, ?, 0, ?)
                         ON CONFLICT(id_pedido, id_articulo) DO UPDATE SET cantidad_pedida = excluded.cantidad_pedida
                     """, (id_ped, id_art, cant_nueva, precio))
                 else:
+                    # Conservar el renglón con cantidad_pedida = 0 para mantener trazabilidad de cantidad_original
                     cursor.execute(
-                        "DELETE FROM DETALLE_PEDIDOS WHERE id_pedido = ? AND id_articulo = ?",
+                        "UPDATE DETALLE_PEDIDOS SET cantidad_pedida = 0 WHERE id_pedido = ? AND id_articulo = ?",
                         (id_ped, id_art)
                     )
 
@@ -218,7 +223,7 @@ class ConsolidacionModel:
             JOIN PROVEEDORES pr ON pr.id_proveedor = p.id_proveedor
             JOIN DETALLE_PEDIDOS dp ON p.id_pedido = dp.id_pedido
             JOIN ARTICULOS a ON dp.id_articulo = a.id_articulo
-            WHERE p.estado = 'Pendiente'
+            WHERE p.estado = 'Pendiente' AND dp.cantidad_pedida > 0
         """
         params = []
         if id_proveedor is not None:
@@ -254,7 +259,7 @@ class ConsolidacionModel:
             JOIN PROVEEDORES pr ON pr.id_proveedor = p.id_proveedor
             JOIN DETALLE_PEDIDOS dp ON p.id_pedido = dp.id_pedido
             JOIN ARTICULOS a ON dp.id_articulo = a.id_articulo
-            WHERE p.estado = 'Pendiente'
+            WHERE p.estado = 'Pendiente' AND dp.cantidad_pedida > 0
         """
         params = []
         if id_proveedor is not None:

@@ -106,11 +106,12 @@ class ConsolidacionView(QWidget):
             for idx_s, s in enumerate(self.socios_actuales):
                 col_idx = 4 + idx_s
                 s_id = s['id']
-                info_s = art['cantidades_por_socio'].get(s_id, {'cantidad': 0, 'id_pedido': s['id_pedido']})
+                info_s = art['cantidades_por_socio'].get(s_id, {'cantidad': 0, 'cantidad_original': 0, 'id_pedido': s['id_pedido']})
                 cant_s = info_s['cantidad']
+                cant_orig_socio = info_s.get('cantidad_original', cant_s)
                 id_ped = info_s.get('id_pedido', s['id_pedido'])
 
-                item_s = QTableWidgetItem(str(cant_s) if cant_s > 0 else "")
+                item_s = QTableWidgetItem(str(cant_s) if (cant_s > 0 or cant_orig_socio != cant_s) else "")
                 item_s.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 
                 # Guardar metadatos para rastreo y auditoría
@@ -119,11 +120,17 @@ class ConsolidacionView(QWidget):
                     'detalle': art['detalle'],
                     'id_socio': s_id,
                     'id_pedido': id_ped,
-                    'cant_original': cant_s
+                    'cant_original': cant_s,
+                    'cant_original_socio': cant_orig_socio,
                 }
                 item_s.setData(Qt.ItemDataRole.UserRole, meta)
                 
-                if cant_s > 0:
+                if cant_orig_socio != cant_s:
+                    item_s.setBackground(QColor("#fef3c7"))
+                    item_s.setForeground(QColor("#b45309"))
+                    item_s.setFont(font_bold)
+                    item_s.setToolTip(f"El socio pidió originalmente {cant_orig_socio}u (ajustado a {cant_s}u)")
+                elif cant_s > 0:
                     item_s.setBackground(QColor("#f8fafc"))
                     item_s.setFont(font_bold)
                     

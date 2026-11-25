@@ -33,7 +33,7 @@ class HistorialEjecutivoModel:
     # Órdenes de compra
     # ------------------------------------------------------------------
 
-    def obtener_ordenes(self, id_proveedor=None, estado=None):
+    def obtener_ordenes(self, id_proveedor=None, estado=None, fecha_desde=None, fecha_hasta=None):
         """
         Órdenes de compra (más recientes primero) con su estado de entrega y de envío:
         - pendientes_entrega: pedidos de la orden todavía 'Consolidado' (sin repartir).
@@ -57,6 +57,12 @@ class HistorialEjecutivoModel:
             params.append(id_proveedor)
         if estado == self.ESTADO_SIN_ENVIAR:
             query += " AND o.fecha_envio_email IS NULL"
+        if fecha_desde:
+            query += " AND substr(o.fecha, 1, 10) >= ?"
+            params.append(fecha_desde)
+        if fecha_hasta:
+            query += " AND substr(o.fecha, 1, 10) <= ?"
+            params.append(fecha_hasta)
         query += " GROUP BY o.id_orden_compra"
         if estado == self.ESTADO_PENDIENTE_ENTREGA:
             query += " HAVING pendientes_entrega > 0"
@@ -74,6 +80,7 @@ class HistorialEjecutivoModel:
                    u.nombre AS socio_nombre,
                    COALESCE(SUM(dp.cantidad_pedida), 0) AS unidades,
                    COALESCE(SUM(dp.cantidad_pedida * dp.precio_unitario), 0) AS total,
+                   SUM(CASE WHEN COALESCE(dp.cantidad_original, dp.cantidad_pedida) != dp.cantidad_pedida THEN 1 ELSE 0 END) AS ajustes_ejecutivo,
                    (SELECT COALESCE(r.numero_remito, r.codigo_comercial) FROM REMITOS r WHERE r.id_pedido = p.id_pedido
                     ORDER BY r.id_remito DESC LIMIT 1) AS remito_codigo
             FROM PEDIDOS p
@@ -90,7 +97,7 @@ class HistorialEjecutivoModel:
     # Remitos emitidos
     # ------------------------------------------------------------------
 
-    def obtener_remitos(self, id_proveedor=None, id_socio=None):
+    def obtener_remitos(self, id_proveedor=None, id_socio=None, fecha_desde=None, fecha_hasta=None):
         """Remitos emitidos (más recientes primero), con la ruta del PDF si el archivo existe."""
         query = """
             SELECT r.id_remito, r.codigo_comercial, r.numero_remito, r.fecha_emision,
@@ -114,6 +121,12 @@ class HistorialEjecutivoModel:
         if id_socio:
             query += " AND r.id_user = ?"
             params.append(id_socio)
+        if fecha_desde:
+            query += " AND substr(r.fecha_emision, 1, 10) >= ?"
+            params.append(fecha_desde)
+        if fecha_hasta:
+            query += " AND substr(r.fecha_emision, 1, 10) <= ?"
+            params.append(fecha_hasta)
         query += " ORDER BY r.fecha_emision DESC, r.id_remito DESC"
 
         with Database() as conn:
@@ -131,7 +144,7 @@ class HistorialEjecutivoModel:
     # Comprobantes de proveedores
     # ------------------------------------------------------------------
 
-    def obtener_comprobantes(self, id_proveedor=None, control=None):
+    def obtener_comprobantes(self, id_proveedor=None, control=None, fecha_desde=None, fecha_hasta=None):
         """
         Comprobantes recibidos (más recientes primero) con el resultado del doble control:
         - faltantes: unidades pedidas no recibidas (suma de diferencias positivas).
@@ -158,6 +171,12 @@ class HistorialEjecutivoModel:
         if id_proveedor:
             query += " AND c.id_proveedor = ?"
             params.append(id_proveedor)
+        if fecha_desde:
+            query += " AND substr(c.fecha_recepcion, 1, 10) >= ?"
+            params.append(fecha_desde)
+        if fecha_hasta:
+            query += " AND substr(c.fecha_recepcion, 1, 10) <= ?"
+            params.append(fecha_hasta)
         query += " GROUP BY c.id_comprobante"
         if control == self.CONTROL_CON_DIFERENCIAS:
             query += " HAVING faltantes > 0 OR excedentes > 0 OR articulos_dif_precio > 0"

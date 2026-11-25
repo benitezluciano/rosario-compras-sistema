@@ -46,6 +46,7 @@ from src.models.reparto_model import RepartoModel
 from src.models.notificacion_model import NotificacionModel
 from src.models.historial_ejecutivo_model import HistorialEjecutivoModel
 from src.models.remito_model import RemitoModel
+from src.models.perfil_model import PerfilSocioModel
 import re
 
 PROV_CENTRAL, PROV_LACTEOS, PROV_FRIGORIFICO, PROV_BEBIDAS = 1, 2, 4, 5
@@ -324,7 +325,36 @@ def run_tests():
     assert any(d['diferencia'] < 0 for d in hist.obtener_detalle_comprobante(id_comp_test))
     print(f"[OK] 9. Historial del ejecutivo: {len(ordenes)} órdenes (filtros de entrega y envío), remitos con/sin PDF y comprobantes con diferencias.")
 
-    print("\n=== ¡CIRCUITO COMPLETO VERIFICADO CON ÉXITO (12/12 PRUEBAS OK)! ===")
+    # 10. TRAZABILIDAD DE CANTIDAD ORIGINAL Y PERFIL FISCAL DEL SOCIO
+    # Crear un pedido nuevo sobre Central, ajustarlo a 0 y agregar un ítem desde ConsolidacionModel
+    arts_central = ped_model.obtener_catalogo_articulos(id_proveedor=PROV_CENTRAL)
+    art_a, art_b = arts_central[0], arts_central[1]
+    res_p = ped_model.guardar_pedido_proveedor(socio_u['id'], PROV_CENTRAL, [(art_a['id_articulo'], 6)])
+    id_ped_traza = res_p['id_pedido']
+    cons_model = ConsolidacionModel()
+    cons_model.guardar_modificaciones_ejecutivo([
+        {'id_pedido': id_ped_traza, 'id_socio': socio_u['id'], 'id_articulo': art_a['id_articulo'],
+         'detalle': art_a['detalle'], 'cant_anterior': 6, 'cant_nueva': 0},
+        {'id_pedido': id_ped_traza, 'id_socio': socio_u['id'], 'id_articulo': art_b['id_articulo'],
+         'detalle': art_b['detalle'], 'cant_anterior': 0, 'cant_nueva': 3},
+    ], nombre_ejecutivo="Ejecutivo Test")
+    det_traza = ped_model.obtener_detalle_pedido(socio_u['id'], id_ped_traza)
+    por_art = {r['id_articulo']: r for r in det_traza['renglones']}
+    assert por_art[art_a['id_articulo']]['cantidad_pedida'] == 0
+    assert por_art[art_a['id_articulo']]['cantidad_original'] == 6
+    assert por_art[art_b['id_articulo']]['cantidad_pedida'] == 3
+    assert por_art[art_b['id_articulo']]['cantidad_original'] == 0
+
+    perfil_model = PerfilSocioModel()
+    ok_inv, _ = perfil_model.actualizar_datos_fiscales(socio_u['id'], "Socio Test", "123", "Monotributista", "Calle 1")
+    assert not ok_inv
+    ok_val, perfil_act = perfil_model.actualizar_datos_fiscales(
+        socio_u['id'], socio_u['nombre'], "20123456789", "Responsable Inscripto", "Bv. Oroño 500, Rosario"
+    )
+    assert ok_val and perfil_act['cuit_dni'] == "20-12345678-9"
+    print("[OK] 10. Trazabilidad de cantidad_original (ajuste a 0 y agregado) y perfil fiscal del socio.")
+
+    print("\n=== ¡CIRCUITO COMPLETO VERIFICADO CON ÉXITO (13/13 PRUEBAS OK)! ===")
 
 
 if __name__ == '__main__':

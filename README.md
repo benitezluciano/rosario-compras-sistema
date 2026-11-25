@@ -6,9 +6,9 @@ Sistema de gestión y abastecimiento empresarial para la red **Rosario Compras**
 
 ## 📖 Manual de Usuario y Documentación
 
-- **Manual Interactivo (Recomendado):** Abre **[`MANUAL_DE_USUARIO.html`](MANUAL_DE_USUARIO.html)** en cualquier navegador para ver la guía completa con navegación por rol, infografías y diagramas.
+- **Manual Interactivo (Recomendado):** Abre **[`MANUAL_DE_USUARIO.html`](MANUAL_DE_USUARIO.html)** en cualquier navegador (o desde el botón **📖 Manual de Usuario** dentro de la app).
 - **Manual en Markdown:** Consulta **[`MANUAL_DE_USUARIO.md`](MANUAL_DE_USUARIO.md)**.
-- **Walkthrough del Circuito:** Consulta **[`WALKTHROUGH.html`](WALKTHROUGH.html)**.
+- **Walkthrough del Circuito:** Consulta **[`WALKTHROUGH.md`](WALKTHROUGH.md)** y **[`WALKTHROUGH.html`](WALKTHROUGH.html)**.
 
 ---
 
@@ -16,46 +16,28 @@ Sistema de gestión y abastecimiento empresarial para la red **Rosario Compras**
 
 Tus colegas **no necesitan instalar Python, ni librerías, ni herramientas adicionales**. Solo requieren tener **Docker Desktop** instalado.
 
-### 1. Clonar el repositorio y entrar a la carpeta:
 ```bash
 git clone https://github.com/benitezluciano/rosario-compras-sistema.git
 cd rosario-compras-sistema
-```
-
-### 2. Levantar el contenedor:
-```bash
 docker compose up --build
 ```
 
-### 3. Abrir la aplicación:
-Abre cualquier navegador web (Chrome, Edge, Firefox, Safari) en:
-👉 **[http://localhost:8080](http://localhost:8080)** (o [http://localhost:8080/vnc.html](http://localhost:8080/vnc.html))
-
-¡Y listo! La aplicación se ejecutará con su interfaz gráfica interactiva dentro del navegador, con la base de datos y todas sus dependencias configuradas automáticamente.
+Luego abre **[http://localhost:8080](http://localhost:8080)** (o [http://localhost:8080/vnc.html](http://localhost:8080/vnc.html)) en tu navegador.
 
 ---
 
 ## 🛠️ Ejecución Local con Python (Método Tradicional)
 
-Si prefieres ejecutar la aplicación de forma nativa en tu máquina:
-
 ### 1. Requisitos
 - Python 3.10 o superior.
 - Git.
 
-### 2. Instalación
+### 2. Instalación y Arranque
 ```powershell
-# Crear y activar entorno virtual
 python -m venv venv
 .\venv\Scripts\Activate
-
-# Instalar dependencias
 pip install -r requirements.txt
-
-# Poblar base de datos inicial
 python seeds/seed_db.py
-
-# Iniciar aplicación
 python main.py
 ```
 
@@ -63,45 +45,55 @@ python main.py
 
 ## 👥 Credenciales de Acceso para Pruebas
 
-El sistema cuenta con autenticación segura y permisos diferenciados por rol:
-
 | Rol | Nombre | Email | Contraseña | Permisos |
 | :--- | :--- | :--- | :--- | :--- |
-| Rol | Nombre | Email | Contraseña | Permisos |
-| :--- | :--- | :--- | :--- | :--- |
-| **`ejecutivo`** | Ejecutivo de Cuentas | `ejecutivo@rosariocompras.com` | `account123` | Acceso a los 3 módulos del circuito completo, ajuste de matriz y remitos PDF. |
-| **`admin`** | Administrador General | `admin@rosariocompras.com` | `admin123` | Acceso total y auditoría de comprobantes y repartos. |
-| **`socio`** | Café Central (Socio 1) | `socio1@rosariocompras.com` | `socio123` | Gestión de pedido vigente, historial y consulta de remitos. |
-| **`socio`** | Panadería La Rosa (Socio 2) | `socio2@rosariocompras.com` | `socio123` | Gestión de pedido vigente, historial y consulta de remitos. |
-| **`socio`** | Restaurante Italia (Socio 3) | `socio3@rosariocompras.com` | `socio123` | Gestión de pedido vigente, historial y consulta de remitos. |
+| **`ejecutivo`** | Ejecutivo de Cuentas | `ejecutivo@rosariocompras.com` | `account123` | Circuito de 3 módulos, historial de órdenes/remitos/comprobantes, ajuste de matriz y envío de órdenes por correo. |
+| **`admin`** | Administrador General | `admin@rosariocompras.com` | `admin123` | Acceso total y auditoría de comprobantes, órdenes y repartos. |
+| **`socio`** | Café Central (Socio 1) | `socio1@rosariocompras.com` | `socio123` | Gestión de pedidos por proveedor (hojas + Resumen), historial con Nota de Pedido PDF, remitos y datos fiscales. |
+| **`socio`** | Panadería La Rosa (Socio 2) | `socio2@rosariocompras.com` | `socio123` | Gestión de pedidos por proveedor (hojas + Resumen), historial con Nota de Pedido PDF, remitos y datos fiscales. |
+| **`socio`** | Restaurante Italia (Socio 3) | `socio3@rosariocompras.com` | `socio123` | Gestión de pedidos por proveedor (hojas + Resumen), historial con Nota de Pedido PDF, remitos y datos fiscales. |
 
 ---
 
 ## 🔄 Circuito Operativo y Módulos del Sistema
 
-1. **📑 1. Listas y Proveedores:**
+1. **📑 1. Listas y Proveedores (Ejecutivo):**
    - Solicitud formal de cotizaciones por email con membrete oficial.
    - Previsualización transparente de listas: **Precio Base**, **Descuento (%)**, **Precio con Descuento** y **Precio + IVA (21%)**.
-   - Importación masiva al catálogo único y 🔔 notificación automática a todos los socios.
+   - Importación al catálogo propio del proveedor y ciclo de habilitación/cierre (**Habilitar / Cerrar Lista**) con 🔔 notificación automática a los socios.
 
-2. **🛍️ Portal del Socio (Gestión de Pedidos):**
-   - **Pedido Vigente:** Carga sin restricciones de cantidad; si el pedido está sin cerrar (`Pendiente`), el socio puede reingresar y **modificar cantidades o artículos**.
-   - **Historial de Pedidos:** Registro detallado de todos los pedidos anteriores con códigos comerciales seguros (`RC-ORD-XXXXXX`), fechas, estados y montos.
+2. **🛍️ Portal del Socio (Gestión de Pedidos, Historial y Datos Fiscales):**
+   - **Hojas estilo Excel + Hoja `🧾 Resumen`:** Una hoja independiente por cada lista habilitada (un pedido por socio y proveedor), una primera hoja resumen de solo lectura y botón **"Enviar Todo"** con confirmación previa.
+   - **Historial de Pedidos:** Filtros por proveedor, estado y rango de fechas; detalle por renglón (incluyendo cantidad original vs. ajustada por el ejecutivo y cantidad entregada), **Nota de Pedido en PDF**, acceso al remito y botón **"Modificar pedido"** mientras siga `Pendiente`.
+   - **Mis Datos Fiscales:** Pantalla propia para editar nombre/razón social, CUIT/DNI, condición frente al IVA y domicilio de entrega.
 
 3. **📦 2. Previsualización y Consolidado (Por Proveedor):**
-   - Unificación de la carga y consolidación para Ejecutivos y Administradores.
-   - Selección central por Proveedor y visualización matricial: `Código`, `Artículo`, `Precio Unitario`, **`Total Cantidad (Suma de todos los socios)`**, y columnas individuales por socio (sin columna `Rubro`).
-   - **Ajustes Ejecutivos (Regla 3a):** Modificación directa de cantidades en la matriz si el proveedor informa limitaciones externas, con notificación automática al socio afectado.
-   - Exportación de órdenes de compra independientes por proveedor (`.xlsx`) y planilla general.
-   - Despacho y pase a estado `Consolidado` con 🔔 notificación a cada socio.
+   - Selección por proveedor con visualización matricial: `Código`, `Artículo`, `Precio Unitario`, **`Total Cantidad`**, y columnas editables por socio.
+   - **Ajustes Ejecutivos:** Modificación de cantidades en la matriz con trazabilidad de la cantidad original pedida por el socio y notificación automática.
+   - **Consolidación y Orden de Compra:** Cierra la lista del proveedor, genera la **Orden de Compra en Excel (`RC-OC-XXXXXX`)** en `ordenes_compra/`, la registra en la base (`ORDENES_COMPRA`) y permite enviarla por correo al proveedor. También permite exportar la **Planilla Borrador del Proveedor**.
 
 4. **🚚 3. Recepción y Reparto Automático:**
-   - **Privacidad Comercial:** Identificadores ofuscados en formato UUID/Hash para pedidos y comprobantes.
-   - **Selección Multinivel:** Dropdowns por Proveedor y por Nro. de Pedido Consolidado (gestiona pedidos concurrentes a un mismo proveedor).
-   - **Comprobante Interno Automático:** Nro. de Comprobante generado automáticamente (`CMP-REC-XXXXXX`) sin tipeo manual.
-   - **Doble Control:** Verificación cruzada compras/logística y asentamiento de stock real.
-   - **Emisión de Remitos Oficiales en PDF:** Generación automática de **un archivo PDF oficial por cada proveedor para cada socio involucrado**, guardados en `remitos_pdf/`.
-   - 🔔 Notificación automática a cada socio con su remito PDF emitido y listo para entrega.
+   - Selección obligatoria por proveedor y pedido consolidado.
+   - **Doble Control:** Verificación cruzada de cantidades y precios contra comprobantes recibidos (`CMP-REC-XXXXXX`).
+   - **Remitos Estándar (Letra X, `0001-00000001`):** Un remito por pedido/proveedor con ORIGINAL y DUPLICADO en `remitos_pdf/` (regenerable desde el historial) y 🔔 notificación al socio.
+
+5. **📜 Historial del Ejecutivo:**
+   - Tres pestañas con filtros por proveedor, estado/socio/control y rango de fechas: **Órdenes de Compra**, **Remitos Emitidos** y **Comprobantes de Proveedores**.
+
+---
+
+## 🧪 Pruebas y Verificación
+
+```powershell
+# Suite integral del circuito (base temporal, no toca database.db)
+python tests/test_circuit_suite.py
+
+# Pruebas de proveedores, importación y EmailService (base temporal)
+python tests/test_proveedores_email.py
+
+# Verificación de compilación
+python -m compileall -q main.py src seeds tests
+```
 
 ---
 
@@ -116,18 +108,20 @@ rosario-compras-sistema/
 ├── MANUAL_DE_USUARIO.md          # Manual de usuario en formato Markdown
 ├── WALKTHROUGH.html              # Documento visual con infografía y diagramas
 ├── WALKTHROUGH.md                # Documentación técnica del circuito
-├── circuito_operativo.jpg        # Infografía gráfica del flujo operativo
 ├── db/
-│   └── rosario_compras.sql       # Script DDL maestro con las 12 tablas
+│   └── rosario_compras.sql       # Script DDL maestro con las 13 tablas
+├── gestion/                      # Estado, decisiones (DEC-001+) y bitácora de sesiones
 ├── migrations/                   # Scripts incrementales de migración
 ├── src/
-│   ├── models/                   # Modelos de negocio (Auth, Catálogo, Pedidos, Consolidación, Reparto, Notificaciones)
-│   ├── views/                    # Vistas y archivos .ui de Qt Designer
-│   ├── controllers/              # Controladores que conectan eventos y modelos
+│   ├── config/                   # Datos del emisor y configuración de remitos (empresa.py)
+│   ├── models/                   # Modelos de negocio (MVC)
+│   ├── views/                    # Vistas PyQt6 y archivos .ui
+│   ├── controllers/              # Controladores MVC
+│   ├── services/                 # Servicios de PDF, Excel de Órdenes de Compra y Email
 │   ├── styles/                   # Sistema de estilos QSS (theme.py)
-│   └── database.py               # Conexión SQLite transaccional
-├── seeds/
-│   └── seed_db.py                # Script para resetear y poblar datos iniciales
-├── main.py                       # Punto de entrada principal con tema moderno
-└── requirements.txt              # Dependencias del proyecto
+│   └── database.py               # Conexión SQLite transaccional y migrar_db
+├── seeds/                        # seed_db.py y limpiar_db.py
+├── tests/                        # test_circuit_suite.py y test_proveedores_email.py
+├── main.py                       # Punto de entrada principal
+└── requirements.txt              # Dependencias directas del proyecto
 ```

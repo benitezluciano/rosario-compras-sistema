@@ -16,6 +16,9 @@ class HistorialEjecutivoController:
         # Órdenes de compra
         self.vista.cmb_ord_proveedor.currentIndexChanged.connect(self.cargar_ordenes)
         self.vista.cmb_ord_estado.currentIndexChanged.connect(self.cargar_ordenes)
+        self.vista.chk_ord_fecha.toggled.connect(self.cargar_ordenes)
+        self.vista.date_ord_desde.dateChanged.connect(self.cargar_ordenes)
+        self.vista.date_ord_hasta.dateChanged.connect(self.cargar_ordenes)
         self.vista.btn_ord_actualizar.clicked.connect(self.cargar_ordenes)
         self.vista.tabla_ordenes.itemSelectionChanged.connect(self.al_seleccionar_orden)
         self.vista.tabla_ordenes.cellDoubleClicked.connect(lambda *_: self.ver_orden())
@@ -24,6 +27,9 @@ class HistorialEjecutivoController:
         # Remitos
         self.vista.cmb_rem_proveedor.currentIndexChanged.connect(self.cargar_remitos)
         self.vista.cmb_rem_socio.currentIndexChanged.connect(self.cargar_remitos)
+        self.vista.chk_rem_fecha.toggled.connect(self.cargar_remitos)
+        self.vista.date_rem_desde.dateChanged.connect(self.cargar_remitos)
+        self.vista.date_rem_hasta.dateChanged.connect(self.cargar_remitos)
         self.vista.btn_rem_actualizar.clicked.connect(self.cargar_remitos)
         self.vista.tabla_remitos.itemSelectionChanged.connect(self.al_seleccionar_remito)
         self.vista.tabla_remitos.cellDoubleClicked.connect(lambda *_: self.abrir_remito())
@@ -32,6 +38,9 @@ class HistorialEjecutivoController:
         # Comprobantes
         self.vista.cmb_comp_proveedor.currentIndexChanged.connect(self.cargar_comprobantes)
         self.vista.cmb_comp_control.currentIndexChanged.connect(self.cargar_comprobantes)
+        self.vista.chk_comp_fecha.toggled.connect(self.cargar_comprobantes)
+        self.vista.date_comp_desde.dateChanged.connect(self.cargar_comprobantes)
+        self.vista.date_comp_hasta.dateChanged.connect(self.cargar_comprobantes)
         self.vista.btn_comp_actualizar.clicked.connect(self.cargar_comprobantes)
         self.vista.tabla_comprobantes.itemSelectionChanged.connect(self.al_seleccionar_comprobante)
 
@@ -65,9 +74,14 @@ class HistorialEjecutivoController:
     # ------------------------------------------------------------------
 
     def cargar_ordenes(self):
+        desde, hasta = self.vista.leer_rango_fechas(
+            self.vista.chk_ord_fecha, self.vista.date_ord_desde, self.vista.date_ord_hasta
+        )
         ordenes = self.modelo.obtener_ordenes(
             self.vista.cmb_ord_proveedor.currentData(),
-            self.vista.cmb_ord_estado.currentData()
+            self.vista.cmb_ord_estado.currentData(),
+            fecha_desde=desde,
+            fecha_hasta=hasta,
         )
         self.vista.cargar_ordenes(ordenes)
 
@@ -96,9 +110,14 @@ class HistorialEjecutivoController:
     # ------------------------------------------------------------------
 
     def cargar_remitos(self):
+        desde, hasta = self.vista.leer_rango_fechas(
+            self.vista.chk_rem_fecha, self.vista.date_rem_desde, self.vista.date_rem_hasta
+        )
         remitos = self.modelo.obtener_remitos(
             self.vista.cmb_rem_proveedor.currentData(),
-            self.vista.cmb_rem_socio.currentData()
+            self.vista.cmb_rem_socio.currentData(),
+            fecha_desde=desde,
+            fecha_hasta=hasta,
         )
         self.vista.cargar_remitos(remitos)
 
@@ -125,9 +144,14 @@ class HistorialEjecutivoController:
     # ------------------------------------------------------------------
 
     def cargar_comprobantes(self):
+        desde, hasta = self.vista.leer_rango_fechas(
+            self.vista.chk_comp_fecha, self.vista.date_comp_desde, self.vista.date_comp_hasta
+        )
         comprobantes = self.modelo.obtener_comprobantes(
             self.vista.cmb_comp_proveedor.currentData(),
-            self.vista.cmb_comp_control.currentData()
+            self.vista.cmb_comp_control.currentData(),
+            fecha_desde=desde,
+            fecha_hasta=hasta,
         )
         self.vista.cargar_comprobantes(comprobantes)
 

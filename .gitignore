@@ -219,11 +219,14 @@ __marimo__/
 
 # Base de datos SQLite
 *.db
-*.sqlite 
+*.sqlite
+database.db
 
 # Python cache
 *.pyc
 *.pyo
 
-# Órdenes de compra generadas por el sistema al consolidar
+# Órdenes de compra, remitos PDF y logs generados por el sistema
 ordenes_compra/
+remitos_pdf/
+logs/

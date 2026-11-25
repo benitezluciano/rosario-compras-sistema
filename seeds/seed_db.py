@@ -244,9 +244,9 @@ def seed():
             (16, 6, 40),                             # Panadería (histórico): Leche
         ]
         cursor.executemany("""
-            INSERT INTO DETALLE_PEDIDOS (id_pedido, id_articulo, cantidad_pedida, precio_unitario)
-            VALUES (?, ?, ?, ?)
-        """, [(ped, art, cant, precio_de[(prov_de_pedido[ped], art)]) for ped, art, cant in detalles_pedidos])
+            INSERT INTO DETALLE_PEDIDOS (id_pedido, id_articulo, cantidad_pedida, cantidad_original, precio_unitario)
+            VALUES (?, ?, ?, ?, ?)
+        """, [(ped, art, cant, cant, precio_de[(prov_de_pedido[ped], art)]) for ped, art, cant in detalles_pedidos])
         print(f"OK: {len(pedidos)} Pedidos (uno por proveedor) y {len(detalles_pedidos)} ítems de detalle insertados.")
 
         # Totales y cantidad de pedidos de cada orden, calculados desde sus pedidos

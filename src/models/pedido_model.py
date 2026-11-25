@@ -108,7 +108,7 @@ class PedidoModel:
 
             for ped in pedidos.values():
                 cursor.execute(
-                    "SELECT id_articulo, cantidad_pedida FROM DETALLE_PEDIDOS WHERE id_pedido = ?",
+                    "SELECT id_articulo, cantidad_pedida FROM DETALLE_PEDIDOS WHERE id_pedido = ? AND cantidad_pedida > 0",
                     (ped['id_pedido'],)
                 )
                 ped['items'] = {r['id_articulo']: r['cantidad_pedida'] for r in cursor.fetchall()}
@@ -206,9 +206,9 @@ class PedidoModel:
 
                 for id_articulo, cantidad in articulos:
                     cursor.execute("""
-                        INSERT INTO DETALLE_PEDIDOS (id_pedido, id_articulo, cantidad_pedida, precio_unitario)
-                        VALUES (?, ?, ?, ?)
-                    """, (id_pedido, id_articulo, cantidad, precios[id_articulo]))
+                        INSERT INTO DETALLE_PEDIDOS (id_pedido, id_articulo, cantidad_pedida, cantidad_original, precio_unitario)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (id_pedido, id_articulo, cantidad, cantidad, precios[id_articulo]))
 
                 resultados.append({
                     'id_pedido': id_pedido,
@@ -285,7 +285,7 @@ class PedidoModel:
             cursor.execute("""
                 SELECT p.id_pedido, p.codigo_comercial, p.fecha, p.estado, p.id_proveedor,
                        pr.nombre AS proveedor_nombre, pr.lista_habilitada,
-                       COUNT(dp.id_articulo) AS cantidad_articulos,
+                       SUM(CASE WHEN dp.cantidad_pedida > 0 THEN 1 ELSE 0 END) AS cantidad_articulos,
                        COALESCE(SUM(dp.cantidad_pedida), 0) AS total_unidades,
                        COALESCE(SUM(dp.cantidad_pedida * dp.precio_unitario), 0.0) AS total_estimado,
                        (SELECT r.id_remito FROM REMITOS r WHERE r.id_pedido = p.id_pedido
@@ -340,7 +340,9 @@ class PedidoModel:
 
             renglones = [dict(r) for r in conn.execute("""
                 SELECT a.id_articulo, a.id_articulo_proveedor AS codigo, a.detalle, a.unidad,
-                       dp.cantidad_pedida, dp.precio_unitario,
+                       dp.cantidad_pedida,
+                       COALESCE(dp.cantidad_original, dp.cantidad_pedida) AS cantidad_original,
+                       dp.precio_unitario,
                        ROUND(dp.cantidad_pedida * dp.precio_unitario, 2) AS subtotal,
                        dr.cantidad_entregada
                 FROM DETALLE_PEDIDOS dp
@@ -419,6 +421,7 @@ class PedidoModel:
             'referencias': " · ".join(referencias) or "Pedido todavía no consolidado en una orden de compra",
             'items': [{
                 'cantidad': r['cantidad_pedida'],
+                'cantidad_original': r.get('cantidad_original', r['cantidad_pedida']),
                 'entregado': r['cantidad_entregada'] if det['entregado'] else None,
                 'unidad': r.get('unidad'),
                 'codigo': r.get('codigo'),

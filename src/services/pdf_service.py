@@ -98,11 +98,12 @@ class PdfService:
         writer.setCreator("Rosario Compras - Sistema de Gestión")
 
         items = datos.get('items', [])
-        hojas = [items[i:i + FILAS_POR_HOJA] for i in range(0, len(items), FILAS_POR_HOJA)] or [[]]
-
         p = QPainter(writer)
         try:
             p.setRenderHint(QPainter.RenderHint.Antialiasing)
+            ancho_desc = X1 - COLUMNAS[3][0] - 4.0
+            alto_disp = (Y_PIE - Y_ENCABEZADO_TABLA) - ALTO_FILA
+            hojas = self._paginar_items(p, items, ancho_desc, 9, alto_disp)
             primera = True
             for copia in ("ORIGINAL", "DUPLICADO"):
                 for nro_hoja, items_hoja in enumerate(hojas, start=1):
@@ -144,6 +145,40 @@ class PdfService:
         else:
             texto = p.fontMetrics().elidedText(texto, Qt.TextElideMode.ElideRight, int(rect.width()))
             p.drawText(rect, int(alineacion), texto)
+
+    def _alto_fila_item(self, p, texto, ancho_mm, puntos):
+        """Calcula la altura en mm necesaria para mostrar `texto` en varias líneas."""
+        fuente = QFont("Arial")
+        fuente.setPointSizeF(puntos)
+        p.setFont(fuente)
+        rect = p.fontMetrics().boundingRect(
+            0,
+            0,
+            int(max(ancho_mm, 10.0) * MM),
+            100000,
+            int(Qt.AlignmentFlag.AlignLeft | Qt.TextFlag.TextWordWrap),
+            "" if texto is None else str(texto),
+        )
+        return max(ALTO_FILA, rect.height() / MM + 2.2)
+
+    def _paginar_items(self, p, items, ancho_desc_mm, puntos, alto_disponible_mm):
+        """Agrupa los ítems en hojas según la altura real de sus descripciones multilínea."""
+        if not items:
+            return [[]]
+        hojas = []
+        actual = []
+        y_usado = 0.0
+        for it in items:
+            alto = self._alto_fila_item(p, it.get('detalle', ''), ancho_desc_mm, puntos)
+            if actual and y_usado + alto > alto_disponible_mm:
+                hojas.append(actual)
+                actual = []
+                y_usado = 0.0
+            actual.append((it, alto))
+            y_usado += alto
+        if actual:
+            hojas.append(actual)
+        return hojas
 
     def _esquinas(self, p, x, y, w, h, largo=3.0):
         """Marcas en L en las cuatro esquinas (como los recuadros del modelo)."""
@@ -240,16 +275,17 @@ class PdfService:
                         negrita=True, alineacion=centro)
 
         y = Y_ENCABEZADO_TABLA
-        for it in items:
+        for entrada in items:
+            it, alto_fila = entrada if isinstance(entrada, tuple) else (entrada, ALTO_FILA)
             valores = [str(it.get('cantidad', '')), it.get('unidad') or 'Unidad', it.get('codigo') or '-', it.get('detalle', '')]
             for i, (x, _) in enumerate(COLUMNAS):
                 x_fin = COLUMNAS[i + 1][0] if i + 1 < len(COLUMNAS) else X1
                 alin = izq if i == 3 else centro
                 margen = 2 if i == 3 else 0.5
-                self._texto(p, x + margen, y, x_fin - x - 2 * margen, ALTO_FILA, valores[i], 9,
-                            negrita=(i == 0), alineacion=alin)
-            self._linea(p, X0, y + ALTO_FILA, X1, y + ALTO_FILA, 0.15, GRIS_CLARO, Qt.PenStyle.DotLine)
-            y += ALTO_FILA
+                self._texto(p, x + margen, y, x_fin - x - 2 * margen, alto_fila, valores[i], 9,
+                            negrita=(i == 0), alineacion=alin, ajustar=(i == 3))
+            self._linea(p, X0, y + alto_fila, X1, y + alto_fila, 0.15, GRIS_CLARO, Qt.PenStyle.DotLine)
+            y += alto_fila
 
         if nro_hoja == total_hojas:
             self._texto(p, COLUMNAS[3][0] + 2, y, X1 - COLUMNAS[3][0] - 4, ALTO_FILA,
@@ -315,11 +351,15 @@ class PdfService:
         writer.setCreator("Rosario Compras - Sistema de Gestión")
 
         items = datos.get('items', [])
-        hojas = [items[i:i + NP_FILAS_POR_HOJA] for i in range(0, len(items), NP_FILAS_POR_HOJA)] or [[]]
+        columnas = NP_COLUMNAS_ENTREGA if datos.get('entregado') else NP_COLUMNAS
+        idx_desc = next(i for i, (_x, _t, clave, _a) in enumerate(columnas) if clave == 'detalle')
+        ancho_desc = columnas[idx_desc + 1][0] - columnas[idx_desc][0] - 3.0
+        alto_disp = (NP_Y_PIE - NP_Y_ENCABEZADO_TABLA) - ALTO_FILA
 
         p = QPainter(writer)
         try:
             p.setRenderHint(QPainter.RenderHint.Antialiasing)
+            hojas = self._paginar_items(p, items, ancho_desc, 8.5, alto_disp)
             for nro_hoja, items_hoja in enumerate(hojas, start=1):
                 if nro_hoja > 1:
                     writer.newPage()
@@ -400,13 +440,20 @@ class PdfService:
 
         alineaciones = {'c': centro, 'i': izq, 'd': der}
         y = NP_Y_ENCABEZADO_TABLA
-        for it in items:
+        for entrada in items:
+            it, alto_fila = entrada if isinstance(entrada, tuple) else (entrada, ALTO_FILA)
             faltante = it.get('entregado') is not None and it['entregado'] < (it.get('cantidad') or 0)
             for i, (x, _titulo, clave, alin) in enumerate(columnas):
                 x_fin = columnas[i + 1][0] if i + 1 < len(columnas) else X1
                 valor = it.get(clave)
                 if clave in ('precio_unitario', 'subtotal'):
                     texto = moneda(valor)
+                elif clave == 'cantidad':
+                    cant_orig = it.get('cantidad_original')
+                    if cant_orig is not None and cant_orig != valor:
+                        texto = f"{valor} (orig. {cant_orig})"
+                    else:
+                        texto = str(valor)
                 elif clave == 'unidad':
                     texto = valor or 'Unidad'
                 elif valor is None:
@@ -415,11 +462,11 @@ class PdfService:
                     texto = str(valor)
                 margen = 1.5 if alin != 'c' else 0.5
                 resaltar = clave == 'entregado' and faltante
-                self._texto(p, x + margen, y, x_fin - x - 2 * margen, ALTO_FILA, texto, 8.5,
+                self._texto(p, x + margen, y, x_fin - x - 2 * margen, alto_fila, texto, 8.5,
                             negrita=(clave == 'cantidad' or resaltar), color=NP_COLOR_FALTANTE if resaltar else NEGRO,
-                            alineacion=alineaciones[alin])
-            self._linea(p, X0, y + ALTO_FILA, X1, y + ALTO_FILA, 0.15, GRIS_CLARO, Qt.PenStyle.DotLine)
-            y += ALTO_FILA
+                            alineacion=alineaciones[alin], ajustar=(clave == 'detalle'))
+            self._linea(p, X0, y + alto_fila, X1, y + alto_fila, 0.15, GRIS_CLARO, Qt.PenStyle.DotLine)
+            y += alto_fila
 
         x_desc = next(x for (x, _t, clave, _a) in columnas if clave == 'detalle')
         x_precio = next(x for (x, _t, clave, _a) in columnas if clave == 'precio_unitario')

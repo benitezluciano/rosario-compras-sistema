@@ -36,14 +36,14 @@
 
 ### DEC-003 — Hoja "Resumen" en el portal del socio
 
-- **Fecha:** 2026-11-21
-- **Estado:** Propuesta
-- **Participantes:** BenitezLuciano, asistente (Claude Code)
+- **Fecha:** 2026-11-21 *(Aprobada: 2026-11-24)*
+- **Estado:** Cerrada
+- **Participantes:** BenitezLuciano, Eros David
 - **Contexto:** Con varias hojas, al socio le puede costar revisar todo lo cargado antes de enviar.
-- **Decisión:** (En evaluación) Agregar una primera hoja "🧾 Resumen" que muestre solo lo cargado en todas las hojas, agrupado por proveedor. Se evaluará más adelante.
+- **Decisión:** Se agrega una primera hoja `"🧾 Resumen"` de solo lectura en `PedidoView` que agrupa todo lo cargado (`cantidad > 0`) por proveedor, con subtotales por proveedor y total general en tiempo real.
 - **Alternativas consideradas:**
-  - No agregarla y confiar en el contador por pestaña (DEC-002) y en el resumen previo de "Enviar todo" (DEC-013): es la situación actual.
-- **Consecuencias:** Sin cambios en código por ahora.
+  - No agregarla y confiar solo en el contador por pestaña (`DEC-002`) y en el resumen previo de "Enviar todo" (`DEC-013`): se descartó porque la hoja fija aporta mayor claridad y confianza al revisar pedidos largos.
+- **Consecuencias:** `PedidoView` gestiona la pestaña 0 como `"🧾 Resumen"` (`_offset_hojas = 1`) y mantiene `seleccionar_hoja(id_proveedor)` compatible con el historial.
 - **Relacionado con:** DEC-002, DEC-013.
 
 ---
@@ -507,3 +507,34 @@
   - Si el grupo decide respaldar las cifras de plazo del documento 06, se agregan a las diapositivas 8 y 9.
   - Quedan con el grupo: aclarar en el video que son datos de prueba y el cuarto criterio de éxito del documento 06.
 - **Relacionado con:** DEC-025, DEC-026.
+
+---
+
+### DEC-028 — Trazabilidad de cantidad original ante ajustes del ejecutivo
+
+- **Fecha:** 2026-11-24
+- **Estado:** Cerrada
+- **Participantes:** Eros David
+- **Contexto:** Al ajustar cantidades en el Módulo 2 (`DEC-024`), se perdía lo que había pedido originalmente el socio y si el ejecutivo bajaba un ítem a `0`, el renglón se borraba.
+- **Decisión:**
+  - Se agrega `DETALLE_PEDIDOS.cantidad_original` (y migración automática en `migrar_db`).
+  - Cuando el socio carga o edita un pedido `Pendiente`, `cantidad_original` se iguala a `cantidad_pedida`.
+  - Cuando el ejecutivo ajusta a `0`, se conserva el renglón con `cantidad_pedida = 0` y `cantidad_original` intacta (excluido de órdenes de compra y totales).
+  - Cuando el ejecutivo agrega un ítem nuevo que el socio no pidió, queda con `cantidad_original = 0`.
+  - Se visualiza en la matriz de consolidación, en el detalle de órdenes del historial ejecutivo, en el historial del socio y en la Nota de Pedido PDF.
+- **Consecuencias:** Trazabilidad completa de ajustes sin perder ítems eliminados ni romper la generación de órdenes de compra.
+- **Relacionado con:** DEC-024.
+
+---
+
+### DEC-029 — Pantalla "Mis Datos Fiscales" del socio y datos simulados en entrega académica
+
+- **Fecha:** 2026-11-24
+- **Estado:** Cerrada
+- **Participantes:** Eros David
+- **Contexto:** Los datos fiscales del socio (`cuit_dni`, `condicion_iva`, `domicilio`) solo se cargaban desde el seed (`DEC-023`).
+- **Decisión:**
+  - Se agrega la pantalla `"🏢 Mis Datos Fiscales"` en el menú lateral del socio (`PerfilSocioModel`, `PerfilSocioView`, `PerfilSocioController`), permitiendo editar nombre/razón social, CUIT/DNI (con validación de formato), condición frente al IVA (desplegable) y domicilio.
+  - Para la entrega académica se mantienen los datos simulados del emisor en `src/config/empresa.py` (`DATOS_SIMULADOS = True`).
+- **Consecuencias:** El socio puede mantener actualizados sus datos para Notas de Pedido y Remitos sin intervención manual en la base.
+- **Relacionado con:** DEC-023.

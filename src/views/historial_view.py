@@ -1,9 +1,10 @@
 import os
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton, QTableWidget,
-    QTableWidgetItem, QHeaderView, QAbstractItemView, QSplitter, QMessageBox, QFileDialog
+    QTableWidgetItem, QHeaderView, QAbstractItemView, QSplitter, QMessageBox, QFileDialog,
+    QCheckBox, QDateEdit
 )
-from PyQt6.QtCore import Qt, QStandardPaths
+from PyQt6.QtCore import Qt, QStandardPaths, QDate
 from PyQt6.QtGui import QColor, QFont
 
 from src.config.empresa import LETRA_REMITO
@@ -76,9 +77,20 @@ class HistorialView(QWidget):
         self.cmb_estado.setMinimumWidth(200)
         for texto, estados in FILTRO_ESTADOS:
             self.cmb_estado.addItem(texto, estados)
+        self.chk_fecha = QCheckBox("Fechas:")
+        self.date_desde = QDateEdit(QDate.currentDate().addMonths(-1))
+        self.date_desde.setCalendarPopup(True)
+        self.date_desde.setDisplayFormat("dd/MM/yyyy")
+        self.date_desde.setEnabled(False)
+        self.date_hasta = QDateEdit(QDate.currentDate())
+        self.date_hasta.setCalendarPopup(True)
+        self.date_hasta.setDisplayFormat("dd/MM/yyyy")
+        self.date_hasta.setEnabled(False)
+        self.chk_fecha.toggled.connect(self._toggle_fechas)
         self.btn_refrescar_historial = QPushButton("🔄 Actualizar")
         fila = QHBoxLayout()
-        for w in ("Proveedor:", self.cmb_proveedor, "Estado:", self.cmb_estado):
+        for w in ("Proveedor:", self.cmb_proveedor, "Estado:", self.cmb_estado,
+                  self.chk_fecha, self.date_desde, "a", self.date_hasta):
             if isinstance(w, str):
                 lbl = QLabel(w)
                 lbl.setStyleSheet("font-weight: bold;")
@@ -177,6 +189,18 @@ class HistorialView(QWidget):
 
     def filtro_estados(self):
         return self.cmb_estado.currentData()
+
+    def _toggle_fechas(self, activo):
+        self.date_desde.setEnabled(activo)
+        self.date_hasta.setEnabled(activo)
+
+    def filtro_rango_fechas(self):
+        if not self.chk_fecha.isChecked():
+            return None, None
+        return (
+            self.date_desde.date().toString("yyyy-MM-dd"),
+            self.date_hasta.date().toString("yyyy-MM-dd"),
+        )
 
     # ------------------------------------------------------------------
     # Lista de pedidos
@@ -279,19 +303,32 @@ class HistorialView(QWidget):
         renglones = det.get('renglones', [])
         t.setRowCount(len(renglones))
         for fila, r in enumerate(renglones):
+            cant_ped = r.get('cantidad_pedida') or 0
+            cant_orig = r.get('cantidad_original')
+            if cant_orig is None:
+                cant_orig = cant_ped
+            ajustado = cant_orig != cant_ped
+            if ajustado:
+                txt_cant = f"{cant_ped} (pediste {cant_orig})"
+                celda_cant = _item(txt_cant, "c", AMBAR, True)
+                celda_cant.setBackground(QColor("#fef3c7"))
+                celda_cant.setToolTip(f"Pediste originalmente {cant_orig} unidad(es); el ejecutivo ajustó a {cant_ped}.")
+            else:
+                celda_cant = _item(cant_ped, "c", None, True)
+
             celdas = [
                 _item(r.get('codigo') or "-", "c", GRIS),
                 _item(r.get('detalle')),
                 _item(r.get('unidad') or "Unidad", "c"),
-                _item(r.get('cantidad_pedida'), "c", None, True),
+                celda_cant,
             ]
             if entregado:
                 ent = r.get('cantidad_entregada') or 0
-                faltante = ent < (r.get('cantidad_pedida') or 0)
+                faltante = ent < cant_ped
                 celda = _item(ent, "c", AMBAR if faltante else VERDE, True)
                 if faltante:
                     celda.setBackground(QColor("#fef3c7"))
-                    celda.setToolTip(f"Se entregaron {ent} de {r.get('cantidad_pedida')} (faltante del proveedor)")
+                    celda.setToolTip(f"Se entregaron {ent} de {cant_ped} (faltante del proveedor)")
                 celdas.append(celda)
             celdas += [
                 _item(_moneda(r.get('precio_unitario')), "d"),

@@ -23,6 +23,9 @@ class HistorialController:
         self.vista.btn_refrescar_historial.clicked.connect(self.inicializar)
         self.vista.cmb_proveedor.currentIndexChanged.connect(self.aplicar_filtros)
         self.vista.cmb_estado.currentIndexChanged.connect(self.aplicar_filtros)
+        self.vista.chk_fecha.toggled.connect(self.aplicar_filtros)
+        self.vista.date_desde.dateChanged.connect(self.aplicar_filtros)
+        self.vista.date_hasta.dateChanged.connect(self.aplicar_filtros)
         self.vista.tabla_historial.itemSelectionChanged.connect(self.al_seleccionar_pedido)
         self.vista.tabla_historial.cellDoubleClicked.connect(lambda *_: self.abrir_nota_pedido())
         self.vista.btn_abrir_nota.clicked.connect(self.abrir_nota_pedido)
@@ -58,9 +61,19 @@ class HistorialController:
     def aplicar_filtros(self):
         id_prov = self.vista.filtro_proveedor()
         estados = self.vista.filtro_estados()
-        filtrados = [p for p in self.pedidos
-                     if (id_prov is None or p.get('id_proveedor') == id_prov)
-                     and (estados is None or p.get('estado') in estados)]
+        fecha_desde, fecha_hasta = self.vista.filtro_rango_fechas()
+        filtrados = []
+        for p in self.pedidos:
+            if id_prov is not None and p.get('id_proveedor') != id_prov:
+                continue
+            if estados is not None and p.get('estado') not in estados:
+                continue
+            fecha_p = (p.get('fecha') or "")[:10]
+            if fecha_desde and fecha_p < fecha_desde:
+                continue
+            if fecha_hasta and fecha_p > fecha_hasta:
+                continue
+            filtrados.append(p)
         self.detalle_actual = None
         self.vista.cargar_historial_pedidos(filtrados, total_pedidos=len(self.pedidos))
 

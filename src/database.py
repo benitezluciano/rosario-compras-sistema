@@ -46,8 +46,12 @@ def migrar_db(conn):
     # (ORDENES_COMPRA se crea con CREATE TABLE IF NOT EXISTS desde rosario_compras.sql)
     agregar_si_falta("PEDIDOS", "id_orden_compra", "INTEGER REFERENCES ORDENES_COMPRA(id_orden_compra)")
 
-    # DETALLE_PEDIDOS: precio congelado
+    # DETALLE_PEDIDOS: precio congelado y cantidad original pedida por el socio
     agregar_si_falta("DETALLE_PEDIDOS", "precio_unitario", "REAL NOT NULL DEFAULT 0.0")
+    agregar_si_falta("DETALLE_PEDIDOS", "cantidad_original", "INTEGER")
+    cursor.execute(
+        "UPDATE DETALLE_PEDIDOS SET cantidad_original = cantidad_pedida WHERE cantidad_original IS NULL"
+    )
 
     # REMITOS: vínculo con pedido/proveedor y código único
     agregar_si_falta("REMITOS", "id_pedido", "INTEGER REFERENCES PEDIDOS(id_pedido)")

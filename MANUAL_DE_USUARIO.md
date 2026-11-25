@@ -1,6 +1,6 @@
 # Manual de Usuario - Rosario Compras
 
-Bienvenido al **Sistema de Gestión y Abastecimiento de Rosario Compras**. Esta aplicación permite gestionar de manera integral el circuito de compras consolidadas, centralizando las listas de proveedores, la toma y ajuste de pedidos de socios, el control cruzado de recepción y la emisión automática de remitos en PDF oficiales.
+Bienvenido al **Sistema de Gestión y Abastecimiento de Rosario Compras**. Esta aplicación permite gestionar de manera integral el circuito de compras consolidadas por proveedor: listas de precios, pedidos de socios, consolidación con órdenes de compra, control cruzado de recepción, emisión de remitos estándar en PDF y consulta de historiales.
 
 ---
 
@@ -8,72 +8,54 @@ Bienvenido al **Sistema de Gestión y Abastecimiento de Rosario Compras**. Esta 
 
 | Rol | Nombre de Ejemplo | Email | Contraseña | Funciones |
 | :--- | :--- | :--- | :--- | :--- |
-| **`ejecutivo`** | Luciano Benítez (Ejecutivo Principal) | `ejecutivo@rosariocompras.com` | `account123` | Circuito completo de 3 módulos: Listas, Previsualización y Consolidado, y Recepción y Reparto con Remitos PDF. |
+| **`ejecutivo`** | Luciano Benítez (Ejecutivo Principal) | `ejecutivo@rosariocompras.com` | `account123` | Circuito completo de 3 módulos, historial de órdenes/remitos/comprobantes, ajuste de matriz y envío de órdenes por mail. |
 | **`ejecutivo`** | Martina Valenzuela (Ejecutiva Zona Norte) | `ejecutivo2@rosariocompras.com` | `account123` | Gestión de compras, ajuste de cantidades en matriz y remitos PDF. |
-| **`admin`** | Administrador General | `admin@rosariocompras.com` | `admin123` | Control total, auditoría comercial y configuración de usuarios. |
-| **`socio`** | Café Central (Socio 1) | `socio1@rosariocompras.com` | `socio123` | Gestión de pedidos: carga de pedido vigente, modificación interactiva e historial de pedidos. |
-| **`socio`** | Panadería La Rosa (Socio 2) | `socio2@rosariocompras.com` | `socio123` | Gestión de pedidos: carga de pedido vigente, modificación interactiva e historial de pedidos. |
-| **`socio`** | Restaurante Italia (Socio 3) | `socio3@rosariocompras.com` | `socio123` | Gestión de pedidos: carga de pedido vigente, modificación interactiva e historial de pedidos. |
+| **`admin`** | Administrador General | `admin@rosariocompras.com` | `admin123` | Control total, auditoría comercial y seguimiento del circuito. |
+| **`socio`** | Café Central (Socio 1) | `socio1@rosariocompras.com` | `socio123` | Gestión de pedidos por proveedor (hojas + Resumen), historial con Nota de Pedido PDF, remitos y datos fiscales. |
+| **`socio`** | Panadería La Rosa (Socio 2) | `socio2@rosariocompras.com` | `socio123` | Gestión de pedidos por proveedor (hojas + Resumen), historial con Nota de Pedido PDF, remitos y datos fiscales. |
+| **`socio`** | Restaurante Italia (Socio 3) | `socio3@rosariocompras.com` | `socio123` | Gestión de pedidos por proveedor (hojas + Resumen), historial con Nota de Pedido PDF, remitos y datos fiscales. |
 
 ---
 
-## 2. Guía para el Socio (Business Partner)
+## 2. Guía para el Socio
 
-### Pestaña 1: 🛍️ Pedido Vigente / Carga de Pedido
-1. **Sin límites artificiales de cantidad:** Ingresa la cantidad deseada para cada producto.
-2. **Pedido sin cerrar (Vigente):** Si ya confirmaste un pedido en el ciclo actual y continúa en estado *Pendiente*, el sistema lo cargará automáticamente indicando: *"Modificando Pedido Vigente #RC-ORD-XXXXXX"*.
-3. **Modificación de Pedido:** Puedes alterar cualquier cantidad, agregar nuevos artículos o poner en 0 los que no desees, y presionar **"💾 Guardar Modificaciones del Pedido"**.
-4. **Subtotales y Total General:** Se calculan en tiempo real a medida que editas cada fila.
+### Pantalla 1: 🛍️ Gestión de Pedidos
+1. **Hojas por Proveedor (estilo Excel):** Cada proveedor con lista habilitada aparece en una pestaña inferior independiente. Cada pedido corresponde a **un socio y un proveedor**.
+2. **Hoja `🧾 Resumen`:** La primera pestaña muestra en tiempo real todo lo cargado en todas las hojas, agrupado por proveedor con subtotales y total general.
+3. **Pedido Vigente y Anulación:** Si ya enviaste un pedido para un proveedor y sigue `Pendiente`, la hoja muestra tus cantidades actuales para que puedas editarlas. Si dejas todas las cantidades en `0` y guardas, el pedido se anula previa confirmación.
+4. **Envío Individual o Masivo:** Puedes enviar hoja por hoja o usar **"🛒 Enviar Todo"**, que muestra un resumen por proveedor antes de confirmar.
 
-### Pestaña 2: 📜 Historial de Mis Pedidos
-1. **Monitoreo Completo:** Consulta tus pedidos pasados con su Nro. de Pedido seguro (`RC-ORD-XXXXXX`), fecha de registro, estado (`Pendiente`, `Consolidado`, `Procesado`), cantidad de productos y monto total estimado.
-2. **Notificaciones y Remitos:** Recibirás alertas automáticas en la campana `🔔` ante modificaciones realizadas por el Ejecutivo, confirmación de consolidación y cuando tu **Remito oficial en PDF** esté generado.
+### Pantalla 2: 📜 Historial de Pedidos
+1. **Filtros y Lista:** Filtra por proveedor, estado (*Pendiente*, *Enviado al proveedor*, *Entregado*) y rango de fechas.
+2. **Detalle del Pedido:** Al seleccionar un pedido se muestran sus renglones con unidad, precio congelado, subtotal, cantidad entregada (si ya tiene remito) y, si el ejecutivo ajustó cantidades, la trazabilidad de la **cantidad original pedida**.
+3. **Acciones:**
+   - **"📄 Abrir Nota de Pedido (PDF)" / "💾 Guardar como…":** Genera la copia del pedido en PDF con precios.
+   - **"🚚 Ver remito":** Abre (o regenera) el remito PDF oficial si ya fue entregado.
+   - **"✏️ Modificar pedido":** Si sigue `Pendiente` y la lista está habilitada, te lleva directo a la hoja de ese proveedor.
+
+### Pantalla 3: 🏢 Mis Datos Fiscales
+- Permite cargar y actualizar tu **Nombre / Razón Social**, **C.U.I.T. / D.N.I.** (con validación de formato), **Condición frente al IVA** y **Domicilio de entrega**, utilizados en Notas de Pedido y Remitos.
 
 ---
 
 ## 3. Guía para el Ejecutivo de Cuentas y Administradores
 
-El flujo operativo se organiza en **3 Módulos Principales**:
-
 ### Módulo 1: 📑 Listas y Proveedores
-- **Solicitud de Cotización:** Presiona **"📧 Solicitar Lista"** para generar un email formal con membrete corporativo hacia el proveedor.
-- **Previsualización Transparente con IVA:** Al cargar una planilla (.xlsx / .csv), la grilla desglosa:
-  `Código` | `Detalle / Producto` | `Rubro` | **`Precio Base`** | **`Descuento (%)`** | **`Precio c/ Descuento`** | **`Precio + IVA (21%)`**.
-- **Importación:** Presiona **"📥 Procesar e Importar al Catálogo Único"** para actualizar la base de datos y emitir un aviso automático masivo a todos los socios.
+- **Solicitud de Cotización:** Presiona **"📧 Solicitar Lista"** para enviar un email formal al proveedor.
+- **Previsualización e Importación:** Carga planillas (`.xlsx` / `.csv`) desglosando `Precio Base`, `Descuento (%)`, `Precio c/ Descuento` y `Precio + IVA (21%)`. Los artículos se importan dentro del catálogo propio del proveedor.
+- **Ciclo de Lista:** Usa **"Habilitar / Cerrar Lista"** para abrir o cerrar la carga de pedidos de los socios (notificándoles automáticamente).
 
 ### Módulo 2: 📦 Previsualización y Consolidado (Por Proveedor)
-- **Selección por Proveedor:** Selecciona el proveedor en el desplegable superior.
-- **Grilla Matricial por Socio:**
-  - Muestra: `Código`, `Artículo / Producto`, `Precio Unitario`, **`Total Cantidad (Suma de todos los socios)`**, y una columna individual para cada socio (sin columna `Rubro`).
-- **Ajustes Ejecutivos por Disponibilidad (Regla 3a):**
-  - Si el proveedor te informa limitaciones externas de stock, puedes editar directamente las cantidades de cualquier socio en la matriz.
-  - La columna *Total Cantidad* se actualiza en tiempo real.
-  - Al presionar **"💾 Guardar Modificaciones"**, se asientan los cambios y se notifica automáticamente al socio afectado explicando el ajuste.
-- **Exportación y Despacho:**
-  - **"📥 Órdenes por Proveedor (.xlsx)":** Genera un Excel independiente por cada proveedor con pedidos.
-  - **"📊 Planilla Consolidada General (.xlsx)":** Planilla global multi-hoja.
-  - **"🚀 Confirmar Consolidación y Despacho a Proveedores":** Pasa los pedidos a estado *Consolidado* y notifica a los socios.
+- **Grilla Matricial:** Selecciona un proveedor para ver sus pedidos pendientes en matriz (`Código`, `Artículo`, `Precio Unitario`, `Total Cantidad` y columnas por socio).
+- **Ajustes Ejecutivos:** Puedes editar cantidades (incluso bajar a `0` o agregar ítems) conservando la cantidad original pedida por el socio. Al guardar se notifica automáticamente al socio afectado.
+- **Consolidación y Orden de Compra:**
+  - **"📊 Planilla Borrador del Proveedor":** Exporta un borrador interno antes de consolidar.
+  - **"🚀 Consolidar y Generar Orden de Compra":** Pasa los pedidos a `Consolidado`, cierra la lista del proveedor, genera la Orden de Compra oficial en Excel (`RC-OC-XXXXXX`) en `ordenes_compra/` y permite abrirla o enviarla por correo al proveedor.
 
 ### Módulo 3: 🚚 Recepción y Reparto Automático
-- **Privacidad Comercial:** Todos los pedidos y comprobantes emplean identificadores seguros y ofuscados tipo UUID/Hash (`RC-ORD-XXXXXX`, `CMP-REC-XXXXXX`, `RC-REM-XXXXXX`).
-- **Selección Multinivel:**
-  - Selector de Proveedor.
-  - Selector de **Nro. de Pedido Consolidado** (para gestionar entregas simultáneas de un mismo proveedor).
-- **Comprobante Interno Automático:** El sistema autogenera el Nro. de Comprobante con formato UUID/Hash, sin requerir tipeo manual.
-- **Doble Control:**
-  - *Logística:* Cantidad Recibida física vs Cantidad Pedida.
-  - *Compras:* Precio Facturado vs Precio Pactado.
-- **Asentar Entrada:** Presiona **"💾 1. Asentar Entrada por Nro. de Comprobante y Registrar Stock Físico"**.
-- **Reparto y Remitos PDF:** Presiona **"🚚 2. Ejecutar Reparto Automático y Generar Remitos PDF Oficiales"**:
-  - Aplica prorrateo proporcional equitativo si hubo faltantes.
-  - Emite **un Remito PDF oficial por cada proveedor para cada socio**, guardado en `remitos_pdf/`.
-  - Notifica formalmente a cada socio con su remito emitido.
-  - Botón **"📂 Ver Carpeta de Remitos PDF"** para abrir el directorio de documentos.
+- **Selección Obligatoria por Proveedor y Pedido Consolidado:** Gestiona entregas por proveedor con comprobante interno (`CMP-REC-XXXXXX`).
+- **Doble Control:** Verifica cantidades recibidas vs. pedidas y precio facturado vs. pactado.
+- **Remitos Estándar (Letra X, `0001-00000001`):** Genera un remito PDF por pedido/proveedor (ORIGINAL y DUPLICADO) en `remitos_pdf/`, con descripción multilínea y notificación automática al socio.
 
----
-
-## 4. Preguntas Frecuentes (FAQ)
-
-- **¿Dónde se guardan los Remitos PDF generados?** En la carpeta `remitos_pdf/` ubicada en la raíz del proyecto.
-- **¿Por qué los números de pedido y remito tienen letras y números como RC-ORD-A7F9D2?** Son identificadores ofuscados basados en hash/UUID diseñados para preservar el secreto comercial de la empresa.
-- **¿Cómo abrir el Manual Interactivo HTML?** Haz clic en el botón superior **"📖 Manual de Usuario"** dentro del sistema o abre `MANUAL_DE_USUARIO.html` en tu navegador.
+### Módulo 4: 📜 Historial del Ejecutivo
+- Reúne tres pestañas con filtros (incluido rango de fechas): **Órdenes de Compra** (con pedidos asociados e indicador de ajustes), **Remitos Emitidos** (con apertura/regeneración de PDF) y **Comprobantes de Proveedores** (resultado del doble control).

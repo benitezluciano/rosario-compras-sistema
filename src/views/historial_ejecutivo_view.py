@@ -1,8 +1,9 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton, QTabWidget,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QSplitter, QMessageBox
+    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QSplitter, QMessageBox,
+    QCheckBox, QDateEdit
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QColor, QFont
 
 from src.config.empresa import LETRA_REMITO
@@ -86,17 +87,41 @@ class HistorialEjecutivoView(QWidget):
         fila.addStretch()
         return fila
 
+    def _crear_filtro_fechas(self):
+        chk = QCheckBox("Fechas:")
+        desde = QDateEdit(QDate.currentDate().addMonths(-1))
+        desde.setCalendarPopup(True)
+        desde.setDisplayFormat("dd/MM/yyyy")
+        desde.setEnabled(False)
+        hasta = QDateEdit(QDate.currentDate())
+        hasta.setCalendarPopup(True)
+        hasta.setDisplayFormat("dd/MM/yyyy")
+        hasta.setEnabled(False)
+        chk.toggled.connect(lambda activo: (desde.setEnabled(activo), hasta.setEnabled(activo)))
+        return chk, desde, hasta
+
+    @staticmethod
+    def leer_rango_fechas(chk, desde, hasta):
+        if not chk.isChecked():
+            return None, None
+        return desde.date().toString("yyyy-MM-dd"), hasta.date().toString("yyyy-MM-dd")
+
     def _crear_tab_ordenes(self):
         tab = QWidget()
         lay = QVBoxLayout(tab)
         lay.setContentsMargins(10, 10, 10, 10)
 
         self.cmb_ord_proveedor = QComboBox()
-        self.cmb_ord_proveedor.setMinimumWidth(240)
+        self.cmb_ord_proveedor.setMinimumWidth(200)
         self.cmb_ord_estado = QComboBox()
-        self.cmb_ord_estado.setMinimumWidth(200)
+        self.cmb_ord_estado.setMinimumWidth(180)
+        self.chk_ord_fecha, self.date_ord_desde, self.date_ord_hasta = self._crear_filtro_fechas()
         self.btn_ord_actualizar = QPushButton("🔄 Actualizar")
-        fila = self._fila_filtros("Proveedor:", self.cmb_ord_proveedor, "Estado:", self.cmb_ord_estado)
+        fila = self._fila_filtros(
+            "Proveedor:", self.cmb_ord_proveedor,
+            "Estado:", self.cmb_ord_estado,
+            self.chk_ord_fecha, self.date_ord_desde, "a", self.date_ord_hasta
+        )
         fila.addWidget(self.btn_ord_actualizar)
         lay.addLayout(fila)
 
@@ -136,11 +161,16 @@ class HistorialEjecutivoView(QWidget):
         lay.setContentsMargins(10, 10, 10, 10)
 
         self.cmb_rem_proveedor = QComboBox()
-        self.cmb_rem_proveedor.setMinimumWidth(240)
+        self.cmb_rem_proveedor.setMinimumWidth(200)
         self.cmb_rem_socio = QComboBox()
-        self.cmb_rem_socio.setMinimumWidth(240)
+        self.cmb_rem_socio.setMinimumWidth(200)
+        self.chk_rem_fecha, self.date_rem_desde, self.date_rem_hasta = self._crear_filtro_fechas()
         self.btn_rem_actualizar = QPushButton("🔄 Actualizar")
-        fila = self._fila_filtros("Proveedor:", self.cmb_rem_proveedor, "Socio:", self.cmb_rem_socio)
+        fila = self._fila_filtros(
+            "Proveedor:", self.cmb_rem_proveedor,
+            "Socio:", self.cmb_rem_socio,
+            self.chk_rem_fecha, self.date_rem_desde, "a", self.date_rem_hasta
+        )
         fila.addWidget(self.btn_rem_actualizar)
         lay.addLayout(fila)
 
@@ -166,11 +196,16 @@ class HistorialEjecutivoView(QWidget):
         lay.setContentsMargins(10, 10, 10, 10)
 
         self.cmb_comp_proveedor = QComboBox()
-        self.cmb_comp_proveedor.setMinimumWidth(240)
+        self.cmb_comp_proveedor.setMinimumWidth(200)
         self.cmb_comp_control = QComboBox()
-        self.cmb_comp_control.setMinimumWidth(200)
+        self.cmb_comp_control.setMinimumWidth(180)
+        self.chk_comp_fecha, self.date_comp_desde, self.date_comp_hasta = self._crear_filtro_fechas()
         self.btn_comp_actualizar = QPushButton("🔄 Actualizar")
-        fila = self._fila_filtros("Proveedor:", self.cmb_comp_proveedor, "Control:", self.cmb_comp_control)
+        fila = self._fila_filtros(
+            "Proveedor:", self.cmb_comp_proveedor,
+            "Control:", self.cmb_comp_control,
+            self.chk_comp_fecha, self.date_comp_desde, "a", self.date_comp_hasta
+        )
         fila.addWidget(self.btn_comp_actualizar)
         lay.addLayout(fila)
 
@@ -287,7 +322,7 @@ class HistorialEjecutivoView(QWidget):
         return item.text() if item else ""
 
     def cargar_pedidos_orden(self, codigo_orden, pedidos):
-        headers = ["N° de Pedido", "Socio", "Fecha", "Estado", "Unidades", "Total", "Remito"]
+        headers = ["N° de Pedido", "Socio", "Fecha", "Estado", "Unidades", "Ajustes", "Total", "Remito"]
         t = self.tabla_pedidos_orden
         t.setRowCount(0)
         t.setColumnCount(len(headers))
@@ -295,12 +330,18 @@ class HistorialEjecutivoView(QWidget):
         t.setRowCount(len(pedidos))
         colores = {'Consolidado': AZUL, 'Procesado': VERDE, 'Repartido': VERDE}
         for fila, p in enumerate(pedidos):
+            ajustes = p.get('ajustes_ejecutivo') or 0
+            celda_ajuste = (
+                _item(f"⚠️ {ajustes} ítem(s)", "c", AMBAR, True)
+                if ajustes else _item("Sin ajustes", "c", GRIS)
+            )
             celdas = [
                 _item(p.get('codigo_comercial'), "c"),
                 _item(p.get('socio_nombre')),
                 _item(p.get('fecha'), "c"),
                 _item(p.get('estado'), "c", colores.get(p.get('estado'))),
                 _item(p.get('unidades'), "c"),
+                celda_ajuste,
                 _item(_moneda(p.get('total')), "d"),
                 _item(p.get('remito_codigo') or "—", "c", None if p.get('remito_codigo') else GRIS),
             ]

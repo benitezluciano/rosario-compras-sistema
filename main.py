@@ -27,6 +27,7 @@ from src.models.consolidacion_model import ConsolidacionModel
 from src.models.reparto_model import RepartoModel
 from src.models.notificacion_model import NotificacionModel
 from src.models.historial_ejecutivo_model import HistorialEjecutivoModel
+from src.models.perfil_model import PerfilSocioModel
 
 # Vistas
 from src.views.login_view import LoginView
@@ -37,6 +38,7 @@ from src.views.reparto_view import RepartoView
 from src.views.historial_view import HistorialView
 from src.views.historial_ejecutivo_view import HistorialEjecutivoView
 from src.views.notificaciones_dialog import NotificacionesDialog
+from src.views.perfil_socio_view import PerfilSocioView
 
 # Controladores
 from src.controllers.auth_controller import AuthController
@@ -46,6 +48,7 @@ from src.controllers.consolidacion_controller import ConsolidacionController
 from src.controllers.reparto_controller import RepartoController
 from src.controllers.historial_controller import HistorialController
 from src.controllers.historial_ejecutivo_controller import HistorialEjecutivoController
+from src.controllers.perfil_socio_controller import PerfilSocioController
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -200,6 +203,15 @@ class MainWindow(QMainWindow):
         )
         self.stacked_pantallas.addWidget(self.vista_historial_ejecutivo) # Índice 5
 
+        # Portal del Socio: Mis Datos Fiscales y Domicilio
+        self.vista_perfil_socio = PerfilSocioView()
+        self.controlador_perfil_socio = PerfilSocioController(
+            self.vista_perfil_socio,
+            PerfilSocioModel(),
+            on_perfil_actualizado=self.al_actualizar_perfil_socio
+        )
+        self.stacked_pantallas.addWidget(self.vista_perfil_socio) # Índice 6
+
         self.menu_lateral.currentRowChanged.connect(self.navegar_pantalla)
 
     def al_iniciar_sesion(self, usuario):
@@ -213,6 +225,7 @@ class MainWindow(QMainWindow):
         
         self.vista_pedido.establecer_socio_actual(usuario['id'], nombre, rol=rol)
         self.controlador_historial.set_socio(usuario['id'])
+        self.controlador_perfil_socio.set_socio(usuario['id'])
         self.controlador_catalogo.set_usuario_actual(usuario)
         self.controlador_consolidacion.set_usuario_actual(usuario)
         self.controlador_historial_ejecutivo.set_usuario_actual(usuario)
@@ -222,9 +235,10 @@ class MainWindow(QMainWindow):
         self.menu_lateral.clear()
         
         if rol == 'socio':
-            # Socio: Gestión de Pedidos e Historial (pantallas separadas)
+            # Socio: Gestión de Pedidos, Historial y Mis Datos Fiscales (pantallas separadas)
             self.menu_lateral.addItem("🛍️ Gestión de Pedidos")
             self.menu_lateral.addItem("📜 Historial de Pedidos")
+            self.menu_lateral.addItem("🏢 Mis Datos Fiscales")
             self.controlador_pedido.inicializar()
             self.menu_lateral.blockSignals(False)
             self.menu_lateral.setCurrentRow(0)
@@ -259,6 +273,9 @@ class MainWindow(QMainWindow):
             elif row == 1:
                 self.stacked_pantallas.setCurrentWidget(self.vista_historial)
                 self.controlador_historial.inicializar()
+            elif row == 2:
+                self.stacked_pantallas.setCurrentWidget(self.vista_perfil_socio)
+                self.controlador_perfil_socio.inicializar()
         else:
             if row == 0:
                 self.stacked_pantallas.setCurrentWidget(self.vista_catalogo)
@@ -321,6 +338,14 @@ class MainWindow(QMainWindow):
 
     def al_completar_reparto(self):
         self.actualizar_badge_notificaciones()
+
+    def al_actualizar_perfil_socio(self, perfil):
+        if not self.usuario_actual or not perfil:
+            return
+        nombre = perfil.get('nombre') or self.usuario_actual.get('nombre', '')
+        self.usuario_actual['nombre'] = nombre
+        self.lbl_usuario_info.setText(f"👤 {nombre}  |  Rol: Socio")
+        self.vista_pedido.establecer_socio_actual(self.usuario_actual['id'], nombre, rol=self.usuario_actual.get('role', 'socio'))
 
     def cerrar_sesion(self):
         self.usuario_actual = None

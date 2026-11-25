@@ -145,10 +145,11 @@ CREATE TABLE IF NOT EXISTS PEDIDOS (
 -- pedido está 'Pendiente' (si se importa una lista nueva) y queda fijo al consolidar.
 
 CREATE TABLE IF NOT EXISTS DETALLE_PEDIDOS (
-    id_pedido       INTEGER NOT NULL,
-    id_articulo     INTEGER NOT NULL,
-    cantidad_pedida INTEGER NOT NULL DEFAULT 1,
-    precio_unitario REAL    NOT NULL DEFAULT 0.0,
+    id_pedido         INTEGER NOT NULL,
+    id_articulo       INTEGER NOT NULL,
+    cantidad_pedida   INTEGER NOT NULL DEFAULT 1,
+    cantidad_original INTEGER,
+    precio_unitario   REAL    NOT NULL DEFAULT 0.0,
 
     PRIMARY KEY (id_pedido, id_articulo),
 

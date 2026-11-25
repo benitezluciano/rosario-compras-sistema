@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-11-24 — Sesión 6 (cierre de pendientes sesiones 1 a 3)
+**Duración aprox.:** (completar) · **Quién:** Eros David
+
+- **Objetivo de la sesión:** Resolver todos los puntos "Para hacer ya" del issue de traspaso de las sesiones 1 a 3 en `feature/pedidos-por-proveedor`.
+- **Hecho:**
+  - **Cantidad original del pedido (DEC-028):** Nueva columna `DETALLE_PEDIDOS.cantidad_original` (DDL + `migrar_db` + `seed_db.py`). Se actualiza al guardar/editar el socio, se conserva al ajustar por el ejecutivo (incluso si ajusta a `0`, excluyéndose de órdenes de compra), y se muestra en la matriz de consolidación, detalle de órdenes, historial del socio y Nota de Pedido PDF.
+  - **Pantalla "Mis Datos Fiscales" del socio (DEC-029):** Nuevos `PerfilSocioModel`, `PerfilSocioView` y `PerfilSocioController`, integrados en el menú lateral del socio con validación de CUIT/DNI y desplegable de condición frente al IVA. Se mantienen datos simulados (`DATOS_SIMULADOS = True`) para la entrega académica.
+  - **Hoja `"🧾 Resumen"` (DEC-003):** Primera pestaña fija de solo lectura en `PedidoView` agrupada por proveedor con subtotales en tiempo real.
+  - **Filtros y PDFs:** Filtro por rango de fechas en historial del socio y del ejecutivo; ajuste multilínea dinámico en `PdfService` para Remito y Nota de Pedido.
+  - **Higiene y tests:** `tests/test_proveedores_email.py` aislado en base temporal; eliminación de `src/views/historial_pedidos.ui` y documentos duplicados en raíz; `database.db`, `remitos_pdf/` y `logs/` fuera del control de versiones; limpieza de `requirements.txt`.
+  - **Documentación:** Actualización de `README.md`, `MANUAL_DE_USUARIO.md/.html` y `WALKTHROUGH.md/.html` al flujo actual por proveedor.
+- **Decidido:** (ver [DECISIONES.md](DECISIONES.md))
+  - DEC-003 (aprobada), DEC-028, DEC-029.
+- **Pendiente / abierto:** Decisiones de grupo (`DEC-011`, observación `#7 / DEC-022`, `DEC-014` y clic en notificaciones).
+
+---
+
 ## 2026-11-24 — Sesión 5 (presentación: guion del video y texto para Gamma)
 **Duración aprox.:** (completar) · **Quién:** BenitezLuciano, con asistente (Claude Code)
 

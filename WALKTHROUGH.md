@@ -1,6 +1,6 @@
-# Rosario Compras - Walkthrough del Circuito Operativo Refinado
+# Rosario Compras - Walkthrough del Circuito Operativo
 
-Documento explicativo del flujo integral de abastecimiento, compras agrupadas, consolidación matricial por proveedor, comprobantes internos con doble control, reparto automático y emisión de remitos en PDF oficiales.
+Documento explicativo del flujo vigente de abastecimiento por proveedor: habilitación de listas, carga en hojas estilo Excel con hoja Resumen, consolidación con Orden de Compra en Excel, doble control de recepción, reparto con Remito estándar (Letra X) y consulta de historiales.
 
 ---
 
@@ -13,69 +13,43 @@ sequenceDiagram
     actor Ejec as Ejecutivo / Admin
     actor Socio as Socio (Business Partner)
 
-    Ejec->>Prov: 1. Solicita listas de precios actualizadas
-    Prov->>Ejec: 2. Envía lista de precios (.xlsx / .csv)
-    Ejec->>Ejec: 3. Previsualiza (Precio Base, Descuento, Precio c/ Desc., +IVA 21%) e Importa a Catálogo
-    Ejec->>Socio: 4. Notificación automática 🔔 (Catálogo y precios actualizados)
-    Socio->>Socio: 5. Carga Pedido Vigente (sin límite) o Modifica Pedido Pendiente
-    Socio->>Ejec: 6. Notificación automática 🔔 (Nuevo Pedido registrado de Socio X)
-    Ejec->>Ejec: 7. Paso 2: Previsualiza Matriz por Proveedor (Total suma + columnas de cada socio, sin Rubro)
-    opt Ajuste por disponibilidad externa (Regla 3a)
-        Ejec->>Ejec: Modifica cantidad de socio en la matriz
-        Ejec->>Socio: Notificación automática 🔔 (Tu Pedido fue modificado por el Ejecutivo)
+    Ejec->>Prov: 1. Solicita lista de precios actualizada
+    Prov->>Ejec: 2. Envía lista (.xlsx / .csv)
+    Ejec->>Ejec: 3. Importa al catálogo del proveedor y habilita lista
+    Ejec->>Socio: 4. Notificación automática 🔔 (Lista habilitada)
+    Socio->>Socio: 5. Carga en hoja del proveedor / revisa hoja Resumen / envía
+    Socio->>Ejec: 6. Notificación automática 🔔 (Nuevo Pedido RC-ORD-XXXXXX)
+    Ejec->>Ejec: 7. Módulo 2: Previsualiza matriz del proveedor
+    opt Ajuste por disponibilidad externa
+        Ejec->>Ejec: Ajusta cantidad (se conserva cantidad_original)
+        Ejec->>Socio: Notificación automática 🔔 (Pedido modificado)
     end
-    Ejec->>Prov: 8. Exporta y Envía Órdenes de Compra por Proveedor (.xlsx)
-    Ejec->>Socio: 9. Notificación automática 🔔 (Pedido consolidado y enviado al proveedor)
-    Prov->>Ejec: 10. Entrega mercadería: Asienta Comprobante Interno (UUID/Hash) + Doble Control
-    Ejec->>Ejec: 11. Paso 3: Ejecuta Reparto Automático (con prorrateo ante faltantes)
-    Ejec->>Socio: 12. Genera REMITOS OFICIALES EN PDF (uno por proveedor para cada socio) y Notifica 🔔
+    Ejec->>Prov: 8. Consolida proveedor, genera Orden de Compra (.xlsx) y envía por mail
+    Ejec->>Socio: 9. Notificación automática 🔔 (Pedido consolidado con N° de Orden)
+    Prov->>Ejec: 10. Entrega mercadería: Asienta Comprobante + Doble Control
+    Ejec->>Ejec: 11. Módulo 3: Ejecuta Reparto (con prorrateo ante faltantes)
+    Ejec->>Socio: 12. Emite Remito estándar X (0001-...) en PDF y Notifica 🔔
 ```
 
 ---
 
 ## 2. Descripción de los Pasos Operativos
 
-### Paso 1: Solicitud de Listas de Precios
-El Ejecutivo de Cuentas inicia el ciclo solicitando formalmente las listas de precios actualizadas a los proveedores asignados desde el módulo **"1. Listas y Proveedores"**.
-
-### Paso 2 y 3: Recepción, Previsualización Impositiva e Importación
-El proveedor envía su planilla (.xlsx o .csv). El sistema la analiza calculando cuatro columnas clave: **Precio Base**, **Descuento (%)**, **Precio con Descuento** y **Precio + IVA (21%)**, incorporando los artículos a `ARTICULOS` y `PRECIOS_NEGOCIADOS`.
-
-### Paso 4: Aviso Masivo de Catálogo Disponible
-🔔 El sistema emite automáticamente una notificación a todos los Socios:
-*"El Ejecutivo actualizó el catálogo con productos del proveedor. Ya puedes consultar precios y cargar tu pedido."*
-
-### Paso 5: Carga, Modificación e Historial del Socio
-El socio puede pedir la cantidad que desee (sin límites artificiales).
-- **Pedido Vigente:** Si tiene un pedido sin cerrar (`Pendiente`), el sistema lo carga para poder modificar cantidades y guardar cambios.
-- **Historial de Pedidos:** Registro completo de pedidos pasados con códigos comerciales protegidos (`RC-ORD-XXXXXX`), estados y detalles.
-
-### Paso 6: Notificación Automática de Pedido
-🔔 Al confirmar o modificar el pedido, el sistema dispara automáticamente una notificación al panel del ejecutivo de cuentas avisando del pedido registrado.
-
-### Paso 7: Paso 2 - Previsualización Matricial por Proveedor
-El ejecutivo selecciona el proveedor y accede a una grilla matricial con:
-- `Código`, `Artículo / Producto`, `Precio Unitario`, **`Total Cantidad (Suma de todos los socios)`**, y columnas individuales por socio (sin columna `Rubro`).
-
-### Regla 3a: Ajustes Ejecutivos por Disponibilidad Externa
-Si el proveedor comunica limitaciones externas, el Ejecutivo ajusta cantidades en la grilla. Al guardar, 🔔 el socio recibe una notificación automática avisándole que su pedido fue modificado por el ejecutivo con el desglose del cambio.
-
-### Paso 8 y 9: Envío a Proveedores y Notificación al Socio
-El ejecutivo exporta las Órdenes de Compra por Proveedor (`.xlsx`) y confirma el despacho. Los pedidos pasan a `Consolidado` y 🔔 cada socio es notificado.
-
-### Paso 10: Paso 3 - Recepción por Comprobante Interno Automático
-Muestra pedidos consolidados con filtro de proveedor y pedido consolidado (para gestionar entregas simultáneas). El sistema autogenera un **Nro. de Comprobante Interno con UUID/Hash** (sin tipeo manual) y asienta el doble control compras/logística para actualizar el stock real.
-
-### Paso 11 y 12: Reparto Automático y Emisión de Remitos PDF Oficiales
-Se ejecuta el reparto (con prorrateo equitativo si hubo quiebre de stock) y se generan automáticamente los **Remitos oficiales en formato PDF** (uno por cada proveedor para cada socio involucrado), almacenados en `remitos_pdf/`. 🔔 Se notifica a cada socio con su remito listo para entrega.
+1. **Listas por Proveedor (Módulo 1):** Cada artículo pertenece al catálogo de un único proveedor. Al importar una lista nueva, se habilita automáticamente el ciclo de pedidos y se notifica a los socios.
+2. **Carga de Pedidos (Portal del Socio):** Cada lista habilitada se muestra como una hoja estilo Excel, precedida por la hoja de solo lectura **`🧾 Resumen`**. Cada hoja genera un pedido independiente (`PEDIDOS.id_proveedor`) con precio congelado (`DETALLE_PEDIDOS.precio_unitario`).
+3. **Historial y Datos Fiscales del Socio:** El socio consulta sus pedidos con filtros por proveedor, estado y fechas, ve la trazabilidad de cantidades ajustadas por el ejecutivo, descarga su **Nota de Pedido en PDF**, accede al remito y actualiza sus datos en **Mis Datos Fiscales**.
+4. **Consolidación y Orden de Compra (Módulo 2):** El ejecutivo ajusta la matriz si hay restricciones del proveedor (conservando `cantidad_original` incluso si baja a `0`) y consolida por proveedor. El sistema genera la **Orden de Compra en Excel (`RC-OC-XXXXXX`)**, la registra en `ORDENES_COMPRA` y cierra la lista.
+5. **Recepción y Reparto (Módulo 3):** Se selecciona proveedor obligatorio y pedido consolidado, se asienta el comprobante con doble control (cantidades y precios) y se emiten los **Remitos estándar Letra X (`0001-00000001`)** en `remitos_pdf/` (ORIGINAL y DUPLICADO).
+6. **Historial del Ejecutivo:** Permite consultar y reabrir/reenviar **Órdenes de Compra**, regenerar/abrir **Remitos Emitidos** y auditar **Comprobantes de Proveedores** con filtro por fechas.
 
 ---
 
 ## 3. Credenciales de Acceso para Pruebas
 
-| Rol | Nombre | Email | Contraseña | Permisos |
-| :--- | :--- | :--- | :--- | :--- |
-| **`ejecutivo`** | Ejecutivo de Cuentas | `ejecutivo@rosariocompras.com` | `account123` | Acceso a los 3 módulos del circuito completo, ajuste matricial y remitos PDF. |
-| **`admin`** | Administrador General | `admin@rosariocompras.com` | `admin123` | Acceso total y auditoría. |
-| **`socio`** | Café Central (Socio 1) | `socio1@rosariocompras.com` | `socio123` | Pedido vigente, modificación, historial y consulta de remitos. |
-| **`socio`** | Panadería La Rosa (Socio 2) | `socio2@rosariocompras.com` | `socio123` | Pedido vigente, modificación, historial y consulta de remitos. |
+| Rol | Nombre | Email | Contraseña |
+| :--- | :--- | :--- | :--- |
+| **`ejecutivo`** | Ejecutivo de Cuentas | `ejecutivo@rosariocompras.com` | `account123` |
+| **`admin`** | Administrador General | `admin@rosariocompras.com` | `admin123` |
+| **`socio`** | Café Central (Socio 1) | `socio1@rosariocompras.com` | `socio123` |
+| **`socio`** | Panadería La Rosa (Socio 2) | `socio2@rosariocompras.com` | `socio123` |
+| **`socio`** | Restaurante Italia (Socio 3) | `socio3@rosariocompras.com` | `socio123` |

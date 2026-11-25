@@ -1,18 +1,30 @@
 import os
+import shutil
 import sys
+import tempfile
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from src.database import inicializar_db
+# Aislar la prueba sobre una base temporal sembrada con el seed (DEC-021)
+import src.database as database
+import seeds.seed_db as seed_db
+
+TMP_DIR = tempfile.mkdtemp(prefix="rc_prov_test_")
+TMP_DB = os.path.join(TMP_DIR, "database.db")
+seed_db.DB_PATH = TMP_DB
+seed_db.seed()
+database.DB_PATH = TMP_DB
+
 from src.models.proveedor_model import ProveedorModel
 from src.models.catalogo_model import CatalogoModel
 from src.services.email_service import EmailService
 
 def run_tests():
     print("Iniciando pruebas de Proveedores, Catálogo y EmailService...")
-    inicializar_db()
+    print(f"(Base temporal: {TMP_DB})")
+    database.inicializar_db()
     
     # 1. Test ProveedorModel
     modelo_prov = ProveedorModel()
@@ -108,4 +120,7 @@ def run_tests():
     print("=======================================================")
 
 if __name__ == "__main__":
-    run_tests()
+    try:
+        run_tests()
+    finally:
+        shutil.rmtree(TMP_DIR, ignore_errors=True)

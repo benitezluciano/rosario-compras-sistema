@@ -106,6 +106,9 @@ class PedidoView(QWidget):
         self.catalogo_completo = []
         self.carrito = {}  # {id_articulo: {'id_articulo', 'cantidad', 'precio', 'detalle', 'id_proveedor'}}
         self.tablas_proveedores = {}  # {id_proveedor: QTableWidget}
+        self.tabla_resumen = None
+        self.lbl_resumen_info = None
+        self._offset_hojas = 0
         # Hojas por proveedor: orden de pestañas, nombres, precios, widgets auxiliares
         self.ids_hojas = []            # [id_proveedor] en el orden de las pestañas
         self.nombres_hojas = {}        # {id_proveedor: nombre}
@@ -272,7 +275,7 @@ class PedidoView(QWidget):
     def renderizar_tablas_por_proveedor(self, lista_articulos):
         """Crea dinámicamente una hoja (pestaña inferior estilo Excel) por cada proveedor."""
         # Recordar la hoja visible para restaurarla tras el re-renderizado
-        idx_previo = self.tabs_proveedores.currentIndex()
+        idx_previo = self.tabs_proveedores.currentIndex() - self._offset_hojas
         prov_previo = self.ids_hojas[idx_previo] if 0 <= idx_previo < len(self.ids_hojas) else None
 
         while self.tabs_proveedores.count():
@@ -281,6 +284,9 @@ class PedidoView(QWidget):
             hoja.deleteLater()
 
         self.tablas_proveedores.clear()
+        self.tabla_resumen = None
+        self.lbl_resumen_info = None
+        self._offset_hojas = 0
         self.ids_hojas = []
         self.nombres_hojas.clear()
         self.precios_por_hoja.clear()
@@ -308,6 +314,9 @@ class PedidoView(QWidget):
             lbl_vacia.setStyleSheet("color: #64748b; font-size: 13px; font-weight: bold;")
             layout_vacia.addWidget(lbl_vacia)
             self.tabs_proveedores.addTab(hoja_vacia, "Sin listas habilitadas")
+        else:
+            self._agregar_hoja_resumen()
+            self._offset_hojas = 1
 
         for prov_id, prov_data in por_proveedor.items():
             prov_nombre = prov_data['nombre']
@@ -397,16 +406,109 @@ class PedidoView(QWidget):
             self.tabs_proveedores.addTab(hoja, prov_nombre)
 
         if prov_previo in self.ids_hojas:
-            self.tabs_proveedores.setCurrentIndex(self.ids_hojas.index(prov_previo))
+            self.tabs_proveedores.setCurrentIndex(self.ids_hojas.index(prov_previo) + self._offset_hojas)
+        elif self.ids_hojas:
+            self.tabs_proveedores.setCurrentIndex(self._offset_hojas)
 
         self.btn_confirmar.setEnabled(bool(self.ids_hojas))
         self.calcular_totales()
+
+    def _agregar_hoja_resumen(self):
+        """Crea la hoja de solo lectura '🧾 Resumen' (DEC-003) con todo lo cargado."""
+        hoja = QWidget()
+        layout = QVBoxLayout(hoja)
+        layout.setContentsMargins(10, 10, 10, 8)
+        layout.setSpacing(6)
+
+        lbl_titulo = QLabel("🧾 Resumen General de Productos Cargados")
+        lbl_titulo.setStyleSheet("font-size: 13px; font-weight: bold; color: #1e3a8a;")
+        layout.addWidget(lbl_titulo)
+
+        self.lbl_resumen_info = QLabel("Todavía no cargaste cantidades en ninguna lista.")
+        self.lbl_resumen_info.setStyleSheet(ESTILO_ESTADO_NUEVO)
+        self.lbl_resumen_info.setWordWrap(True)
+        layout.addWidget(self.lbl_resumen_info)
+
+        tabla = QTableWidget()
+        headers = ["Proveedor", "Artículo / Producto", "Precio Unitario", "Cantidad", "Subtotal"]
+        tabla.setColumnCount(len(headers))
+        tabla.setHorizontalHeaderLabels(headers)
+        tabla.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        for col in (0, 2, 3, 4):
+            tabla.horizontalHeader().setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
+        tabla.verticalHeader().setDefaultSectionSize(32)
+        tabla.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        tabla.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        tabla.setStyleSheet(ESTILO_TABLA)
+        layout.addWidget(tabla)
+
+        self.tabla_resumen = tabla
+        self.tabs_proveedores.addTab(hoja, "🧾 Resumen")
+
+    def actualizar_hoja_resumen(self):
+        """Actualiza la tabla de la hoja 'Resumen' agrupada por proveedor."""
+        if self.tabla_resumen is None:
+            return
+        filas = []
+        total_unidades = 0
+        total_productos = 0
+        provs_activos = 0
+        for prov_id in self.ids_hojas:
+            nombre_prov = self.nombres_hojas.get(prov_id, "Proveedor")
+            items_prov = [
+                it for it in self.carrito.values()
+                if it.get('id_proveedor') == prov_id and it.get('cantidad', 0) > 0
+            ]
+            if not items_prov:
+                continue
+            provs_activos += 1
+            items_prov.sort(key=lambda x: x['detalle'].lower())
+            sub_prov = 0.0
+            for it in items_prov:
+                sub = it['cantidad'] * it['precio']
+                sub_prov += sub
+                total_unidades += it['cantidad']
+                total_productos += 1
+                filas.append((nombre_prov, it['detalle'], it['precio'], it['cantidad'], sub, False))
+            filas.append((f"Subtotal {nombre_prov}", f"{len(items_prov)} producto(s)", None, None, sub_prov, True))
+
+        t = self.tabla_resumen
+        t.setRowCount(len(filas))
+        for r, (prov, det, pre, cant, sub, es_subtotal) in enumerate(filas):
+            c_prov = QTableWidgetItem(prov)
+            c_det = QTableWidgetItem(det)
+            c_pre = QTableWidgetItem(f"${pre:,.2f}" if pre is not None else "")
+            c_pre.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            c_cant = QTableWidgetItem(str(cant) if cant is not None else "")
+            c_cant.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            c_sub = QTableWidgetItem(f"${sub:,.2f}")
+            c_sub.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+            if es_subtotal:
+                from PyQt6.QtGui import QColor, QFont
+                fuente = QFont()
+                fuente.setBold(True)
+                for celda in (c_prov, c_det, c_pre, c_cant, c_sub):
+                    celda.setFont(fuente)
+                    celda.setBackground(QColor("#eff6ff"))
+                    celda.setForeground(QColor("#1e3a8a"))
+
+            for col, celda in enumerate((c_prov, c_det, c_pre, c_cant, c_sub)):
+                t.setItem(r, col, celda)
+
+        if self.lbl_resumen_info:
+            if total_productos:
+                self.lbl_resumen_info.setText(
+                    f"📦 {total_productos} producto(s) ({total_unidades} unidades) distribuidos en {provs_activos} proveedor(es)."
+                )
+            else:
+                self.lbl_resumen_info.setText("Todavía no cargaste cantidades en ninguna lista.")
 
     def seleccionar_hoja(self, id_proveedor):
         """Muestra la hoja (pestaña) del proveedor indicado. Retorna False si no está habilitada."""
         if id_proveedor not in self.ids_hojas:
             return False
-        self.tabs_proveedores.setCurrentIndex(self.ids_hojas.index(id_proveedor))
+        self.tabs_proveedores.setCurrentIndex(self.ids_hojas.index(id_proveedor) + self._offset_hojas)
         return True
 
     def sincronizar_cantidades_en_tablas(self):
@@ -481,11 +583,16 @@ class PedidoView(QWidget):
             nombre = self.nombres_hojas.get(prov_id, "Proveedor")
             prefijo = "📝 " if prov_id in self.pedidos_vigentes else ""
             etiqueta = f"{prefijo}{nombre} ({cantidad_productos})" if cantidad_productos > 0 else f"{prefijo}{nombre}"
-            self.tabs_proveedores.setTabText(idx, etiqueta)
+            self.tabs_proveedores.setTabText(idx + self._offset_hojas, etiqueta)
 
             lbl_sub = self.lbl_subtotales_hoja.get(prov_id)
             if lbl_sub:
                 lbl_sub.setText(f"Subtotal de esta hoja: ${subtotal_hoja:,.2f}")
+
+        if self._offset_hojas:
+            total_items = sum(1 for it in self.carrito.values() if it.get('cantidad', 0) > 0)
+            self.tabs_proveedores.setTabText(0, f"🧾 Resumen ({total_items})" if total_items else "🧾 Resumen")
+        self.actualizar_hoja_resumen()
 
     # ------------------------------------------------------------------
     # Mensajes
