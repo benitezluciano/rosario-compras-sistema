@@ -12,11 +12,12 @@
   - Se trajeron los cambios del remoto (`a553862`) y se resolvió el conflicto de `.gitignore` dejando las líneas de Eros y agregando `documentacion/`. Se subió en `830e971`.
   - Prueba integral: 13 de 13 en verde.
   - Se actualizó "13 de 13" en la diapositiva 7 y en `ESTADO.md`.
+  - Material de la presentación: diapositivas numeradas con marcas `<!-- Diapositiva N de 10 -->` en la Parte A; el video pasó a 7 escenas (nueva escena 1: importar y previsualizar la lista, que ya la habilita; unos 2:35) y la diapositiva 7 lista 7 etapas; se sacó de la diapositiva 9 el riesgo de stock (DEC-030); tiempos de la Parte B recalculados (9:40, a medir en el ensayo).
 - **Decidido:** (ver [DECISIONES.md](DECISIONES.md))
   - DEC-030: Rosario Compras no maneja stock; cierra DEC-014.
   - DEC-031: se ratifica DEC-011 (lista nueva, precios nuevos en pendientes).
   - DEC-032: la observación #7 queda como está; mejoras futuras anotadas.
-- **Pendiente / abierto:** ensayar el video con el seed nuevo y confirmar el reparto 2/4/3; revisar con el grupo el riesgo de stock de la diapositiva 9 (ya no aplica, DEC-030); cuarto criterio del documento 06; quién graba el video.
+- **Pendiente / abierto:** ensayar el video con el seed nuevo y confirmar el reparto 2/4/3; medir la duración del video nuevo; cuarto criterio del documento 06; quién graba el video.
 
 ---
 

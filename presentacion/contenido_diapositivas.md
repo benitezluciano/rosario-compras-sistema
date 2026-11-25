@@ -15,10 +15,10 @@ Fuentes: documentos 02 a 06 de `documentacion/` y decisiones DEC-004 a DEC-025 d
 
 1. En Gamma, elegir crear una **presentación** pegando texto. Si Gamma ofrece conservar el texto tal cual en lugar de reescribirlo o resumirlo, elegir esa opción (a verificar en la pantalla).
 2. Formato 16:9, idioma español, tono profesional y sobrio.
-3. Pegar la Parte A completa. Las diapositivas están separadas por `---`.
+3. Pegar la Parte A completa. Las diapositivas están separadas por `---` y numeradas con una marca `<!-- Diapositiva N de 10 -->` para orientarse. Si Gamma muestra esas marcas en alguna diapositiva, borrarlas.
 4. En las instrucciones adicionales, pegar este texto:
 
-> Presentación ejecutiva en español, formato 16:9, de exactamente 10 diapositivas, una por cada sección separada por ---. Conservá el texto de cada sección. No agregues diapositivas, datos, cifras ni porcentajes que no estén en el texto. Estilo sobrio y corporativo, tipografía grande y pocas palabras por diapositiva. Donde dice [IMAGEN: archivo] dejá el espacio libre: la imagen la sube una persona. No generes ilustraciones, gráficos ni capturas de pantalla inventadas.
+> Presentación ejecutiva en español, formato 16:9, de exactamente 10 diapositivas, una por cada sección separada por ---. Ignorá las líneas <!-- Diapositiva N de 10 -->: son marcas para orientarse y no van en las diapositivas. Conservá el texto de cada sección. No agregues diapositivas, datos, cifras ni porcentajes que no estén en el texto. Estilo sobrio y corporativo, tipografía grande y pocas palabras por diapositiva. Donde dice [IMAGEN: archivo] dejá el espacio libre: la imagen la sube una persona. No generes ilustraciones, gráficos ni capturas de pantalla inventadas.
 
 5. Subir a mano las imágenes que están en `presentacion/diagramas/`:
    - `as-is.png` y `to-be.png` (diapositivas 3 y 5).
@@ -29,6 +29,7 @@ Fuentes: documentos 02 a 06 de `documentacion/` y decisiones DEC-004 a DEC-025 d
 
 # PARTE A: TEXTO PARA PEGAR EN GAMMA
 
+<!-- Diapositiva 1 de 10 -->
 # Rosario Compras: del pedido al remito, sin planillas
 
 Propuesta de mejora del circuito de compras y reparto
@@ -37,6 +38,7 @@ Propuesta de mejora del circuito de compras y reparto
 
 ---
 
+<!-- Diapositiva 2 de 10 -->
 # Una compra conjunta que funciona
 
 Rosario Compras agrupa a 12 empresas supermercadistas, con 32 locales, que compran juntas para conseguir mejores precios.
@@ -49,6 +51,7 @@ El desafío no es comprar mejor. Es consolidar los pedidos y repartir la mercade
 
 ---
 
+<!-- Diapositiva 3 de 10 -->
 # Hoy: cuatro problemas entre el pedido y el remito
 
 [IMAGEN: as-is.png, a la izquierda, ocupando toda la altura]
@@ -60,6 +63,7 @@ El desafío no es comprar mejor. Es consolidar los pedidos y repartir la mercade
 
 ---
 
+<!-- Diapositiva 4 de 10 -->
 # Lo que cuesta hoy
 
 **~4 horas**
@@ -75,6 +79,7 @@ Estimaciones de la organización obtenidas en el relevamiento. No fueron medidas
 
 ---
 
+<!-- Diapositiva 5 de 10 -->
 # Mismo circuito, otro modo de trabajo
 
 [IMAGEN: as-is.png y to-be.png, una al lado de la otra, ocupando casi toda la diapositiva]
@@ -83,6 +88,7 @@ El socio carga su pedido en el sistema. La consolidación, la orden de compra, e
 
 ---
 
+<!-- Diapositiva 6 de 10 -->
 # Qué cambia y qué no
 
 **Se elimina**
@@ -104,21 +110,24 @@ El módulo apoya el criterio de las personas, no lo reemplaza.
 
 ---
 
+<!-- Diapositiva 7 de 10 -->
 # El prototipo ya funciona de punta a punta
 
-Video de 2 minutos con el recorrido completo:
+Video con el recorrido completo:
 
-1. El socio carga su pedido
-2. El ejecutivo ve todo consolidado y ajusta cantidades
-3. Se consolida y se genera la orden de compra
-4. Recepción con doble control de cantidades y precios
-5. Reparto automático con prorrateo ante faltantes
-6. Remito en PDF y consulta del socio
+1. El ejecutivo importa la lista de precios, la previsualiza y queda habilitada para los socios
+2. El socio carga su pedido
+3. El ejecutivo ve todo consolidado y ajusta cantidades
+4. Se consolida, se genera la orden de compra y se envía al proveedor
+5. Recepción con doble control de cantidades y precios
+6. Reparto automático con prorrateo ante faltantes
+7. Remito en PDF y consulta del socio
 
 Prueba integral del circuito: 13 de 13 verificaciones correctas. Los datos del video son de prueba.
 
 ---
 
+<!-- Diapositiva 8 de 10 -->
 # Por qué conviene
 
 - **Reparto y armado de un pedido:** meta de reducirlo al menos un 70 % (de unas 4 horas a menos de 1 hora 12 minutos).
@@ -132,12 +141,12 @@ Metas y cifras del relevamiento: se miden en el piloto. El retorno de la inversi
 
 ---
 
+<!-- Diapositiva 9 de 10 -->
 # Cómo se llega a producción
 
 **Etapas:** E4 cierre de brechas críticas, E5 piloto con dos socios y, si el piloto funciona, integración con IT.
 
 **Riesgos y cómo se cubren**
-- Stock mal calculado tras una recepción: se corrige en E4, antes del piloto.
 - Diferencias de precio o cantidad sin seguimiento: se corrige en E4.
 - 20 usuarios simultáneos e integración con SAP: se resuelve en la integración con IT, con un motor central.
 - Exposición de datos y credenciales de prueba: cifrado y manejo de secretos en la integración. El prototipo no se usa con datos reales.
@@ -145,6 +154,7 @@ Metas y cifras del relevamiento: se miden en el piloto. El retorno de la inversi
 
 ---
 
+<!-- Diapositiva 10 de 10 -->
 # Qué le pedimos a la dirección
 
 **Aprobar la etapa E4 y un piloto con dos socios.**
@@ -164,7 +174,7 @@ El problema está acotado, la solución ya existe como prototipo y los beneficio
 
 # PARTE B: NOTAS DEL ORADOR (no se pega en Gamma)
 
-Los tiempos suman 9:15 y dejan unos 45 segundos de margen. Los nombres de los 4 integrantes están pendientes: se usan las letras A a D.
+Los tiempos suman 9:40 y dejan unos 20 segundos de margen. Son una estimación: el grupo los mide en el ensayo del jueves 26 y ajusta lo que haga falta (el video es lo más fácil de recortar). Los nombres de los 4 integrantes están pendientes: se usan las letras A a D.
 
 | # | Diapositiva | Quién | Tiempo |
 | :--- | :--- | :--- | :--- |
@@ -174,7 +184,7 @@ Los tiempos suman 9:15 y dejan unos 45 segundos de margen. Los nombres de los 4 
 | 4 | Lo que cuesta hoy | A | 0:30 |
 | 5 | Mismo circuito, otro modo de trabajo | B | 1:15 |
 | 6 | Qué cambia y qué no | B | 0:50 |
-| 7 | Prototipo (video) | C | 2:10 |
+| 7 | Prototipo (video) | C | 2:35 |
 | 8 | Por qué conviene | D | 1:10 |
 | 9 | Cómo se llega a producción | D | 0:50 |
 | 10 | Qué le pedimos a la dirección | D | 0:35 |
@@ -191,7 +201,7 @@ Los tiempos suman 9:15 y dejan unos 45 segundos de margen. Los nombres de los 4 
 
 **6. Qué cambia.** Cerrar con la idea de que se mantienen la negociación y el control físico, que son tareas de criterio humano.
 
-**7. Prototipo.** Pasar el video mudo y narrar con el guion de `guion_video.md`. Si falla el video, mostrar las 6 etapas de la diapositiva y ofrecer abrir el programa al final.
+**7. Prototipo.** Pasar el video mudo y narrar con el guion de `guion_video.md`. Si falla el video, mostrar las 7 etapas de la diapositiva y ofrecer abrir el programa al final.
 
 **8. Por qué conviene.** Decir con claridad qué es meta y qué es estimación. No afirmar un plazo de recupero de la inversión ni plazos o costos de implementación: el grupo no los calculó.
 

@@ -37,12 +37,12 @@ Los puntos "Para hacer ya" de las sesiones 1 a 3 quedaron implementados el 2026-
 ## Presentación del proyecto (en paralelo al desarrollo)
 **Fecha de la presentación: 27/11/2026.** Formato y criterio en DEC-025 (propuesta) y DEC-026. Material en [../presentacion/](../presentacion/README.md): página AS-IS y TO-BE, diagramas en SVG y PNG, guion del video, texto de las diapositivas para Gamma (Sergio) y el script que genera los diagramas.
 - **Falta:**
-  1. Ensayar el recorrido del video con la base reseteada y confirmar el reparto esperado (2 / 4 / 3); decidir quién graba. La portada la completa Sergio.
+  1. Ensayar el recorrido del video (ahora 7 escenas, empieza en la carga de la lista de precios) con la base reseteada, confirmar el reparto esperado (2 / 4 / 3) y medir la duración; decidir quién graba. La portada la completa Sergio.
   2. Con el grupo: aclarar en el video que los datos son de prueba y decidir si se incluye el cuarto criterio de éxito del documento 06.
   3. No hay duraciones ni costos de implementación calculados: las diapositivas no los incluyen (DEC-027). Si el grupo respalda las cifras de plazo del documento 06, se agregan.
 - **Diferencias entre el documento 05 (v1) y el sistema actual, para revisar con el grupo:**
   - RF-18 figura como no implementado, pero hoy el socio accede a su remito desde el historial (DEC-024).
-  - L-01 parece resuelta por DEC-004 a DEC-009, y L-11 quedó vieja (hay una prueba integral de 13 pruebas). L-08 (cantidad original) quedó resuelta el 24/11 (`DETALLE_PEDIDOS.cantidad_original`) y L-02 (stock) dejó de ser una brecha: Rosario Compras no maneja stock (DEC-030). La diapositiva 9 todavía lista "stock mal calculado" como riesgo: revisar con el grupo.
+  - L-01 parece resuelta por DEC-004 a DEC-009, y L-11 quedó vieja (hay una prueba integral de 13 pruebas). L-08 (cantidad original) quedó resuelta el 24/11 (`DETALLE_PEDIDOS.cantidad_original`) y L-02 (stock) dejó de ser una brecha: Rosario Compras no maneja stock (DEC-030). El riesgo de stock se sacó de la diapositiva 9.
   - Los datos de prueba tienen 8 socios gastronómicos; el caso real son 12 supermercadistas.
   - El documento 02 repite el encabezado del 04, y el diagrama de contexto del 03 tiene una caja suelta.
   - Los ejecutivos pidieron en la entrevista que los archivos se generen "según necesidad"; el sistema hoy guarda las órdenes de compra en la base (DEC-019). A verificar.

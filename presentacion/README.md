@@ -10,7 +10,7 @@ Material de la presentación grupal (4 integrantes, máximo 10 minutos, enfoque 
 | `diagramas/as-is.svg` · `as-is.png` | Circuito actual en 5 carriles y 9 filas. El PNG mide 1770 × 2292 px (fondo blanco). |
 | `diagramas/to-be.svg` · `to-be.png` | Circuito con el módulo, en los mismos carriles y filas. |
 | `contenido_diapositivas.md` | Texto para pegar en Gamma (10 diapositivas), notas del orador con tiempos y reparto, preguntas probables y puntos a confirmar. |
-| `guion_video.md` | Guion del video del prototipo (6 escenas, 2:10) con datos, clics y narración. |
+| `guion_video.md` | Guion del video del prototipo (7 escenas, unos 2:35) con datos, clics y narración. |
 | `fuente/` | Lo necesario para regenerar todo (ver más abajo). |
 
 El AS-IS sale del relevamiento (documentos 02 a 05 de [`documentacion/`](../documentacion)). El TO-BE sale del flujo vigente del prototipo (DEC-004 a DEC-024), no del README ni del manual, que están desactualizados.

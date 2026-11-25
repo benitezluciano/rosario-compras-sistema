@@ -554,7 +554,7 @@
   - Que el sistema reemplace el stock por lo recibido (observación #4) deja de ser un problema: coincide con el modo de trabajo real. No se programa ningún cambio por esta decisión.
   - Se levanta el bloqueo de DEC-014. La limitación L-02 del documento 05 deja de ser una brecha.
   - Queda como mejora futura, sin fecha, registrar el excedente (lo recibido que sobra tras el reparto) para que el ejecutivo decida. No está verificado si el sistema hoy lo registra.
-  - La diapositiva 9 menciona "Stock mal calculado tras una recepción: se corrige en E4". Con esta decisión ese riesgo ya no aplica y hay que revisarlo con el grupo.
+  - La diapositiva 9 mencionaba "Stock mal calculado tras una recepción: se corrige en E4". Con esta decisión ese riesgo ya no aplica y se sacó de las diapositivas el 2026-11-25.
 - **Relacionado con:** DEC-014, DEC-009.
 
 ---
