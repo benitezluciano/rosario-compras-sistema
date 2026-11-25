@@ -230,3 +230,6 @@ database.db
 ordenes_compra/
 remitos_pdf/
 logs/
+
+# Documentos de la catedra (no se versionan)
+documentacion/
